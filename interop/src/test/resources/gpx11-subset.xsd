@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors. AGPL-3.0-or-later.
+
+  A hand-written schema for the part of GPX 1.1 that Self Watch writes: metadata (name, time),
+  one trk (name, type, trkseg) and trkpt with ele, time and extensions. Element order, types and
+  ranges follow the published GPX 1.1 rules (lat -90..90, lon -180..180 exclusive of 180).
+  Extensions are checked by the companion schema tpx-v1-subset.xsd.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:gpx="http://www.topografix.com/GPX/1/1"
+           xmlns:tpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+           targetNamespace="http://www.topografix.com/GPX/1/1"
+           elementFormDefault="qualified">
+  <xs:import namespace="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" schemaLocation="tpx-v1-subset.xsd"/>
+
+  <xs:element name="gpx">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="metadata" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string" minOccurs="0"/>
+              <xs:element name="time" type="xs:dateTime" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="trk" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="name" type="xs:string" minOccurs="0"/>
+              <xs:element name="type" type="xs:string" minOccurs="0"/>
+              <xs:element name="trkseg" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="trkpt" type="gpx:wpt" minOccurs="0" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" fixed="1.1"/>
+      <xs:attribute name="creator" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="wpt">
+    <xs:sequence>
+      <xs:element name="ele" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="time" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="extensions" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element ref="tpx:TrackPointExtension" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="lat" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:decimal">
+          <xs:minInclusive value="-90.0"/>
+          <xs:maxInclusive value="90.0"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="lon" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:decimal">
+          <xs:minInclusive value="-180.0"/>
+          <xs:maxExclusive value="180.0"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+</xs:schema>

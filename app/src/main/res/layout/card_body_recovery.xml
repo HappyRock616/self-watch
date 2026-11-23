@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: sleep, resting heart rate and HRV side by side (RecoveryCard). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recovery_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/sw_space_2"
+    android:baselineAligned="false"
+    android:orientation="horizontal">
+
+    <app.selfwatch.ui.components.SwCard
+        android:id="@+id/sleep_card"
+        style="@style/Widget.SelfWatch.TabCard.Third"
+        android:layout_marginTop="0dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/sleep_tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:swLabel="@string/body_sleep"
+            app:swValue="@string/dash" />
+    </app.selfwatch.ui.components.SwCard>
+
+    <app.selfwatch.ui.components.SwCard
+        android:id="@+id/rest_hr_card"
+        style="@style/Widget.SelfWatch.TabCard.Third"
+        android:layout_marginTop="0dp"
+        android:layout_marginStart="@dimen/tab_card_gap"
+        android:clickable="true"
+        android:focusable="true">
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/rest_hr_tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:swLabel="@string/body_rest_hr"
+            app:swValue="@string/dash" />
+    </app.selfwatch.ui.components.SwCard>
+
+    <app.selfwatch.ui.components.SwCard
+        android:id="@+id/hrv_card"
+        style="@style/Widget.SelfWatch.TabCard.Third"
+        android:layout_marginTop="0dp"
+        android:layout_marginStart="@dimen/tab_card_gap"
+        android:clickable="true"
+        android:focusable="true">
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/hrv_tile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:swLabel="@string/body_hrv"
+            app:swValue="@string/dash" />
+    </app.selfwatch.ui.components.SwCard>
+</LinearLayout>

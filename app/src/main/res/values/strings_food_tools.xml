@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Food tab tools: copy day, meal names, export day, turning food tracking on; recipe book import,
+     export and tags; the + sheet's water and fasting. -->
+<resources>
+    <!-- Copy day -->
+    <string name="food_copy_what">Copy what?</string>
+    <plurals name="food_copy_whole_day">
+        <item quantity="one">Whole day (%d item)</item>
+        <item quantity="other">Whole day (%d items)</item>
+    </plurals>
+    <string name="food_copy_meal">%1$s (%2$d)</string>
+    <string name="food_copy_same_day">Pick another day to copy to.</string>
+    <plurals name="food_copied_to">
+        <item quantity="one">Copied %1$d item to %2$s</item>
+        <item quantity="other">Copied %1$d items to %2$s</item>
+    </plurals>
+    <string name="food_copy_undone">Copy undone</string>
+    <string name="food_nothing_logged">Nothing logged on this day yet.</string>
+
+    <!-- Export day -->
+    <plurals name="food_exported">
+        <item quantity="one">Saved %d entry</item>
+        <item quantity="other">Saved %d entries</item>
+    </plurals>
+
+    <!-- Food tracking is off -->
+    <string name="food_turn_on_title">Turn on food tracking?</string>
+    <string name="food_turn_on_message">Log meals, water and fasts, and see calories left for the day. You can turn it off again in Settings.</string>
+    <string name="food_turn_on">Turn on</string>
+
+    <!-- Meal names -->
+    <string name="meals_help">Tap a name to rename it. Removed meals keep their past entries.</string>
+    <string name="meals_add">Add meal</string>
+    <string name="meals_rename">Rename meal</string>
+    <string name="meals_name_hint">Meal name</string>
+    <string name="meals_rename_description">Rename %1$s</string>
+    <string name="meals_up">Move %1$s up</string>
+    <string name="meals_down">Move %1$s down</string>
+    <string name="meals_remove">Remove %1$s</string>
+    <string name="meals_removed">Removed</string>
+    <string name="meals_restore">Bring back</string>
+    <string name="meals_restore_description">Bring back %1$s</string>
+
+    <!-- + sheet: water and fasting -->
+    <string name="add_water_logged">Glass logged. %1$s ml today</string>
+    <string name="add_water_logged_goal">Glass logged. %1$s of %2$s ml today</string>
+    <string name="add_fast_started">Fast started. Goal %1$s. You\'ve got this</string>
+    <string name="add_fast_ended">Fast ended at %1$s. Well done</string>
+
+    <!-- Recipe book -->
+    <plurals name="recipe_exported">
+        <item quantity="one">Saved %d recipe</item>
+        <item quantity="other">Saved %d recipes</item>
+    </plurals>
+    <string name="recipe_export_empty">No recipes to export yet.</string>
+    <string name="recipe_no_tags">No tags yet. Add them when you edit a recipe.</string>
+    <string name="import_recipes_intro">Choose a recipe file or a recipe app export. You\'ll see the recipes before anything is saved, and you can undo the import later.</string>
+    <string name="import_recipes_formats">Works with: %1$s.</string>
+</resources>

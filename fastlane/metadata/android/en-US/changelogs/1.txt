@@ -1,0 +1,1 @@
+First public build: body, activity, sleep, workouts, food diary with barcode scanning, Garmin watch sync over Bluetooth, import and export, encrypted backups, Health Connect, and a privacy center listing every internet request.

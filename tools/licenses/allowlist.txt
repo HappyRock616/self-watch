@@ -1,0 +1,20 @@
+# Licence allow-list for :app:licenseCheck (G07). One case-insensitive regular expression per line,
+# matched against each <license><name> in a library's POM. A library passes when any of its
+# licences matches any line. Add a line only for a free licence compatible with AGPL-3.0, in a
+# commit that says which library needs it.
+
+# Apache-2.0 and its common spellings
+^Apache-2\.0$
+^(The )?Apache (Software )?License,? (Version |v)?2\.0
+^(The )?Apache 2(\.0)?$
+^ASL,? (Version )?2\.0$
+
+# MIT
+^MIT$
+^(The )?MIT License$
+
+# BSD 2-clause and 3-clause
+^BSD-[23]-Clause$
+^(The )?BSD [23]-Clause( License)?
+^(The )?(New|Simplified|Revised) BSD License$
+^3-Clause BSD License$

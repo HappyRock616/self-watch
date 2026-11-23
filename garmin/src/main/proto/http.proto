@@ -1,0 +1,139 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// Connect IQ web requests from watch apps (A23): makeWebRequest (ConnectIQHTTPRequest) and raw resource
+// requests (used for example for GPS ephemeris), whose large answers can go through the data transfer service.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_http.proto
+//   ConnectIQHTTPService (1, 2, 5, 6), ConnectIQHTTPRequest (1..9; methods 0..6, response types 0..3),
+//   ConnectIQHTTPResponse (1..6; statuses 0, 100, 200..202, 300, 400..402, 1001),
+//   RawResourceRequest (1..11; HTTPHeader 1, 2; MultipartForm 1..5), RawResourceResponse (1..5; statuses 0..500),
+//   EncryptedEnvelope (1..3); gdi_data_types.proto DataTransferItem (1, 2)
+syntax = "proto2";
+
+package selfwatch.garmin.http;
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "HttpProto";
+
+message HttpService {
+    optional WebRequest connect_iq_http_request = 1;
+    optional WebResponse connect_iq_http_response = 2;
+    optional RawResourceRequest raw_resource_request = 5;
+    optional RawResourceResponse raw_resource_response = 6;
+}
+
+enum ResponseType {
+    JSON = 0;
+    URL_ENCODED = 1;
+    PLAIN_TEXT = 2;
+    XML = 3;
+}
+
+enum HttpMethod {
+    UNKNOWN = 0;
+    GET = 1;
+    PUT = 2;
+    POST = 3;
+    DELETE = 4;
+    PATCH = 5;
+    HEAD = 6;
+}
+
+message WebRequest {
+    enum Version {
+        VERSION_1 = 0;
+        VERSION_2 = 1;
+    }
+    required string url = 1;
+    optional HttpMethod http_method = 2;
+    // Monkey C serialized dictionary of header fields.
+    optional bytes http_header_fields = 3;
+    // Monkey C serialized body (usually a dictionary).
+    optional bytes http_body = 4;
+    optional uint32 max_response_length = 5;
+    optional bool include_http_header_fields_in_response = 6;
+    optional bool compress_response_body = 7;
+    optional ResponseType response_type = 8;
+    optional Version version = 9;
+}
+
+message WebResponse {
+    enum Status {
+        UNKNOWN = 0;
+        OK = 100;
+        INVALID_HTTP_HEADER_FIELDS_IN_REQUEST = 200;
+        INVALID_HTTP_BODY_IN_REQUEST = 201;
+        INVALID_HTTP_METHOD_IN_REQUEST = 202;
+        NETWORK_REQUEST_TIMED_OUT = 300;
+        INVALID_HTTP_BODY_IN_NETWORK_RESPONSE = 400;
+        INVALID_HTTP_HEADER_FIELDS_IN_NETWORK_RESPONSE = 401;
+        NETWORK_RESPONSE_TOO_LARGE = 402;
+        INSECURE_REQUEST = 1001;
+    }
+    optional Status status = 1;
+    optional int32 http_status_code = 2;
+    // Monkey C serialized body.
+    optional bytes http_body = 3;
+    // Monkey C serialized dictionary of header fields.
+    optional bytes http_header_fields = 4;
+    // 0 when the body is not compressed.
+    optional uint32 inflated_size = 5;
+    optional ResponseType response_type = 6;
+}
+
+message HttpHeader {
+    required string key = 1;
+    required string value = 2;
+}
+
+message DataTransferItem {
+    required uint32 id = 1;
+    required uint32 size = 2;
+}
+
+message EncryptedEnvelope {
+    optional bytes cipher_text = 1;
+    optional bytes iv = 2;
+    optional bytes tag = 3;
+}
+
+message MultipartForm {
+    optional string name = 1;
+    optional string filename = 2;
+    optional string content_type = 3;
+    optional bytes resource_data = 4;
+    optional DataTransferItem xfer_data = 5;
+}
+
+message RawResourceRequest {
+    required string url = 1;
+    optional uint32 max_size = 2;
+    optional HttpMethod method = 3;
+    optional string body = 4;
+    repeated HttpHeader headers = 5;
+    optional bool use_data_xfer = 6;
+    optional bytes raw_body = 7;
+    repeated MultipartForm forms = 8;
+    optional int32 connection_timeout_seconds = 9;
+    optional int32 read_timeout_seconds = 10;
+    optional EncryptedEnvelope encrypted_request = 11;
+}
+
+message RawResourceResponse {
+    enum Status {
+        UNKNOWN = 0;
+        OK = 100;
+        NETWORK_REQUEST_TIMED_OUT = 200;
+        FILE_TOO_LARGE = 300;
+        DATA_TRANSFER_ITEM_FAILURE = 400;
+        DECRYPTION_FAILURE = 500;
+    }
+    optional Status status = 1;
+    optional int32 http_status_code = 2;
+    optional bytes resource_data = 3;
+    optional DataTransferItem xfer_data = 4;
+    repeated HttpHeader headers = 5;
+}

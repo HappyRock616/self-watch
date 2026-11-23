@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- XML attributes for app.selfwatch.ui.components. All prefixed "sw" to avoid clashes with Material. -->
+<resources>
+    <attr name="swTitle" format="string" />
+    <attr name="swSubtitle" format="string" />
+    <attr name="swActionText" format="string" />
+    <attr name="swValue" format="string" />
+    <attr name="swUnit" format="string" />
+    <attr name="swLabel" format="string" />
+    <attr name="swTrailing" format="string" />
+    <attr name="swColor" format="color" />
+
+    <!-- Theme colors, set per color theme overlay: the primary as small text (at least 4.5:1 on the surfaces),
+         and the SwTheme.Theme ordinal (read by ChartPalette). -->
+    <attr name="swColorAccentText" format="color" />
+    <attr name="swThemeId" format="integer" />
+
+    <declare-styleable name="SwCard">
+        <attr name="swTitle" />
+        <attr name="swActionText" />
+    </declare-styleable>
+
+    <declare-styleable name="StatTile">
+        <attr name="swValue" />
+        <attr name="swUnit" />
+        <attr name="swLabel" />
+        <attr name="swDeltaText" format="string" />
+        <attr name="swDelta" format="float" />
+        <attr name="swDeltaGoodWhenDown" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="RingView">
+        <attr name="swProgress" format="float" />
+        <attr name="swColor" />
+        <attr name="swTrackColor" format="color" />
+        <attr name="swRingWidth" format="dimension" />
+        <attr name="swCenterText" format="string" />
+        <attr name="swSubText" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="BarsView">
+        <attr name="swGoalColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="Sparkline">
+        <attr name="swColor" />
+        <attr name="swLineWidth" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="ListRow">
+        <attr name="swTitle" />
+        <attr name="swSubtitle" />
+        <attr name="swTrailing" />
+        <attr name="swShowChevron" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="SourceTag">
+        <attr name="swTagStyle" format="enum">
+            <enum name="database" value="0" />
+            <enum name="mine" value="1" />
+            <enum name="chain" value="2" />
+            <enum name="meal" value="3" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="EmptyState">
+        <attr name="swIcon" format="reference" />
+        <attr name="swMessage" format="string" />
+        <attr name="swButtonText" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="NumberStepper">
+        <attr name="swUnit" />
+        <attr name="swStepX100" format="integer" />
+        <attr name="swMinX100" format="integer" />
+        <attr name="swMaxX100" format="integer" />
+        <attr name="swDecimals" format="integer" />
+    </declare-styleable>
+</resources>

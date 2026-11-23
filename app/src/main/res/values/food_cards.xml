@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sizes and view ids of the Food cards added after phase 1 (WP-15). -->
+<resources>
+    <dimen name="food_dot_size">16dp</dimen>
+    <dimen name="food_dot_cell">28dp</dimen>
+
+    <item name="food_logging_days_card" type="id" />
+    <item name="food_protein_per_kg_card" type="id" />
+    <item name="food_protein_per_meal_card" type="id" />
+    <item name="food_carbs_per_kg_card" type="id" />
+    <item name="food_workout_fuel_card" type="id" />
+    <item name="food_fuel_balance_card" type="id" />
+    <item name="food_sodium_card" type="id" />
+    <item name="food_fibre_card" type="id" />
+    <item name="food_total_sugar_card" type="id" />
+    <item name="sleep_calories_chart" type="id" />
+    <item name="sleep_calories_link" type="id" />
+</resources>

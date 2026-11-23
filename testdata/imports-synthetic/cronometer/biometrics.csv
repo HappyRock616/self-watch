@@ -1,0 +1,6 @@
+Day,Time,Group,Metric,Unit,Amount
+2026-03-01,07:10,Weigh-in,Weight,kg,78.40
+2026-03-01,07:10,Weigh-in,Body Fat,%,21.5
+2026-03-02,07:05,Weigh-in,Weight,lbs,172.40
+2026-03-02,07:05,Weigh-in,Waist Size,in,33.5
+2026-03-02,,Vitals,Blood Pressure,mmHg,120

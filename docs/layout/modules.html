@@ -1,0 +1,106 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Self Watch modules</title>
+<style>body{margin:0;background:#fff;font-family:Segoe UI,Arial,sans-serif}</style></head><body>
+<svg width="1100" height="610" viewBox="0 0 1100 610" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b78"/></marker>
+  </defs>
+  <style>
+    .t{font-size:17px;font-weight:700;fill:#16324A}
+    .k{font-size:12px;font-weight:600}
+    .d{font-size:12.5px;fill:#333}
+    .lay{font-size:13px;font-weight:700;fill:#8a96a0;letter-spacing:1px}
+    .ln{stroke:#5b6b78;stroke-width:1.6;fill:none;marker-end:url(#a)}
+  </style>
+
+  <!-- layer labels -->
+  <text class="lay" x="20" y="22">APP</text>
+  <text class="lay" x="20" y="152">FEATURES</text>
+  <text class="lay" x="20" y="302">DEVICE</text>
+  <text class="lay" x="20" y="432">FOUNDATION</text>
+
+  <!-- app -->
+  <rect x="20" y="30" width="650" height="78" rx="12" fill="#16324A"/>
+  <text x="40" y="58" font-size="18" font-weight="700" fill="#F1EFE8">app <tspan font-size="12" font-weight="600" fill="#FF8A1F">  ANDROID APP · LOADS ONLY WHEN YOU OPEN IT</tspan></text>
+  <text x="40" y="82" font-size="13" fill="#d6dde3">Screens (Body · Activity · Food · Devices · Me) and App.kt wiring.</text>
+  <text x="40" y="99" font-size="13" fill="#d6dde3">Uses every module below, and service. Food code loads only when Food is used.</text>
+  <rect x="690" y="30" width="390" height="78" rx="12" fill="#1F4766" stroke="#FF8A1F" stroke-width="2.5"/>
+  <text x="708" y="58" font-size="18" font-weight="700" fill="#F1EFE8">service <tspan font-size="12" font-weight="600" fill="#FF8A1F">  ALWAYS ON · OWN SMALL PROCESS</tspan></text>
+  <text x="708" y="82" font-size="13" fill="#d6dde3">Watch connection, sync, relays, summaries, link.</text>
+  <text x="708" y="99" font-size="13" fill="#d6dde3">Uses ble, garmin, core-db, net. Never food or screens.</text>
+
+  <!-- features row -->
+  <g>
+    <rect x="20" y="160" width="245" height="92" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="34" y="186">ui</text><text class="k" x="58" y="186" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="34" y="208">Theme, components, overlay chart,</text><text class="d" x="34" y="226">rings, bars, number formatting</text>
+  </g>
+  <g>
+    <rect x="285" y="160" width="245" height="92" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="299" y="186">food</text><text class="k" x="343" y="186" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="299" y="208">Food sources and search, barcode,</text><text class="d" x="299" y="226">diary, recipe book, budget,</text><text class="d" x="299" y="244">foods.db install</text>
+  </g>
+  <g>
+    <rect x="550" y="160" width="245" height="92" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="564" y="186">interop</text><text class="k" x="632" y="186" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="564" y="208">Import and export: backups, CSV,</text><text class="d" x="564" y="226">GPX / FIT / TCX, recipes,</text><text class="d" x="564" y="244">Health Connect</text>
+  </g>
+  <g>
+    <rect x="815" y="160" width="265" height="92" rx="10" fill="#fff" stroke="#4DABF7" stroke-width="2.5"/>
+    <text class="t" x="829" y="186">garmin</text><text class="k" x="892" y="186" fill="#1c7fc4">KOTLIN ONLY, NO ANDROID</text>
+    <text class="d" x="829" y="208">Garmin protocol: framing, messages,</text><text class="d" x="829" y="226">sync, files, notifications,</text><text class="d" x="829" y="244">watch apps and app messages</text>
+  </g>
+
+  <!-- device row -->
+  <g>
+    <rect x="550" y="310" width="245" height="80" rx="10" fill="#fff" stroke="#4DABF7" stroke-width="2.5"/>
+    <text class="t" x="564" y="336">fit</text><text class="k" x="593" y="336" fill="#1c7fc4">KOTLIN ONLY, NO ANDROID</text>
+    <text class="d" x="564" y="358">FIT file reader and writer</text><text class="d" x="564" y="376">(no Garmin SDK)</text>
+  </g>
+  <g>
+    <rect x="815" y="310" width="265" height="80" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="829" y="336">ble</text><text class="k" x="862" y="336" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="829" y="358">Bluetooth pairing, connection, reconnects;</text><text class="d" x="829" y="376">gives garmin its byte pipe</text>
+  </g>
+
+  <!-- foundation row -->
+  <g>
+    <rect x="20" y="440" width="245" height="80" rx="10" fill="#fff" stroke="#4DABF7" stroke-width="2.5"/>
+    <text class="t" x="34" y="466">core-model</text><text class="k" x="130" y="466" fill="#1c7fc4">KOTLIN ONLY</text>
+    <text class="d" x="34" y="488">Data classes, units, time,</text><text class="d" x="34" y="506">device driver interfaces</text>
+  </g>
+  <g>
+    <rect x="285" y="440" width="245" height="80" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="299" y="466">core-db</text><text class="k" x="368" y="466" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="299" y="488">selfwatch.db: schema,</text><text class="d" x="299" y="506">migrations, queries</text>
+  </g>
+  <g>
+    <rect x="550" y="440" width="245" height="80" rx="10" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+    <text class="t" x="564" y="466">net</text><text class="k" x="597" y="466" fill="#FF8A1F">ANDROID LIBRARY</text>
+    <text class="d" x="564" y="488">HTTP, firewall,</text><text class="d" x="564" y="506">network log</text>
+  </g>
+  <g>
+    <rect x="815" y="440" width="265" height="80" rx="10" fill="#fff" stroke="#8a96a0" stroke-width="2" stroke-dasharray="6 4"/>
+    <text class="t" x="829" y="466">link-client</text><text class="k" x="923" y="466" fill="#5b6b78">AAR FOR OTHER APPS</text>
+    <text class="d" x="829" y="488">Other apps send and receive</text><text class="d" x="829" y="506">watch-app messages through Self Watch</text>
+  </g>
+
+  <!-- arrows -->
+  <path class="ln" d="M380 252 L400 438"/>           <!-- food -> core-db -->
+  <path class="ln" d="M490 252 L530 405 L612 438"/>  <!-- food -> net -->
+  <path class="ln" d="M640 252 L655 308"/>           <!-- interop -> fit -->
+  <path class="ln" d="M580 252 L470 438"/>           <!-- interop -> core-db -->
+  <path class="ln" d="M900 252 L760 308"/>           <!-- garmin -> fit -->
+  <path d="M960 252 L960 308" stroke="#8a96a0" stroke-width="1.6" stroke-dasharray="3 4"/>  <!-- garmin .. ble, joined by app -->
+  <text x="968" y="285" font-size="11.5" fill="#5b6b78">joined by service</text>
+  <path class="ln" d="M948 438 C 948 410, 1092 410, 1092 120 L1092 112" stroke-dasharray="5 4"/> <!-- link-client -> app (binder) -->
+  <text x="1000" y="425" font-size="11.5" fill="#5b6b78">talks to service</text>
+
+  <!-- legend -->
+  <rect x="20" y="545" width="16" height="16" rx="4" fill="#fff" stroke="#4DABF7" stroke-width="2.5"/>
+  <text x="44" y="558" font-size="13" fill="#333">Kotlin only: runs and is tested on a normal computer, no phone or watch needed</text>
+  <rect x="580" y="545" width="16" height="16" rx="4" fill="#fff" stroke="#FF8A1F" stroke-width="2.5"/>
+  <text x="604" y="558" font-size="13" fill="#333">Android library</text>
+  <text x="20" y="590" font-size="13" fill="#5b6b78">Arrows point to what a module uses. Every library also uses core-model (not drawn). Nothing below uses app or service. Dotted: connected only through service.</text>
+</svg>
+</body></html>

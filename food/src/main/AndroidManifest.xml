@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Barcode scanning only; asked for on the first scan (COMPATIBILITY: food row). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- The fasting timer notification (WP-11 FastService). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Tablets without a camera still install; the scan screen falls back to manual entry. -->
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+</manifest>

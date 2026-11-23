@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fixed ids: the debug demo-data menu items, and charts that keep zoom and toggles across rotation. -->
+<resources>
+    <item name="demo_load" type="id" />
+    <item name="demo_clear" type="id" />
+    <item name="edit_cards_list" type="id" />
+    <item name="edit_cards_reset" type="id" />
+    <item name="food_macros_card" type="id" />
+    <item name="food_water_card" type="id" />
+    <item name="sleep_chart" type="id" />
+    <item name="heart_chart" type="id" />
+    <item name="workout_chart" type="id" />
+    <item name="weight_chart" type="id" />
+    <item name="measure_chart" type="id" />
+    <item name="heart_trend_chart" type="id" />
+    <item name="body_signals_chart" type="id" />
+</resources>

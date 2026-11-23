@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: steps and active minutes today (StepsCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/steps_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_steps">
+
+    <LinearLayout
+        android:id="@+id/steps_numbers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <app.selfwatch.ui.components.StatTile
+                android:id="@+id/steps_tile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:swLabel="@string/steps_label"
+                app:swValue="@string/dash" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/steps_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sw_space_1"
+                android:importantForAccessibility="no"
+                app:trackCornerRadius="4dp"
+                app:trackThickness="8dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/sw_space_2"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <app.selfwatch.ui.components.StatTile
+                android:id="@+id/active_min_tile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:swLabel="@string/active_min_label"
+                app:swValue="@string/dash" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/active_min_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sw_space_1"
+                android:importantForAccessibility="no"
+                app:indicatorColor="?attr/colorSecondary"
+                app:trackCornerRadius="4dp"
+                app:trackThickness="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/steps_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/steps_empty" />
+</app.selfwatch.ui.components.SwCard>

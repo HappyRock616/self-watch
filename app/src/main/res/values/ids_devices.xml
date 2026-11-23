@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ids of views built in code on the Devices screens (Device order, Other devices, other device cards). -->
+<resources>
+    <item name="device_order_list" type="id" />
+    <item name="other_devices_paired" type="id" />
+</resources>

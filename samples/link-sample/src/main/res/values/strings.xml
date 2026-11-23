@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2026 Self Watch contributors. Apache-2.0. -->
+<resources>
+    <string name="app_name">Link sample</string>
+    <string name="uuid_label">Watch app UUID (from its manifest.xml)</string>
+    <string name="send">Send test message</string>
+    <string name="send_description">Send a test dictionary to the watch app</string>
+    <string name="log_description">Messages and results</string>
+
+    <string name="using_transport">Using %1$s</string>
+    <string name="transport_self_watch">Self Watch</string>
+    <string name="transport_garmin">Garmin\'s toolkit (stub)</string>
+    <string name="bad_uuid">That is not a UUID</string>
+    <string name="ready">Connected to Self Watch</string>
+    <string name="unavailable">Self Watch unavailable: %1$s</string>
+    <string name="no_watch">No connected watch</string>
+    <string name="watch_found">Watch: %1$s</string>
+    <string name="sending">Sending to %1$s…</string>
+    <string name="send_result">Send result: %1$s</string>
+    <string name="received">Reply: %1$s</string>
+    <string name="garmin_stub">Garmin\'s toolkit is not included. Add it in your own app under Garmin\'s licence (see GarminToolkitTransport).</string>
+</resources>

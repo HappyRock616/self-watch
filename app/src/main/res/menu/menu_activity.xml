@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_edit_cards" android:title="@string/menu_edit_cards" app:showAsAction="never" />
+    <item android:id="@+id/menu_range" android:title="@string/menu_range" app:showAsAction="never" />
+    <item android:id="@+id/menu_activity_goals" android:title="@string/menu_activity_goals" app:showAsAction="never" />
+    <item android:id="@+id/menu_export_activities" android:title="@string/menu_export_activities" app:showAsAction="never" />
+</menu>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Day labels (Fmt.day) -->
+    <string name="sw_today">Today</string>
+    <string name="sw_yesterday">Yesterday</string>
+
+    <!-- Duration parts (Fmt.duration): "7h 12m", "42 min" -->
+    <string name="sw_duration_hm">%1$sh %2$sm</string>
+    <string name="sw_duration_min">%1$s min</string>
+
+    <!-- Units -->
+    <string name="sw_unit_kcal">kcal</string>
+    <string name="sw_unit_kg">kg</string>
+    <string name="sw_unit_lb">lb</string>
+    <string name="sw_unit_cm">cm</string>
+    <string name="sw_unit_in">in</string>
+    <string name="sw_unit_m">m</string>
+    <string name="sw_unit_km">km</string>
+    <string name="sw_unit_ft">ft</string>
+    <string name="sw_unit_mi">mi</string>
+
+    <!-- Components -->
+    <string name="sw_value_with_unit">%1$s %2$s</string>
+    <string name="sw_delta_up">up %1$s</string>
+    <string name="sw_delta_down">down %1$s</string>
+    <string name="sw_ring_description">%1$s, %2$s of goal</string>
+    <string name="sw_bars_label_values">%1$s: %2$s</string>
+    <string name="sw_bars_series_value">%1$s %2$s</string>
+    <string name="sw_bars_goal">goal %1$s</string>
+    <string name="sw_stepper_decrease">Decrease</string>
+    <string name="sw_stepper_increase">Increase</string>
+    <string name="sw_stepper_amount">Amount</string>
+    <string name="sw_close">Close</string>
+    <string name="sw_undo">Undo</string>
+    <string name="sw_chip_on">%1$s, shown</string>
+    <string name="sw_chip_off">%1$s, hidden</string>
+
+    <!-- Charts -->
+    <string name="sw_stage_awake">Awake</string>
+    <string name="sw_stage_rem">REM</string>
+    <string name="sw_stage_light">Light</string>
+    <string name="sw_stage_deep">Deep</string>
+    <string name="sw_stage_unmeasurable">Unmeasured</string>
+    <string name="sw_chart_no_data">No data</string>
+    <string name="sw_chart_no_value">–</string>
+    <string name="sw_chart_value_unit">%1$s %2$s</string>
+    <string name="sw_chart_range">%1$s–%2$s</string>
+    <string name="sw_chart_layer_value">%1$s %2$s</string>
+    <string name="sw_chart_slice">%1$s: %2$s</string>
+    <string name="sw_chart_description">Chart from %1$s to %2$s: %3$s. Explore by touch to hear each part, or use the Read as table action.</string>
+    <string name="sw_chart_read_table">Read as table</string>
+    <string name="sw_chart_table_title">%1$s to %2$s</string>
+    <string name="sw_chart_goal">goal %1$s</string>
+    <string name="sw_chart_average">average %1$s</string>
+    <string name="sw_chart_bar">%1$s: %2$s</string>
+    <string name="sw_trend_description">%1$s to %2$s. %3$s</string>
+    <string name="sw_weight_entry">%1$s: %2$s, trend %3$s</string>
+    <string name="sw_weight_description">Weight from %1$s to %2$s. Latest %3$s, trend %4$s. %5$s</string>
+</resources>

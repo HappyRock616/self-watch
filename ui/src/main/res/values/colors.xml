@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Self Watch color tokens, light palette. The dark palette (the default look) is in values-night.
+     See docs/build-plan/WP-09-ui.md. -->
+<resources>
+    <!-- Color themes (the Just Go 5K themes), one set per theme, used by ThemeOverlay.SelfWatch.Theme.*.
+         Worked out by app.selfwatch.ui.ThemeColors (ThemeColorsTest checks these match):
+         primary / secondary: the theme color, darkened just enough for 3:1 on the surface and background;
+         on_*: text on that fill (4.5:1); accent_text: primary as small text (4.5:1 on every surface);
+         accent_text_inverse: primary as text on the inverse surface (snackbar action). -->
+    <color name="sw_theme_turquoise_primary">#159C92</color>
+    <color name="sw_theme_turquoise_on_primary">#041F1D</color>
+    <color name="sw_theme_turquoise_secondary">#A48B34</color>
+    <color name="sw_theme_turquoise_on_secondary">#211C0A</color>
+    <color name="sw_theme_turquoise_accent_text">#12746D</color>
+    <color name="sw_theme_turquoise_accent_text_inverse">#19D3C5</color>
+    <color name="sw_theme_purple_primary">#9E7BCF</color>
+    <color name="sw_theme_purple_on_primary">#201929</color>
+    <color name="sw_theme_purple_secondary">#5D94BC</color>
+    <color name="sw_theme_purple_on_secondary">#131E26</color>
+    <color name="sw_theme_purple_accent_text">#765D9A</color>
+    <color name="sw_theme_purple_accent_text_inverse">#BD93F9</color>
+    <color name="sw_theme_orange_primary">#D4741C</color>
+    <color name="sw_theme_orange_on_primary">#2A1706</color>
+    <color name="sw_theme_orange_secondary">#4393D4</color>
+    <color name="sw_theme_orange_on_secondary">#0D1D2A</color>
+    <color name="sw_theme_orange_accent_text">#9D5717</color>
+    <color name="sw_theme_orange_accent_text_inverse">#FF8A1F</color>
+    <color name="sw_theme_yellow_primary">#AF8431</color>
+    <color name="sw_theme_yellow_on_primary">#231A0A</color>
+    <color name="sw_theme_yellow_secondary">#2E9E5B</color>
+    <color name="sw_theme_yellow_on_secondary">#092012</color>
+    <color name="sw_theme_yellow_accent_text">#866627</color>
+    <color name="sw_theme_yellow_accent_text_inverse">#F5B841</color>
+    <color name="sw_theme_forest_primary">#2E9E5B</color>
+    <color name="sw_theme_forest_on_primary">#092012</color>
+    <color name="sw_theme_forest_secondary">#AF8431</color>
+    <color name="sw_theme_forest_on_secondary">#231A0A</color>
+    <color name="sw_theme_forest_accent_text">#257947</color>
+    <color name="sw_theme_forest_accent_text_inverse">#2E9E5B</color>
+
+    <!-- Surfaces and text -->
+    <color name="sw_background">#F7F6F2</color>
+    <color name="sw_surface">#FFFFFF</color>
+    <color name="sw_surface_variant">#E9EEF2</color>
+    <color name="sw_surface_high">#DDE4EA</color>
+    <color name="sw_on_surface">#16202A</color>
+    <color name="sw_muted">#52616D</color>
+    <color name="sw_outline">#B7C2CC</color>
+    <color name="sw_outline_variant">#D5DDE3</color>
+    <color name="sw_inverse_surface">#16202A</color>
+    <color name="sw_on_inverse_surface">#F1EFE8</color>
+
+    <!-- Ring and progress bar tracks (Just Go 5K's track gray, light equivalent). -->
+    <color name="sw_track">#E2E1DB</color>
+
+    <!-- Meaning. Red is kept for destructive, alarm and error states in every theme. -->
+    <color name="sw_bad">#D14343</color>
+    <color name="sw_error">#B3261E</color>
+    <color name="sw_on_error">#FFFFFF</color>
+</resources>

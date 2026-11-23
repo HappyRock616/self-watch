@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon for a watch app: a rounded tile with a small round face. Drawn for Self Watch. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:tint="?attr/colorPrimary"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M10,2h20a8,8 0,0 1,8 8v20a8,8 0,0 1,-8 8H10a8,8 0,0 1,-8 -8V10a8,8 0,0 1,8 -8z M12,20a8,8 0,1 0,16 0a8,8 0,1 0,-16 0z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M19,15h2v4.4l3,2.2l-1.2,1.6l-3.8,-2.8z" />
+</vector>

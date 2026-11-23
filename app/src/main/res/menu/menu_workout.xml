@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_export_gpx" android:title="@string/workout_export_gpx" app:showAsAction="never" />
+    <item android:id="@+id/menu_export_fit" android:title="@string/workout_export_fit" app:showAsAction="never" />
+    <item android:id="@+id/menu_export_tcx" android:title="@string/workout_export_tcx" app:showAsAction="never" />
+    <item android:id="@+id/menu_delete_workout" android:title="@string/workout_delete" app:showAsAction="never" />
+</menu>

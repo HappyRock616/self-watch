@@ -1,0 +1,35 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// The envelope around every Garmin protobuf service message (PROTOBUF_REQUEST/RESPONSE, 5043/5044).
+// Only the services Self Watch uses are listed; any other field survives parsing as an unknown field.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_smart_proto.proto (Smart: 2, 3, 4, 7, 8, 12, 13, 27)
+syntax = "proto2";
+
+package selfwatch.garmin;
+
+import "core.proto";
+import "device_status.proto";
+import "find_my_watch.proto";
+import "credentials.proto";
+import "installed_apps.proto";
+import "app_settings.proto";
+import "http.proto";
+import "data_transfer.proto";
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "SmartProto";
+
+message Smart {
+    optional selfwatch.garmin.http.HttpService connect_iq_http_service = 2;
+    optional selfwatch.garmin.apps.InstalledAppsService connect_iq_installed_apps_service = 3;
+    optional selfwatch.garmin.appsettings.AppSettingsService connect_iq_app_settings_service = 4;
+    optional selfwatch.garmin.transfer.DataTransferService data_transfer_service = 7;
+    optional selfwatch.garmin.status.DeviceStatusService device_status_service = 8;
+    optional selfwatch.garmin.find.FindMyWatchService find_my_watch_service = 12;
+    optional selfwatch.garmin.core.CoreService core_service = 13;
+    optional selfwatch.garmin.credentials.CredentialsService credentials_service = 27;
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: last night's sleep against 7–9 hours, stages as detail (SleepCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/sleep_night_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_sleep">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/sleep_night_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/sleep_card_last_night"
+        app:swValue="@string/dash" />
+
+    <TextView
+        android:id="@+id/sleep_night_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+    <TextView
+        android:id="@+id/sleep_night_stages"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <app.selfwatch.ui.components.Sparkline
+        android:id="@+id/sleep_night_spark"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/body_spark_height"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/sleep_night_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/sleep_card_empty" />
+</app.selfwatch.ui.components.SwCard>

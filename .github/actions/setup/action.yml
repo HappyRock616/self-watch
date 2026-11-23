@@ -1,0 +1,28 @@
+# Shared CI setup: JDK 21, Android SDK platform 37 + build-tools 36.0.0, Gradle (wrapper checked).
+# Every action is pinned to a full commit SHA; the tag is in the comment.
+name: Self Watch build setup
+description: JDK, Android SDK packages and Gradle for Self Watch CI jobs
+inputs:
+  working-directory:
+    description: Folder holding the checkout (for the reproducible job's second copy)
+    required: false
+    default: .
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - name: Android SDK packages
+      shell: bash
+      run: |
+        sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+        yes | "$sdkmanager" --licenses > /dev/null || true
+        "$sdkmanager" --install "platforms;android-37" "build-tools;36.0.0" "platform-tools" > /dev/null
+        echo "sdk.dir=$ANDROID_HOME" > "${{ inputs.working-directory }}/local.properties"
+
+    - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      with:
+        validate-wrappers: true

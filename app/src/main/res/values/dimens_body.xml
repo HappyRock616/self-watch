@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sizes for the Body, Activity and detail screens (tasks C10-C13). -->
+<resources>
+    <dimen name="body_chip_max_width">220dp</dimen>
+    <dimen name="body_spark_height">40dp</dimen>
+    <dimen name="route_height">260dp</dimen>
+    <dimen name="trend_chart_height">150dp</dimen>
+</resources>

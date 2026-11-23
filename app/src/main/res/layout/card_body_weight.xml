@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: weight, trend and goal (WeightCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/weight_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swActionText="@string/body_log"
+    app:swTitle="@string/body_weight">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/weight_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swDeltaGoodWhenDown="true"
+        app:swLabel="@string/body_weight_empty"
+        app:swValue="@string/dash" />
+
+    <TextView
+        android:id="@+id/weight_goal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <TextView
+        android:id="@+id/weight_band"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.components.Sparkline
+        android:id="@+id/weight_spark"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/body_spark_height"
+        android:layout_marginTop="@dimen/sw_space_1" />
+
+    <TextView
+        android:id="@+id/weight_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/weight_water_note"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+</app.selfwatch.ui.components.SwCard>

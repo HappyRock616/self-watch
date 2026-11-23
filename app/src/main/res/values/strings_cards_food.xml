@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text of the Food cards added after phase 1 (WP-15): card_<id>, card_<id>_summary and the card's own strings. -->
+<resources>
+    <!-- Shared -->
+    <string name="food_card_unit_g_per_kg">g/kg</string>
+    <string name="food_card_unit_mg">mg</string>
+    <string name="food_card_unit_g_per_h">g/h</string>
+    <string name="food_card_unit_kcal_per_kg">kcal/kg</string>
+    <string name="food_card_target_min">Target %1$s g/kg or more</string>
+    <string name="food_card_target_band">Target band %1$s–%2$s g/kg</string>
+    <string name="food_card_log_weight">Log weight</string>
+    <string name="food_card_no_weight">Add a weigh-in to see this per kg of body weight.</string>
+    <string name="food_card_description">%1$s: %2$s. %3$s</string>
+
+    <!-- C4 logging days -->
+    <string name="card_logging_days">Logging days</string>
+    <string name="card_logging_days_summary">Days with food logged this week</string>
+    <plurals name="logging_days_count">
+        <item quantity="one">%d day logged this week</item>
+        <item quantity="other">%d days logged this week</item>
+    </plurals>
+    <plurals name="logging_days_nice">
+        <item quantity="one">%d day logged this week, nice</item>
+        <item quantity="other">%d days logged this week, nice</item>
+    </plurals>
+    <string name="logging_days_fresh">A fresh week. Log a meal and the days fill in here.</string>
+    <string name="logging_days_resume">Pick up where you left off: log a meal and this week starts filling in.</string>
+    <string name="logging_days_note">Logging most days, even roughly, is what helps.</string>
+    <string name="sleep_calories_link">Sleep and calories</string>
+
+    <!-- C7 protein per kg -->
+    <string name="card_protein_per_kg">Protein per kg</string>
+    <string name="card_protein_per_kg_summary">Protein for each kg of body weight</string>
+    <string name="protein_kg_inputs">%1$s g protein, body weight %2$s</string>
+    <string name="protein_kg_reason_loss">At least 1.2 g/kg helps keep muscle while losing weight.</string>
+    <string name="protein_kg_reason_loss_strength">Strength training this week: 1.6 g/kg helps keep and build muscle while losing weight.</string>
+    <string name="protein_kg_reason_muscle">About 1.6 g/kg supports building muscle.</string>
+    <string name="protein_kg_reason_training">1.2–2.0 g/kg supports training and recovery.</string>
+    <string name="protein_kg_reason_active_aging">1.0–1.2 g/kg helps keep muscle as you get older.</string>
+    <string name="protein_kg_reason_general">About 1.2 g/kg is a good everyday amount.</string>
+    <string name="protein_kg_reason_own">From your protein goal of %1$s g.</string>
+    <string name="protein_kg_empty">Log a meal with protein to see grams per kg here.</string>
+
+    <!-- C8 protein per meal -->
+    <string name="card_protein_per_meal">Protein per meal</string>
+    <string name="card_protein_per_meal_summary">Meals bringing about 20–40 g of protein</string>
+    <plurals name="protein_meals_reached">
+        <item quantity="one">%1$d of %2$d meal reached %3$s g protein</item>
+        <item quantity="other">%1$d of %2$d meals reached %3$s g protein</item>
+    </plurals>
+    <string name="protein_meals_from_weight">%1$s g is 0.25 g per kg of your body weight; spreading protein over the day helps muscle.</string>
+    <string name="protein_meals_no_weight">Add a weigh-in to fit this to your body weight (now %1$s g).</string>
+    <string name="protein_meals_item">%1$s %2$s g</string>
+    <string name="protein_meals_item_none">%1$s nothing logged</string>
+    <string name="protein_meals_empty">Log a meal to see which meals bring enough protein.</string>
+
+    <!-- C9 carbs per kg -->
+    <string name="card_carbs_per_kg">Carbs per kg</string>
+    <string name="card_carbs_per_kg_summary">Carbs for each kg, banded by your training time</string>
+    <string name="carbs_kg_inputs">%1$s g carbs, body weight %2$s</string>
+    <string name="carbs_kg_training">About %1$s of training a day over the last 7 days.</string>
+    <string name="carbs_kg_training_none">Little training logged over the last 7 days.</string>
+    <string name="carbs_kg_empty">Log a meal to see carbs per kg here.</string>
+
+    <!-- C22 workout fuel -->
+    <string name="card_workout_fuel">Workout fuel</string>
+    <string name="card_workout_fuel_summary">Carbs around workouts over an hour</string>
+    <string name="workout_fuel_aim">Aim %1$s–%2$s g/h</string>
+    <string name="workout_fuel_workout">%1$s, %2$s, %3$s</string>
+    <string name="workout_fuel_carbs">%1$s g carbs logged from 30 minutes before to 30 minutes after.</string>
+    <string name="workout_fuel_nothing">Nothing logged around it. On long sessions, some carbs each hour keep energy up.</string>
+    <plurals name="workout_fuel_coverage">
+        <item quantity="one">%1$d of %2$d food has carb data</item>
+        <item quantity="other">%1$d of %2$d foods have carb data</item>
+    </plurals>
+    <string name="workout_fuel_none">Shows the carbs you log around workouts longer than an hour, today or yesterday.</string>
+
+    <!-- C24 fuel balance -->
+    <string name="card_fuel_balance">Fuel for training</string>
+    <string name="card_fuel_balance_summary">Food minus active calories, per kg of fat-free mass</string>
+    <string name="fuel_balance_label">7-day estimate per kg of fat-free mass</string>
+    <string name="fuel_balance_low">You may be under-fuelling for your training. A little more food on training days can help.</string>
+    <string name="fuel_balance_ok">About 30 kcal/kg or more covers training and everyday needs.</string>
+    <plurals name="fuel_balance_inputs">
+        <item quantity="one">About %1$s kcal eaten and %2$s active kcal a day, %3$s kg fat-free mass (%4$d day logged). An estimate.</item>
+        <item quantity="other">About %1$s kcal eaten and %2$s active kcal a day, %3$s kg fat-free mass (%4$d days logged). An estimate.</item>
+    </plurals>
+    <string name="fuel_balance_no_body_fat">This needs a body fat reading, from a scale or entered by hand, to estimate your fat-free mass.</string>
+    <string name="fuel_balance_add_body_fat">Add body fat</string>
+    <plurals name="fuel_balance_few_days">
+        <item quantity="one">Log food on 4 or more of the last 7 days to see this (%d day so far).</item>
+        <item quantity="other">Log food on 4 or more of the last 7 days to see this (%d days so far).</item>
+    </plurals>
+
+    <!-- C25 sodium, C26 fibre, C27 total sugar -->
+    <string name="card_sodium">Sodium</string>
+    <string name="card_sodium_summary">Sodium against 2,300 mg a day</string>
+    <string name="sodium_limit">Limit %1$s mg a day</string>
+    <string name="sodium_left">%1$s mg left under the limit.</string>
+    <string name="sodium_over">Above the daily limit; tomorrow is a new day.</string>
+    <plurals name="sodium_coverage">
+        <item quantity="one">%1$d of %2$d food has sodium data</item>
+        <item quantity="other">%1$d of %2$d foods have sodium data</item>
+    </plurals>
+    <string name="sodium_none_known">None of the foods logged have sodium data yet.</string>
+    <string name="sodium_empty">Log food to see sodium here.</string>
+    <string name="nutrient_partial">The real total may be higher.</string>
+
+    <string name="card_fibre">Fiber</string>
+    <string name="card_fibre_summary">Fiber against 14 g per 1,000 kcal eaten</string>
+    <string name="fibre_target">Target %1$s g (14 g per 1,000 kcal)</string>
+    <string name="fibre_target_none">14 g per 1,000 kcal eaten</string>
+    <string name="fibre_left">%1$s g to go.</string>
+    <string name="fibre_reached">Target reached.</string>
+    <plurals name="fibre_coverage">
+        <item quantity="one">%1$d of %2$d food has fiber data</item>
+        <item quantity="other">%1$d of %2$d foods have fiber data</item>
+    </plurals>
+    <string name="fibre_none_known">None of the foods logged have fiber data yet.</string>
+    <string name="fibre_empty">Log food to see fiber here.</string>
+
+    <string name="card_total_sugar">Total sugar</string>
+    <string name="card_total_sugar_summary">Natural and added sugar together</string>
+    <string name="total_sugar_label">Total sugar, natural and added</string>
+    <string name="total_sugar_share">%1$s of the calories logged.</string>
+    <string name="total_sugar_note">Labels give total sugar; added sugar cannot be told apart.</string>
+    <plurals name="total_sugar_coverage">
+        <item quantity="one">%1$d of %2$d food has sugar data</item>
+        <item quantity="other">%1$d of %2$d foods have sugar data</item>
+    </plurals>
+    <string name="total_sugar_none_known">None of the foods logged have sugar data yet.</string>
+    <string name="total_sugar_empty">Log food to see total sugar here.</string>
+
+    <!-- O2 sleep and calories -->
+    <string name="sleep_calories_title">Sleep and calories</string>
+    <string name="sleep_calories_chart">Sleep and next-day calories</string>
+    <string name="sleep_calories_layer_sleep">Sleep</string>
+    <string name="sleep_calories_layer_kcal">Calories eaten</string>
+    <string name="sleep_calories_range_4w">4 weeks</string>
+    <string name="sleep_calories_range_8w">8 weeks</string>
+    <string name="sleep_calories_short">After nights under 7 h</string>
+    <string name="sleep_calories_long">After 7 h or more</string>
+    <string name="sleep_calories_note">Each day\'s calories sit with the night before it. On average, people eat about 200–400 kcal more after short sleep, but the spread between people is large: some eat less, some a lot more. Look for your own pattern over weeks, not single days.</string>
+    <string name="sleep_calories_compare_hint">Averages show once there are 3 or more days of each.</string>
+    <string name="sleep_calories_empty">Sleep from your watch and food from your diary show up here together after a few days of both.</string>
+    <string name="sleep_calories_scrub">%1$s · %2$s</string>
+    <string name="sleep_calories_scrub_sleep">sleep %1$s</string>
+    <string name="sleep_calories_scrub_kcal">%1$s kcal eaten</string>
+</resources>

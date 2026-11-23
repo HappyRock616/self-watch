@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Room below the last card so the + button never covers it. -->
+    <dimen name="tab_bottom_space">96dp</dimen>
+    <dimen name="tab_card_gap">8dp</dimen>
+</resources>

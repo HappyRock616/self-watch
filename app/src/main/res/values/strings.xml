@@ -1,0 +1,345 @@
+<resources>
+    <string name="app_name">Self Watch</string>
+
+    <!-- Bottom tabs -->
+    <string name="tab_body">Body</string>
+    <string name="tab_activity">Activity</string>
+    <string name="tab_food">Food</string>
+    <string name="tab_devices">Devices</string>
+    <string name="tab_me">Me</string>
+
+    <!-- Shell -->
+    <string name="add_button">Add</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="coming_soon_named">%1$s is coming soon</string>
+    <string name="sync_unavailable">Syncing arrives with watch pairing</string>
+    <string name="dash">—</string>
+
+    <!-- Add sheet -->
+    <string name="add_title">Add</string>
+    <string name="add_scan">Scan barcode</string>
+    <string name="add_search">Search food</string>
+    <string name="add_quick">Quick add calories</string>
+    <string name="add_weight">Log weight</string>
+    <string name="add_measurements">Log measurements</string>
+    <string name="add_water">Log water</string>
+    <string name="add_fast">Start or stop fast</string>
+
+    <!-- Menus (APP_LAYOUT section 3) -->
+    <string name="menu_edit_cards">Edit cards</string>
+    <string name="menu_sync_now">Sync now</string>
+    <string name="menu_range">Range</string>
+    <string name="menu_activity_goals">Activity goals</string>
+    <string name="menu_export_activities">Export activities (GPX, FIT, TCX)</string>
+    <string name="menu_go_to_date">Go to date</string>
+    <string name="menu_copy_day">Copy day</string>
+    <string name="menu_recipe_book">Recipe book</string>
+    <string name="menu_meal_names">Meal names</string>
+    <string name="menu_export_day">Export day</string>
+    <string name="menu_pair_device">Pair new device</string>
+    <string name="menu_device_order">Device order</string>
+    <string name="menu_bluetooth_help">Bluetooth help</string>
+    <string name="menu_help">Help</string>
+    <string name="menu_about">About</string>
+
+    <!-- Body -->
+    <string name="body_energy_today">Energy today</string>
+    <string name="body_in_empty">In —</string>
+    <string name="body_out_empty">Out —</string>
+    <string name="body_energy_empty">No data yet. Pair your watch or log a meal to see calories in and out.</string>
+    <string name="body_weight">Weight</string>
+    <string name="body_log">Log</string>
+    <string name="body_weight_empty">No weigh-ins yet</string>
+    <string name="body_measurements">Measurements</string>
+    <string name="body_waist">waist</string>
+    <string name="body_hips">hips</string>
+    <string name="body_fat">body fat</string>
+    <string name="body_sleep">sleep</string>
+    <string name="body_rest_hr">rest HR</string>
+    <string name="body_hrv">HRV</string>
+
+    <!-- Activity -->
+    <string name="activity_of_goal">of %1$s</string>
+    <string name="activity_active">active min</string>
+    <string name="activity_active_kcal_short">active kcal</string>
+    <string name="activity_trends">Trends</string>
+    <string name="activity_distance">Distance</string>
+    <string name="activity_active_min">Active min</string>
+    <string name="activity_steps">Steps</string>
+    <string name="activity_active_kcal">Active kcal</string>
+    <string name="activity_trends_empty">Walks, steps and active minutes build up here week by week.</string>
+    <string name="activity_recent">Recent activities</string>
+    <string name="activity_recent_empty">Workouts from your watch show up here.</string>
+
+    <!-- Food -->
+    <string name="food_today">Today</string>
+    <string name="food_add_food">Add food</string>
+    <string name="food_water">Water</string>
+    <string name="food_fasting">Fasting</string>
+    <string name="food_fasting_empty">Not fasting</string>
+    <string name="food_off">Food tracking is off. Turn it on in Settings.</string>
+
+    <!-- Devices -->
+    <string name="devices_no_watch">No watch yet</string>
+    <string name="devices_my_watch">My watch</string>
+    <string name="devices_watch_empty">Pair your Garmin watch to sync steps, sleep and heart rate.</string>
+    <string name="devices_pair">Pair watch</string>
+    <string name="devices_watch_apps">Watch apps</string>
+    <string name="devices_app_settings">App settings</string>
+    <string name="devices_install_file">Install from file</string>
+    <string name="devices_notifications">Notifications</string>
+    <string name="devices_alarms">Alarms</string>
+    <string name="devices_weather">Weather on watch</string>
+    <string name="devices_linked_apps">Phone apps linked</string>
+    <string name="devices_watch_settings">Watch settings</string>
+    <string name="devices_other">Other devices</string>
+    <string name="devices_sync_now">Sync now</string>
+    <string name="devices_remove">Remove watch</string>
+    <string name="devices_pairing">Pairing…</string>
+    <string name="devices_state_off">Not connected</string>
+    <string name="devices_state_disconnected">Disconnected</string>
+    <string name="devices_state_connecting">Connecting…</string>
+    <string name="devices_state_handshaking">Setting up…</string>
+    <string name="devices_state_ready">Connected</string>
+    <string name="devices_state_syncing">Syncing…</string>
+    <string name="devices_state_syncing_progress">Syncing %1$d of %2$d (%3$s)</string>
+    <string name="devices_state_failed">Connection failed: %1$s</string>
+    <string name="devices_state_failed_retry">Connection failed: %1$s. Trying again in %2$d s</string>
+    <string name="devices_last_sync">Last sync %1$s</string>
+    <string name="devices_never_synced">Not synced yet</string>
+    <string name="devices_battery">Battery %1$d%%</string>
+    <string name="devices_detail_join">%1$s · %2$s</string>
+    <string name="devices_data_so_far">Data so far</string>
+    <string name="devices_data_activity">Activity minutes today</string>
+    <string name="devices_data_steps">Steps today</string>
+    <string name="devices_data_metrics">Heart rate and other readings today</string>
+    <string name="devices_data_sleep">Sleep stages last night</string>
+    <string name="devices_data_workouts">Workouts</string>
+    <string name="devices_data_files">Watch files stored</string>
+    <string name="devices_data_last">Last stored</string>
+    <string name="devices_debug">Debug</string>
+    <string name="devices_ble_capture">Bluetooth capture</string>
+    <string name="devices_share_capture">Share Bluetooth capture</string>
+    <string name="devices_share_logs">Share logs</string>
+    <string name="devices_share_none">Nothing to share yet</string>
+    <string name="devices_share_title">Send to</string>
+    <string name="devices_bt_reason">Self Watch needs \"Nearby devices\" to connect to your watch over Bluetooth.</string>
+    <string name="devices_bt_denied">Without \"Nearby devices\" Self Watch can\'t reach your watch. You can allow it in Settings → Apps → Self Watch → Permissions.</string>
+    <string name="devices_notify_reason">Allow notifications so Self Watch can show that it\'s connected to your watch and syncing.</string>
+    <string name="devices_continue">Continue</string>
+    <string name="devices_not_now">Not now</string>
+    <string name="devices_pair_failed">Pairing didn\'t finish: %1$s</string>
+    <string name="devices_paired">Paired with %1$s</string>
+    <string name="devices_service_refused">Couldn\'t start the watch connection. Check that \"Nearby devices\" is allowed.</string>
+    <string name="devices_sync_started">Syncing…</string>
+    <string name="devices_remove_title">Remove %1$s?</string>
+    <string name="devices_remove_message">Self Watch stops connecting to this watch. The data already synced stays.</string>
+    <string name="devices_remove_forget">Removed. To remove it fully, also forget the watch in Bluetooth settings.</string>
+    <string name="devices_removed">Watch removed</string>
+
+    <!-- Me -->
+    <string name="me_privacy_center">Privacy center</string>
+    <string name="me_privacy_summary">No account · no ads · nothing leaves the phone unless you allow it</string>
+    <string name="me_goals">Goals</string>
+    <string name="me_goals_sub">calories, macros, steps, weight</string>
+    <string name="me_profile">Profile</string>
+    <string name="me_profile_sub">height, age</string>
+    <string name="me_network">Network activity</string>
+    <string name="me_permissions">Permissions</string>
+    <string name="me_data">Data</string>
+    <string name="me_data_sub">import, export, backup</string>
+    <string name="me_health_connect">Health Connect</string>
+    <string name="me_food_data">Food data</string>
+    <string name="me_appearance">Appearance</string>
+    <string name="me_settings">Settings</string>
+    <string name="me_about">About Self Watch</string>
+    <string name="appearance_summary">%1$s · %2$s</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_system">System</string>
+    <!-- Color themes (the same five as the Just Go 5K watch app) -->
+    <string name="theme_turquoise">Turquoise</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_yellow">Yellow</string>
+    <string name="theme_forest">Forest</string>
+
+    <!-- Food diary (C15) -->
+    <string name="food_day_prev">Previous day</string>
+    <string name="food_day_next">Next day</string>
+    <string name="food_day_label">%1$s. Tap to go to today</string>
+    <string name="food_energy">Calories left</string>
+    <string name="food_energy_info">How calories left are worked out</string>
+    <string name="food_energy_formula_short">Goal − food + activity = left</string>
+    <string name="food_energy_formula_title">Goal − Food + Activity = Left</string>
+    <string name="food_energy_formula">Your goal already includes the energy you burn at rest. Food is everything logged today. Activity is the active calories your watch measured. So: goal minus food plus activity is what you have left.</string>
+    <string name="food_energy_line">Goal %1$s − Food %2$s + Activity %3$s</string>
+    <string name="food_energy_description">Goal %1$s, food %2$s, activity %3$s, left %4$s</string>
+    <string name="food_remaining">kcal left</string>
+    <string name="food_kcal">%1$s kcal</string>
+    <string name="food_other_meal">Other</string>
+    <string name="food_meal_description">%1$s, %2$s</string>
+    <string name="food_entry_description">%1$s, %2$s, %3$s. Tap to edit</string>
+    <string name="food_add_food_plus">+ Add food</string>
+    <string name="food_add_to_meal">Add food to %1$s</string>
+    <string name="food_copy_yesterday">Add yesterday\'s %1$s (%2$s)</string>
+    <string name="food_deleted">%1$s deleted</string>
+    <string name="food_failed">That didn\'t work. Please try again.</string>
+    <plurals name="food_copied">
+        <item quantity="one">Copied %d item</item>
+        <item quantity="other">Copied %d items</item>
+    </plurals>
+    <string name="food_glass_full">Glass %1$d of %2$d, drunk. Tap to remove</string>
+    <string name="food_glass_empty">Glass %1$d of %2$d. Tap to add 250 ml</string>
+    <string name="food_water_ml">%1$s ml</string>
+    <string name="food_water_of_goal">%1$s of %2$s ml</string>
+    <string name="food_fast_start">Start fast</string>
+    <string name="food_fast_end">End fast</string>
+    <string name="food_fast_progress">%1$s of %2$s</string>
+    <string name="food_quick_add_label">Quick add</string>
+    <string name="food_grams">%1$s g</string>
+    <string name="food_times_serving">%1$s × %2$s</string>
+
+    <!-- Add food -->
+    <string name="food_add_to">Add to %1$s</string>
+    <string name="food_search_hint">Search foods, brands, chains</string>
+    <string name="food_scan">Scan</string>
+    <string name="food_tab_recent">Recent</string>
+    <string name="food_tab_favorites">Favorites</string>
+    <string name="food_tab_mine">My foods</string>
+    <string name="food_tab_recipes">Recipes</string>
+    <string name="food_plus_hint">“+” logs your last serving in one tap. Tap a row to change the serving.</string>
+    <string name="food_new_food">New food</string>
+    <string name="food_no_results">Nothing found</string>
+    <string name="food_empty_recent">Foods you log show up here, ready to add again in one tap.</string>
+    <string name="food_empty_favorites">Tap the star on a food to keep it here.</string>
+    <string name="food_empty_mine">Foods you create show up here.</string>
+    <string name="food_empty_recipes">Recipes from your recipe book show up here.</string>
+    <string name="food_logged">Added %1$s (%2$s)</string>
+    <string name="food_added">Added %1$s</string>
+    <string name="food_quick_log">Add %1$s with your last serving</string>
+    <string name="food_row_description">%1$s, %2$s, %3$s. Tap for servings</string>
+    <string name="menu_create_food">Create custom food</string>
+    <string name="menu_create_recipe">Create recipe</string>
+    <string name="tag_mine">Mine</string>
+    <string name="tag_usda">USDA</string>
+    <string name="tag_off">OFF</string>
+    <string name="tag_chain">Chain</string>
+    <string name="tag_packaged">Packaged</string>
+    <string name="tag_recipe">Recipe</string>
+    <string name="tag_meal">Meal</string>
+
+    <!-- Food detail and quick add -->
+    <string name="food_detail_title">Add food</string>
+    <string name="food_edit_entry">Edit entry</string>
+    <string name="food_serving">Serving</string>
+    <string name="food_serving_with_grams">%1$s (%2$s g)</string>
+    <string name="food_amount">Amount</string>
+    <string name="food_meal">Meal</string>
+    <string name="food_unit_g">g</string>
+    <string name="food_unit_servings">servings</string>
+    <string name="food_preview">%1$s · protein %2$s g · fat %3$s g · carbs %4$s g</string>
+    <string name="food_preview_unknown">Pick a serving with a weight to see the nutrients</string>
+    <string name="food_save">Save</string>
+    <string name="food_add">Add</string>
+    <string name="food_delete">Delete</string>
+    <string name="food_favourite">Add to favorites</string>
+    <string name="food_unfavourite">Remove from favorites</string>
+    <string name="food_edit_custom">Edit food</string>
+    <string name="food_edit_as_custom">Edit as custom food</string>
+    <string name="food_data_from">data from %1$d</string>
+    <string name="food_missing">This food is no longer available.</string>
+    <string name="food_quick_add">Quick add calories</string>
+    <string name="food_calories">Calories (kcal)</string>
+    <string name="food_calories_needed">Enter the calories</string>
+    <string name="food_protein_g">Protein g</string>
+    <string name="food_fat_g">Fat g</string>
+    <string name="food_carbs_g">Carbs g</string>
+    <string name="food_name_optional">Name (optional)</string>
+    <string name="food_quick_added">Added</string>
+
+    <!-- Custom food editor -->
+    <string name="editor_title_new">New food</string>
+    <string name="editor_title_edit">Edit food</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_brand">Brand (optional)</string>
+    <string name="editor_nutrients_per">Nutrients are per</string>
+    <string name="editor_per_serving">One serving</string>
+    <string name="editor_per_100g">100 g (or 100 ml)</string>
+    <string name="editor_serving_label">Serving, e.g. 1 bar</string>
+    <string name="editor_serving_grams">Grams</string>
+    <string name="editor_satfat_g">Sat. fat g</string>
+    <string name="editor_sugar_g">Sugar g</string>
+    <string name="editor_fibre_g">Fiber g</string>
+    <string name="editor_sodium_mg">Sodium mg</string>
+    <string name="editor_cholesterol_mg">Cholesterol mg</string>
+    <string name="editor_barcode">Barcode (optional)</string>
+    <string name="editor_name_needed">Enter a name</string>
+    <string name="editor_bad_number">Enter a number</string>
+    <string name="editor_delete_confirm">Delete this food? Diary entries keep their numbers.</string>
+
+    <!-- Barcode scan -->
+    <string name="scan_hint">Hold the barcode inside the frame.</string>
+    <string name="scan_preview">Camera view for reading barcodes</string>
+    <string name="scan_torch">Turn the light on</string>
+    <string name="scan_torch_off">Turn the light off</string>
+    <string name="scan_type_code">Or type the barcode</string>
+    <string name="scan_look_up">Look up</string>
+    <string name="scan_bad_code">That doesn\'t look like a barcode. Check the digits.</string>
+    <string name="scan_permission_reason">Self Watch uses the camera only to read barcodes, and only on this screen.</string>
+    <string name="scan_permission_denied">Camera access is off. Type the barcode below instead.</string>
+    <string name="scan_no_camera">This device has no camera. Type the barcode below.</string>
+    <string name="scan_camera_failed">The camera couldn\'t start. Type the barcode below.</string>
+    <string name="scan_looking">Looking up %1$s…</string>
+    <string name="scan_looking_online">Asking Open Food Facts about %1$s…</string>
+    <string name="scan_found">Found %1$s</string>
+    <string name="scan_not_found">%1$s isn\'t in your foods yet.</string>
+    <string name="scan_not_found_online">Open Food Facts doesn\'t know %1$s either.</string>
+    <string name="scan_look_online">Look up on Open Food Facts</string>
+    <string name="scan_create_food">Create this food</string>
+    <string name="scan_again">Scan again</string>
+    <string name="scan_off_blocked">Open Food Facts lookups are off in the Privacy center.</string>
+    <string name="scan_offline">No internet connection right now.</string>
+    <string name="scan_off_failed">Open Food Facts couldn\'t be reached.</string>
+
+    <!-- Recipe book (C16) -->
+    <string name="recipe_back">Back</string>
+    <string name="recipe_search_hint">Search recipes</string>
+    <string name="recipe_all">All</string>
+    <string name="recipe_create">Create recipe</string>
+    <string name="recipe_empty">No recipes yet. Create one, or import your recipe files.</string>
+    <string name="recipe_servings_short">%1$s servings</string>
+    <string name="recipe_kcal_per_serving">%1$s kcal</string>
+    <string name="recipe_edit">Edit recipe</string>
+    <string name="recipe_missing">This recipe is no longer in your recipe book.</string>
+    <string name="recipe_per_serving">Per serving</string>
+    <string name="recipe_stated">As stated by the recipe</string>
+    <string name="recipe_computed">Worked out from the ingredients</string>
+    <plurals name="recipe_partial">
+        <item quantity="one">Partial: %d ingredient not counted</item>
+        <item quantity="other">Partial: %d ingredients not counted</item>
+    </plurals>
+    <string name="recipe_macros">Protein %1$s g · fat %2$s g · carbs %3$s g</string>
+    <string name="recipe_log_serving">Log a serving</string>
+    <string name="recipe_servings">Servings</string>
+    <string name="recipe_ingredients">Ingredients</string>
+    <string name="recipe_suggest">Suggest matches</string>
+    <string name="recipe_no_ingredients">No ingredients yet.</string>
+    <string name="recipe_steps">Steps</string>
+    <string name="recipe_source">Source: %1$s</string>
+    <string name="recipe_match_confirmed">Matched: %1$s</string>
+    <string name="recipe_match_suggested">Suggested: %1$s. Tap to confirm or change</string>
+    <string name="recipe_match_skipped">Not counted</string>
+    <string name="recipe_match_none">No match. Tap to pick a food</string>
+    <string name="recipe_match_gone">food no longer available</string>
+    <string name="recipe_line_description">%1$s. %2$s</string>
+    <string name="recipe_fix_match">Pick the food</string>
+    <string name="recipe_skip_line">Don\'t count this line</string>
+    <string name="recipe_name">Recipe name</string>
+    <string name="recipe_ingredients_hint">Ingredients, one per line</string>
+    <string name="recipe_tags_hint">Tags, separated by commas</string>
+    <string name="recipe_delete_confirm">Delete this recipe?</string>
+    <string name="menu_import_recipes">Import recipes</string>
+    <string name="menu_export_recipes">Export recipe book</string>
+    <string name="menu_tags">Tags</string>
+</resources>

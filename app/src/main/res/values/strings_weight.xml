@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weight screen: calories and activity drawn over the weight. -->
+<resources>
+    <string name="weight_layer_kcal_in">Calories in</string>
+    <string name="weight_layer_kcal_out">Calories out</string>
+    <string name="weight_layer_net">Net calories</string>
+    <string name="weight_layer_active">Active minutes</string>
+    <string name="weight_overlay_rolling">Net calories and active minutes are 7-day averages, to compare with the weight trend.</string>
+    <string name="weight_overlay_weekly">Calories and activity are averages per day for each week, to compare with the weight trend.</string>
+    <string name="weight_scrub_in">in %1$s</string>
+    <string name="weight_scrub_out">out %1$s</string>
+    <string name="weight_scrub_net">net %1$s</string>
+    <string name="weight_scrub_active">%1$s active min</string>
+    <plurals name="weight_scrub_steps">
+        <item quantity="one">%1$s step</item>
+        <item quantity="other">%1$s steps</item>
+    </plurals>
+    <string name="weight_scrub_line">%1$s · %2$s</string>
+    <string name="unit_kcal">kcal</string>
+</resources>

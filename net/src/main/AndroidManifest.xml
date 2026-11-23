@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Only the net module talks to the network. Both are install-time permissions; GrapheneOS can
+         remove INTERNET, and then every request returns Offline (COMPATIBILITY.md section 3). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- HTTPS only, system trust anchors only; cleartext just for 127.0.0.1 and localhost. Merges
+         into the app's <application>. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>

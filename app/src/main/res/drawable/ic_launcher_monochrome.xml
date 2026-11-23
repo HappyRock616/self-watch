@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- From branding/icon/adaptive-monochrome.svg. Themed icon: the system tints it, only alpha matters.
+     Same group transforms as ic_launcher_foreground.xml. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="256"
+        android:pivotY="255"
+        android:scaleX="0.1406"
+        android:scaleY="0.1406"
+        android:translateX="-202"
+        android:translateY="-201">
+        <path
+            android:strokeColor="#FF000000"
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M256,54L420,112V246C420,352 348,420 256,456C164,420 92,352 92,246V112Z" />
+        <path
+            android:strokeColor="#FF000000"
+            android:strokeWidth="20"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M194,146H318A56,56 0,0 1,374 202V310A56,56 0,0 1,318 366H194A56,56 0,0 1,138 310V202A56,56 0,0 1,194 146Z" />
+        <group
+            android:pivotX="174"
+            android:pivotY="168"
+            android:scaleX="0.9"
+            android:scaleY="0.9"
+            android:translateX="82"
+            android:translateY="44">
+            <path
+                android:strokeColor="#FF000000"
+                android:strokeWidth="14"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M140,122V156M156,122V156M172,122V156M138,156Q156,176 174,156M156,168V214" />
+            <path
+                android:strokeColor="#FF000000"
+                android:strokeWidth="14"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M200,122C218,136 218,166 204,176V214" />
+        </group>
+        <path
+            android:strokeColor="#FF000000"
+            android:strokeWidth="14"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M190,312H214L228,288L248,338L266,296L278,312H322" />
+    </group>
+</vector>

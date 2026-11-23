@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: waist, hips and body fat (MeasurementsCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/measurements_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swActionText="@string/body_30_days"
+    app:swTitle="@string/body_measurements">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/measure_waist"
+            style="@style/Widget.SelfWatch.TabStat"
+            app:swDeltaGoodWhenDown="true"
+            app:swLabel="@string/body_waist"
+            app:swValue="@string/dash" />
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/measure_hips"
+            style="@style/Widget.SelfWatch.TabStat"
+            app:swDeltaGoodWhenDown="true"
+            app:swLabel="@string/body_hips"
+            app:swValue="@string/dash" />
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/measure_fat"
+            style="@style/Widget.SelfWatch.TabStat"
+            app:swDeltaGoodWhenDown="true"
+            app:swLabel="@string/body_fat"
+            app:swValue="@string/dash" />
+    </LinearLayout>
+</app.selfwatch.ui.components.SwCard>

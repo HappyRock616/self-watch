@@ -1,0 +1,48 @@
+<b>Calorie counter + fitness tracker + watch sync, in one private app.</b>
+
+Tracking your health usually takes three apps: the watch maker's app for steps and sleep, a calorie counter for food, and a health dashboard to join them up. Three accounts, three clouds.
+
+Self Watch merges them into one. It connects directly to your Garmin watch over Bluetooth, keeps your food diary, and puts calories in and calories out side by side, all on your phone. Your data, connected for you, by you, locally.
+
+<b>Your body. Your data. Your business.</b>
+
+No account. No cloud. No ads. No analytics. No Google Play Services.
+
+<b>Body</b>
+• Weight with a trend line and progress to your goal
+• Waist, hips and body fat
+• Calories in vs out, today and over the last week
+
+<b>Activity and workouts</b>
+• Steps, active minutes, active calories and streaks
+• Week, month, year and all-time trends
+• Every workout with route, heart rate, speed and splits
+• Export as GPX, TCX or FIT
+
+<b>Sleep</b>
+• Deep, light, REM and awake stages
+• Heart rate, HRV, breathing and SpO2 through the night
+
+<b>Food diary</b>
+• Search, scan a barcode with the built-in camera (no pictures saved), or re-log in one tap
+• Custom foods, saved meals and recipes
+• Calories left for the day, with activity added in
+• Works with no internet at all
+
+<b>Watch</b>
+• Pairs directly with Garmin watches. No Garmin account needed
+• Phone notifications on the watch, with a switch per app
+• Phone apps can talk to Connect IQ watch apps, with your permission
+
+<b>Import and export</b>
+• Bring your history from Gadgetbridge, Garmin Connect exports, FIT/GPX/TCX files, calorie-counting apps and recipe managers
+• Export to CSV, JSON, GPX, TCX and FIT
+• Full backups, optionally encrypted, to a folder you choose
+• Optional Health Connect sync (Android 14+)
+
+<b>Privacy center</b>
+Every internet feature has its own switch, most start off, and every request is listed: when, where and how much.
+
+Tested with the vívoactive 5; other current Garmin watches are expected to work, and the app tells you when a model hasn't been verified yet.
+
+Free and open source under the AGPL-3.0. Self Watch is an independent project, not affiliated with or endorsed by Garmin. Garmin, vívoactive and Connect IQ are trademarks of Garmin Ltd. or its subsidiaries.

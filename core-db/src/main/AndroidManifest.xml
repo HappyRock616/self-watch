@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Guards the DB_CHANGED broadcast between the app's own processes. Named after the application
+      id (app.selfwatch.permission.INTERNAL in the release app) so the debug build, which has its own
+      id, can be installed beside it. DbChanges builds the same name from the package at run time.
+    -->
+    <permission
+        android:name="${applicationId}.permission.INTERNAL"
+        android:protectionLevel="signature"
+        tools:ignore="SystemPermissionTypo" />
+
+    <uses-permission
+        android:name="${applicationId}.permission.INTERNAL"
+        tools:ignore="SystemPermissionTypo" />
+</manifest>

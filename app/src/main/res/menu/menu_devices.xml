@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_pair_device" android:title="@string/menu_pair_device" app:showAsAction="never" />
+    <item android:id="@+id/menu_device_order" android:title="@string/menu_device_order" app:showAsAction="never" />
+    <item android:id="@+id/menu_bluetooth_help" android:title="@string/menu_bluetooth_help" app:showAsAction="never" />
+</menu>

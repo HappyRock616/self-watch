@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Theme.SelfWatch. Colors resolve through @color/sw_* tokens, which have a light set (values/) and a dark
+  set (values-night/). Dark is the default look because the app sets night mode to "dark" unless the user
+  picks light or system (see app.selfwatch.ui.SwTheme). The color theme is an overlay applied on top.
+-->
+<resources>
+    <style name="Base.Theme.SelfWatch" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Color theme: Orange by default; see ThemeOverlay.SelfWatch.Theme.* -->
+        <item name="swThemeId">2</item>
+        <item name="colorPrimary">@color/sw_theme_orange_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_orange_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_orange_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_orange_on_primary</item>
+        <item name="swColorAccentText">@color/sw_theme_orange_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_orange_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_orange_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/sw_surface_variant</item>
+        <item name="colorOnSecondaryContainer">@color/sw_on_surface</item>
+        <item name="colorTertiary">@color/sw_theme_orange_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_orange_on_secondary</item>
+
+        <!-- Background and surfaces -->
+        <item name="android:colorBackground">@color/sw_background</item>
+        <item name="android:windowBackground">@color/sw_background</item>
+        <item name="colorOnBackground">@color/sw_on_surface</item>
+        <item name="colorSurface">@color/sw_surface</item>
+        <item name="colorOnSurface">@color/sw_on_surface</item>
+        <item name="colorSurfaceVariant">@color/sw_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/sw_muted</item>
+        <item name="colorSurfaceContainerLowest">@color/sw_surface</item>
+        <item name="colorSurfaceContainerLow">@color/sw_surface</item>
+        <item name="colorSurfaceContainer">@color/sw_surface</item>
+        <item name="colorSurfaceContainerHigh">@color/sw_surface_variant</item>
+        <item name="colorSurfaceContainerHighest">@color/sw_surface_high</item>
+        <item name="colorSurfaceInverse">@color/sw_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/sw_on_inverse_surface</item>
+        <!-- Snackbar action text sits on the inverse surface. -->
+        <item name="colorPrimaryInverse">@color/sw_theme_orange_accent_text_inverse</item>
+        <item name="colorOutline">@color/sw_outline</item>
+        <item name="colorOutlineVariant">@color/sw_outline_variant</item>
+        <item name="colorError">@color/sw_error</item>
+        <item name="colorOnError">@color/sw_on_error</item>
+
+        <!-- Type scale mapped onto Material roles -->
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.SelfWatch.Display</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.SelfWatch.Headline</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.SelfWatch.Title</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.SelfWatch.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.SelfWatch.Body</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.SelfWatch.Caption</item>
+
+        <!-- Shapes and component styles -->
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.SelfWatch.Card</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.SelfWatch.Chip</item>
+        <item name="materialCardViewStyle">@style/Widget.SelfWatch.Card</item>
+        <item name="chipStyle">@style/Widget.SelfWatch.Chip</item>
+        <item name="linearProgressIndicatorStyle">@style/Widget.SelfWatch.LinearProgress</item>
+        <!-- Accent used as text: text buttons, dialog buttons and focused field labels use swColorAccentText. -->
+        <item name="borderlessButtonStyle">@style/Widget.SelfWatch.Button.Text</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.SelfWatch.MaterialAlertDialog</item>
+        <item name="textInputOutlinedStyle">@style/Widget.SelfWatch.TextInput</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.SelfWatch.BottomSheetDialog</item>
+    </style>
+
+    <style name="Theme.SelfWatch" parent="Base.Theme.SelfWatch" />
+
+    <!-- Color theme overlays (the Just Go 5K themes). Apply with SwTheme.applyTheme(); they win over the
+         base theme. swThemeId is the SwTheme.Theme ordinal, read by ChartPalette. -->
+    <style name="ThemeOverlay.SelfWatch.Theme.Turquoise" parent="">
+        <item name="swThemeId">0</item>
+        <item name="colorPrimary">@color/sw_theme_turquoise_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_turquoise_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_turquoise_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_turquoise_on_primary</item>
+        <item name="colorPrimaryInverse">@color/sw_theme_turquoise_accent_text_inverse</item>
+        <item name="swColorAccentText">@color/sw_theme_turquoise_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_turquoise_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_turquoise_on_secondary</item>
+        <item name="colorTertiary">@color/sw_theme_turquoise_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_turquoise_on_secondary</item>
+    </style>
+    <style name="ThemeOverlay.SelfWatch.Theme.Purple" parent="">
+        <item name="swThemeId">1</item>
+        <item name="colorPrimary">@color/sw_theme_purple_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_purple_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_purple_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_purple_on_primary</item>
+        <item name="colorPrimaryInverse">@color/sw_theme_purple_accent_text_inverse</item>
+        <item name="swColorAccentText">@color/sw_theme_purple_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_purple_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_purple_on_secondary</item>
+        <item name="colorTertiary">@color/sw_theme_purple_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_purple_on_secondary</item>
+    </style>
+    <style name="ThemeOverlay.SelfWatch.Theme.Orange" parent="">
+        <item name="swThemeId">2</item>
+        <item name="colorPrimary">@color/sw_theme_orange_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_orange_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_orange_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_orange_on_primary</item>
+        <item name="colorPrimaryInverse">@color/sw_theme_orange_accent_text_inverse</item>
+        <item name="swColorAccentText">@color/sw_theme_orange_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_orange_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_orange_on_secondary</item>
+        <item name="colorTertiary">@color/sw_theme_orange_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_orange_on_secondary</item>
+    </style>
+    <style name="ThemeOverlay.SelfWatch.Theme.Yellow" parent="">
+        <item name="swThemeId">3</item>
+        <item name="colorPrimary">@color/sw_theme_yellow_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_yellow_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_yellow_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_yellow_on_primary</item>
+        <item name="colorPrimaryInverse">@color/sw_theme_yellow_accent_text_inverse</item>
+        <item name="swColorAccentText">@color/sw_theme_yellow_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_yellow_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_yellow_on_secondary</item>
+        <item name="colorTertiary">@color/sw_theme_yellow_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_yellow_on_secondary</item>
+    </style>
+    <style name="ThemeOverlay.SelfWatch.Theme.Forest" parent="">
+        <item name="swThemeId">4</item>
+        <item name="colorPrimary">@color/sw_theme_forest_primary</item>
+        <item name="colorOnPrimary">@color/sw_theme_forest_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sw_theme_forest_primary</item>
+        <item name="colorOnPrimaryContainer">@color/sw_theme_forest_on_primary</item>
+        <item name="colorPrimaryInverse">@color/sw_theme_forest_accent_text_inverse</item>
+        <item name="swColorAccentText">@color/sw_theme_forest_accent_text</item>
+        <item name="colorSecondary">@color/sw_theme_forest_secondary</item>
+        <item name="colorOnSecondary">@color/sw_theme_forest_on_secondary</item>
+        <item name="colorTertiary">@color/sw_theme_forest_secondary</item>
+        <item name="colorOnTertiary">@color/sw_theme_forest_on_secondary</item>
+    </style>
+
+    <!-- Dialogs: button text in the text accent. -->
+    <style name="ThemeOverlay.SelfWatch.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="buttonBarButtonStyle">@style/Widget.SelfWatch.Button.Text.Dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.SelfWatch.Button.Text.Dialog</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.SelfWatch.Button.Text.Dialog</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.SelfWatch.Button.Text.Dialog.Flush</item>
+    </style>
+
+    <!-- Progress bars: theme primary (or the series color a layout sets) on the neutral track gray. -->
+    <style name="Widget.SelfWatch.LinearProgress" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="trackColor">@color/sw_track</item>
+    </style>
+
+    <!-- Bottom sheets (SwSheet) -->
+    <style name="ThemeOverlay.SelfWatch.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.SelfWatch.BottomSheet</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="enableEdgeToEdge">true</item>
+    </style>
+    <style name="Widget.SelfWatch.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">?attr/colorSurface</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.SelfWatch.Sheet</item>
+    </style>
+</resources>

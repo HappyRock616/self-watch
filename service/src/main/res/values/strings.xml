@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<resources>
+    <string name="svc_notification_title">Self Watch</string>
+
+    <string name="svc_channel_connection">Watch connection</string>
+    <string name="svc_channel_connection_desc">Shows while Self Watch keeps your watch connected</string>
+    <string name="svc_channel_find_phone">Find my phone</string>
+    <string name="svc_channel_find_phone_desc">Rings when your watch looks for this phone</string>
+    <string name="svc_channel_alerts">Alerts</string>
+    <string name="svc_channel_alerts_desc">Things that need your attention, such as permissions to fix</string>
+
+    <string name="svc_status_connected">Connected</string>
+    <string name="svc_status_synced_now">Connected · synced just now</string>
+    <plurals name="svc_status_synced_min">
+        <item quantity="one">Connected · synced %d min ago</item>
+        <item quantity="other">Connected · synced %d min ago</item>
+    </plurals>
+    <plurals name="svc_status_synced_hours">
+        <item quantity="one">Connected · synced %d hour ago</item>
+        <item quantity="other">Connected · synced %d hours ago</item>
+    </plurals>
+    <plurals name="svc_status_synced_days">
+        <item quantity="one">Connected · synced %d day ago</item>
+        <item quantity="other">Connected · synced %d days ago</item>
+    </plurals>
+    <string name="svc_status_syncing">Syncing %1$d of %2$d</string>
+    <string name="svc_status_connecting">Connecting…</string>
+    <string name="svc_status_out_of_range">Watch out of range</string>
+    <string name="svc_status_no_watch">No watch paired</string>
+
+    <string name="svc_action_sync_now">Sync now</string>
+
+    <string name="svc_listener_label">Self Watch notifications to watch</string>
+
+    <string name="svc_find_phone_title">Your watch is looking for this phone</string>
+    <string name="svc_find_phone_text">Tap Stop when you have found it</string>
+    <string name="svc_find_phone_stop">Stop</string>
+
+    <string name="svc_fix_notify_title">Watch notifications are off</string>
+    <string name="svc_fix_notify_text">Android turned off notification access for Self Watch. Tap to turn it back on.</string>
+
+    <string name="svc_link_ask_title">Allow %1$s to message its watch app?</string>
+    <string name="svc_link_ask_title_unknown">Allow an unknown app to message a watch app?</string>
+    <string name="svc_link_ask_text">It wants to send messages to %1$s on your %2$s and receive its replies.</string>
+    <string name="svc_link_ask_your_watch">watch</string>
+    <string name="svc_link_allow">Allow</string>
+    <string name="svc_link_deny">Deny</string>
+    <string name="svc_test_notify_app">Self Watch</string>
+    <string name="svc_test_notify_title">Test notification</string>
+    <string name="svc_test_notify_text">If you can read this on your watch, notifications work.</string>
+</resources>

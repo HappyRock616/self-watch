@@ -1,0 +1,191 @@
+# Copyright (C) 2026 Self Watch contributors
+# AGPL-3.0-or-later. See the LICENSE file.
+#
+# Ingredient-line corpus for IngredientParser, written for Self Watch in the style of MyPlate and
+# common recipe sites. Columns (tab separated): line, amountX100, unit, words, note, package.
+# "-" means null. package is "<amountX100> <unit>". Lines starting with # are comments.
+2 cups all-purpose flour	200	cup	all-purpose flour	-	-
+1 cup sugar	100	cup	sugar	-	-
+1/2 cup brown sugar, packed	50	cup	brown sugar	packed	-
+3/4 cup milk	75	cup	milk	-	-
+1/3 cup vegetable oil	33	cup	vegetable oil	-	-
+2/3 cup water	67	cup	water	-	-
+1 1/2 cups rolled oats	150	cup	rolled oats	-	-
+1-1/2 cups shredded cheddar cheese	150	cup	shredded cheddar cheese	-	-
+½ teaspoon salt	50	tsp	salt	-	-
+1½ cups chicken broth	150	cup	chicken broth	-	-
+¼ tsp black pepper	25	tsp	black pepper	-	-
+¾ cup plain yogurt	75	cup	plain yogurt	-	-
+⅓ cup honey	33	cup	honey	-	-
+2 tablespoons olive oil	200	tbsp	olive oil	-	-
+1 tablespoon butter	100	tbsp	butter	-	-
+1 Tbsp. soy sauce	100	tbsp	soy sauce	-	-
+1 T lemon juice	100	tbsp	lemon juice	-	-
+1 t vanilla extract	100	tsp	vanilla extract	-	-
+2 tsp baking powder	200	tsp	baking powder	-	-
+1 teaspoon baking soda	100	tsp	baking soda	-	-
+1/8 teaspoon cayenne pepper	13	tsp	cayenne pepper	-	-
+3 eggs	300	-	eggs	-	-
+2 large eggs	200	-	large eggs	-	-
+1 egg, beaten	100	-	egg	beaten	-
+4 egg whites	400	-	egg whites	-	-
+1 large onion, chopped	100	-	large onion	chopped	-
+1 medium carrot, peeled and diced	100	-	medium carrot	peeled and diced	-
+2 cloves garlic, minced	200	clove	garlic	minced	-
+3 garlic cloves, crushed	300	-	garlic cloves	crushed	-
+1 clove garlic	100	clove	garlic	-	-
+1 can (15 oz) black beans, drained and rinsed	100	can	black beans	drained and rinsed	1500 oz
+2 (14.5 ounce) cans diced tomatoes	200	can	diced tomatoes	-	1450 oz
+1 (10 oz) package frozen spinach, thawed	100	package	frozen spinach	thawed	1000 oz
+1 15-ounce can chickpeas, drained	100	can	chickpeas	drained	1500 oz
+1 28-oz can crushed tomatoes	100	can	crushed tomatoes	-	2800 oz
+1 can coconut milk	100	can	coconut milk	-	-
+1 jar (24 oz) marinara sauce	100	jar	marinara sauce	-	2400 oz
+1 (8 ounce) package cream cheese, softened	100	package	cream cheese	softened	800 oz
+1 lb ground beef	100	lb	ground beef	-	-
+1 lb. lean ground turkey	100	lb	lean ground turkey	-	-
+2 pounds chicken thighs	200	lb	chicken thighs	-	-
+1/2 pound bacon, cut into pieces	50	lb	bacon	cut into pieces	-
+8 oz mushrooms, sliced	800	oz	mushrooms	sliced	-
+12 ounces spaghetti	1200	oz	spaghetti	-	-
+4 oz. feta cheese, crumbled	400	oz	feta cheese	crumbled	-
+200g plain flour	20000	g	plain flour	-	-
+200 g plain flour	20000	g	plain flour	-	-
+500 grams potatoes, peeled	50000	g	potatoes	peeled	-
+1.5 kg chicken	150	kg	chicken	-	-
+1kg beef chuck	100	kg	beef chuck	-	-
+250ml milk	25000	ml	milk	-	-
+250 ml double cream	25000	ml	double cream	-	-
+1 litre vegetable stock	100	l	vegetable stock	-	-
+1.5 liters water	150	l	water	-	-
+100 mL white wine	10000	ml	white wine	-	-
+2 fl oz espresso	200	fl oz	espresso	-	-
+8 fluid ounces orange juice	800	fl oz	orange juice	-	-
+1 pint strawberries, hulled	100	pint	strawberries	hulled	-
+1 quart chicken stock	100	quart	chicken stock	-	-
+1 gallon water	100	gallon	water	-	-
+a pinch of salt	100	pinch	salt	-	-
+pinch of nutmeg	100	pinch	nutmeg	-	-
+a dash of hot sauce	100	dash	hot sauce	-	-
+2 dashes bitters	200	dash	bitters	-	-
+Salt and pepper to taste	-	-	salt and pepper	to taste	-
+salt, to taste	-	-	salt	to taste	-
+freshly ground black pepper, to taste	-	-	freshly ground black pepper	to taste	-
+Fresh parsley for garnish	-	-	fresh parsley	for garnish	-
+cooking spray	-	-	cooking spray	-	-
+Olive oil as needed	-	-	olive oil	as needed	-
+1 cup walnuts, chopped (optional)	100	cup	walnuts	optional, chopped	-
+1/4 cup chopped fresh cilantro	25	cup	chopped fresh cilantro	-	-
+2 green onions, thinly sliced	200	-	green onions	thinly sliced	-
+1 red bell pepper, seeded and chopped	100	-	red bell pepper	seeded and chopped	-
+2 medium potatoes	200	-	medium potatoes	-	-
+3 ripe bananas, mashed	300	-	ripe bananas	mashed	-
+1 avocado	100	-	avocado	-	-
+an apple, cored and sliced	100	-	apple	cored and sliced	-
+one lemon, juiced	100	-	lemon	juiced	-
+two limes	200	-	limes	-	-
+Juice of 1 lime	-	-	juice of 1 lime	-	-
+1-2 jalapeños, minced	150	-	jalapeños	minced	-
+2-3 cloves garlic	250	clove	garlic	-	-
+1 to 2 tablespoons sriracha	150	tbsp	sriracha	-	-
+3 - 4 cups spinach	350	cup	spinach	-	-
+1 or 2 bay leaves	150	-	bay leaves	-	-
+1/2-1 teaspoon red pepper flakes	75	tsp	red pepper flakes	-	-
+4 slices bread	400	slice	bread	-	-
+2 slices bacon, cooked and crumbled	200	slice	bacon	cooked and crumbled	-
+1 slice cheddar cheese	100	slice	cheddar cheese	-	-
+1 stick butter, melted	100	stick	butter	melted	-
+2 sticks unsalted butter	200	stick	unsalted butter	-	-
+1 bunch kale, stems removed	100	bunch	kale	stems removed	-
+1 head cauliflower, cut into florets	100	head	cauliflower	cut into florets	-
+3 sprigs fresh thyme	300	sprig	fresh thyme	-	-
+2 stalks celery, diced	200	stalk	celery	diced	-
+1 handful baby spinach	100	handful	baby spinach	-	-
+1 bag frozen peas	100	bag	frozen peas	-	-
+1 box (16 oz) penne pasta	100	box	penne pasta	-	1600 oz
+1 container (32 oz) chicken broth	100	container	chicken broth	-	3200 oz
+1 envelope taco seasoning	100	envelope	taco seasoning	-	-
+1 packet active dry yeast	100	packet	active dry yeast	-	-
+2 pieces fresh ginger	200	piece	fresh ginger	-	-
+1 piece of salmon	100	piece	salmon	-	-
+4 cups (1 liter) water	400	cup	water	1 l	-
+1 cup (240 ml) whole milk	100	cup	whole milk	240 ml	-
+2 cups (about 10 ounces) frozen corn	200	cup	frozen corn	about 10 ounces	-
+1 cup cooked rice (from 1/3 cup uncooked)	100	cup	cooked rice	from 1/3 cup uncooked	-
+1 heaping tablespoon peanut butter	100	tbsp	peanut butter	heaping	-
+2 level teaspoons cinnamon	200	tsp	cinnamon	level	-
+1 scant cup sugar	100	cup	sugar	scant	-
+3 large cloves garlic	300	clove	garlic	large	-
+1 cup of milk	100	cup	milk	-	-
+2 cups of chopped kale	200	cup	chopped kale	-	-
+1.5 cups quinoa	150	cup	quinoa	-	-
+.5 cup raisins	50	cup	raisins	-	-
+0.25 teaspoon nutmeg	25	tsp	nutmeg	-	-
+2.5 lbs pork shoulder	250	lb	pork shoulder	-	-
+10 cherry tomatoes, halved	1000	-	cherry tomatoes	halved	-
+12 corn tortillas	1200	-	corn tortillas	-	-
+24 frozen meatballs	2400	-	frozen meatballs	-	-
+6 boneless skinless chicken breasts	600	-	boneless skinless chicken breasts	-	-
+1 whole chicken (about 4 pounds)	100	-	whole chicken	about 4 pounds	-
+1 (3 to 4 pound) beef roast	100	-	beef roast	3 to 4 pound	-
+1 cup frozen mixed vegetables	100	cup	frozen mixed vegetables	-	-
+2 cups low-fat milk	200	cup	low-fat milk	-	-
+1 cup fat-free plain Greek yogurt	100	cup	fat-free plain greek yogurt	-	-
+1/2 cup low-sodium soy sauce	50	cup	low-sodium soy sauce	-	-
+1 cup whole-wheat pasta, uncooked	100	cup	whole-wheat pasta	uncooked	-
+2 cups canned pumpkin	200	cup	canned pumpkin	-	-
+1/2 cup unsweetened applesauce	50	cup	unsweetened applesauce	-	-
+1 cup nonfat dry milk	100	cup	nonfat dry milk	-	-
+3 cups broccoli florets	300	cup	broccoli florets	-	-
+1 medium zucchini, grated	100	-	medium zucchini	grated	-
+1 small sweet potato, cubed	100	-	small sweet potato	cubed	-
+1/2 medium red onion, finely chopped	50	-	medium red onion	finely chopped	-
+1 cup dried lentils, rinsed	100	cup	dried lentils	rinsed	-
+1 can (14.5 oz) no-salt-added diced tomatoes	100	can	no-salt-added diced tomatoes	-	1450 oz
+1/4 cup grated Parmesan cheese	25	cup	grated parmesan cheese	-	-
+2 tbsp chopped fresh basil	200	tbsp	chopped fresh basil	-	-
+1 tsp ground cumin	100	tsp	ground cumin	-	-
+1 tsp dried oregano	100	tsp	dried oregano	-	-
+1/2 tsp garlic powder	50	tsp	garlic powder	-	-
+1/2 tsp onion powder	50	tsp	onion powder	-	-
+1 tsp chili powder	100	tsp	chili powder	-	-
+2 tsps smoked paprika	200	tsp	smoked paprika	-	-
+3 tbsps maple syrup	300	tbsp	maple syrup	-	-
+1 Tbs Dijon mustard	100	tbsp	dijon mustard	-	-
+2 tbl. red wine vinegar	200	tbsp	red wine vinegar	-	-
+1 c. buttermilk	100	cup	buttermilk	-	-
+2 C flour	200	cup	flour	-	-
+1 qt. milk	100	quart	milk	-	-
+1 pt heavy cream	100	pint	heavy cream	-	-
+16 oz. cottage cheese	1600	oz	cottage cheese	-	-
+1 # potatoes	100	-	# potatoes	-	-
+1 kilo tomatoes	100	kg	tomatoes	-	-
+350 gr pasta	35000	g	pasta	-	-
+10 mg saffron	1000	mg	saffron	-	-
+1 tin chopped tomatoes	100	can	chopped tomatoes	-	-
+1 x 400g tin chickpeas	100	-	x 400g tin chickpeas	-	-
+2 sachets instant oats	200	packet	instant oats	-	-
+1 pack tofu, pressed	100	package	tofu	pressed	-
+1 cube chicken bouillon	100	cube	chicken bouillon	-	-
+2 ears corn, husked	200	ear	corn	husked	-
+2 salmon fillets	200	-	salmon fillets	-	-
+4 drops vanilla	400	drop	vanilla	-	-
+1 scoop protein powder	100	scoop	protein powder	-	-
+2 sheets nori	200	sheet	nori	-	-
+• 1 cup rice	100	cup	rice	-	-
+- 2 tbsp oil	200	tbsp	oil	-	-
+   3   cups   water   	300	cup	water	-	-
+1 cup water.	100	cup	water	-	-
+1/2 cup (1 stick) butter, softened	50	cup	butter	1 stick, softened	-
+2 cups (500 ml) broth, divided	200	cup	broth	500 ml, divided	-
+1 tablespoon (15 ml) lemon juice	100	tbsp	lemon juice	15 ml	-
+1 1/4 cups (300 ml) cream	125	cup	cream	300 ml	-
+3 eggs (room temperature)	300	-	eggs	room temperature	-
+1 cup berries [fresh or frozen]	100	cup	berries	fresh or frozen	-
+1 tablespoon sugar plus more to taste	100	tbsp	sugar	plus more to taste	-
+oil for frying	-	-	oil	for frying	-
+flour, for dusting	-	-	flour	for dusting	-
+Lemon wedges, for serving	-	-	lemon wedges	for serving	-
+2 tbsp honey (or maple syrup)	200	tbsp	honey	or maple syrup	-
+1 cup ice	100	cup	ice	-	-
+6 cups popped popcorn	600	cup	popped popcorn	-	-

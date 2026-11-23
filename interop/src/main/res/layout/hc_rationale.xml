@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/hc_rationale_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/hc_rationale_title"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        <TextView
+            android:id="@+id/hc_rationale_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/hc_rationale_body"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <Button
+            android:id="@+id/hc_rationale_close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:minHeight="48dp"
+            android:minWidth="48dp"
+            android:text="@string/hc_rationale_close" />
+    </LinearLayout>
+</ScrollView>

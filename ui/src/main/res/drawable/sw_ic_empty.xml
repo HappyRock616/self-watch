@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default empty-state icon: an open circle with a small dot, drawn in the muted colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M32,8A24,24 0,1 1,8 32" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M32,28a4,4 0,1 1,0 8a4,4 0,1 1,0 -8z" />
+</vector>

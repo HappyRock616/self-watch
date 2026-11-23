@@ -1,0 +1,2 @@
+# Release APK size budget in bytes. Raise only in a commit that says why (see README.md).
+3618375

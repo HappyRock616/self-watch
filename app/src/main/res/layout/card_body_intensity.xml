@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: vigorous minutes vs the weekly goal (IntensityCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/intensity_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_intensity">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/intensity_week"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/intensity_week_label"
+        app:swValue="@string/dash" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/intensity_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <TextView
+        android:id="@+id/intensity_today"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/intensity_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/intensity_empty" />
+</app.selfwatch.ui.components.SwCard>

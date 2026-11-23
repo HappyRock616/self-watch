@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Food diary: day switcher, calories left (fixed), the Food cards (water, macros…), then meals and fasting. Built in code. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.SelfWatch.TabToolbar"
+        app:subtitle="@string/food_today"
+        app:title="@string/tab_food" />
+
+    <LinearLayout
+        android:id="@+id/day_switcher"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/sw_space_1"
+        android:paddingEnd="@dimen/sw_space_1">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/day_prev"
+            style="?attr/materialIconButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/food_day_prev"
+            android:minWidth="@dimen/sw_touch_target"
+            android:minHeight="@dimen/sw_touch_target"
+            app:icon="@drawable/ic_day_prev" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/day_label"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="@dimen/sw_touch_target"
+            android:textAllCaps="false"
+            android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/day_next"
+            style="?attr/materialIconButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/food_day_next"
+            android:minWidth="@dimen/sw_touch_target"
+            android:minHeight="@dimen/sw_touch_target"
+            app:icon="@drawable/ic_day_next" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <app.selfwatch.shell.MaxWidthLinearLayout style="@style/Widget.SelfWatch.TabColumn">
+
+            <app.selfwatch.ui.components.EmptyState
+                android:id="@+id/food_off"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:swButtonText="@string/me_settings"
+                app:swMessage="@string/food_off" />
+
+            <LinearLayout
+                android:id="@+id/food_main"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Calories left: fixed at the top, never a card. -->
+                <LinearLayout
+                    android:id="@+id/food_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <!-- The Food cards the user picked (filled by CardStack). -->
+                <LinearLayout
+                    android:id="@+id/food_cards"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <!-- Meals and fasting. -->
+                <LinearLayout
+                    android:id="@+id/food_diary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </app.selfwatch.shell.MaxWidthLinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

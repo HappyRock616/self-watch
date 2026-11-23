@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Round + button, as in the wireframes. -->
+    <style name="ShapeAppearance.SelfWatch.Fab" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Top bar of each tab: large bold title, muted subtitle; grows with the font size. -->
+    <style name="Widget.SelfWatch.TabToolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">?attr/actionBarSize</item>
+        <item name="titleTextAppearance">@style/TextAppearance.SelfWatch.Title</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.SelfWatch.Caption</item>
+    </style>
+
+    <!-- Scrolling column of cards. -->
+    <style name="Widget.SelfWatch.TabColumn" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">@dimen/sw_space_2</item>
+        <item name="android:paddingEnd">@dimen/sw_space_2</item>
+        <item name="android:paddingBottom">@dimen/tab_bottom_space</item>
+    </style>
+
+    <!-- A card in the column. -->
+    <style name="Widget.SelfWatch.TabCard" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/sw_space_2</item>
+    </style>
+
+    <!-- One of several cards side by side. -->
+    <style name="Widget.SelfWatch.TabCard.Third">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+
+    <!-- A stat tile filling its share of a row. -->
+    <style name="Widget.SelfWatch.TabStat" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+</resources>

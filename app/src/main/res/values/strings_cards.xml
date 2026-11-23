@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cards on Body, Activity and Food, Edit cards and the main goal. -->
+<resources>
+    <!-- Card names and one-line summaries (Edit cards) -->
+    <string name="card_energy">Calories</string>
+    <string name="card_energy_summary">Food in vs calories out</string>
+    <string name="card_macros">Protein and macros</string>
+    <string name="card_macros_summary">Protein, carbs and fat today</string>
+    <string name="card_steps">Steps</string>
+    <string name="card_steps_summary">Steps and active minutes today</string>
+    <string name="card_intensity">Vigorous minutes</string>
+    <string name="card_intensity_summary">Hard effort vs 75 minutes a week</string>
+    <string name="card_weight">Weight</string>
+    <string name="card_weight_summary">Weight trend and goal</string>
+    <string name="card_measurements">Measurements</string>
+    <string name="card_measurements_summary">Waist, hips and body fat</string>
+    <string name="card_recovery">Recovery</string>
+    <string name="card_recovery_summary">Sleep, resting heart rate and HRV</string>
+    <string name="card_spo2">Blood oxygen</string>
+    <string name="card_spo2_summary">Last night\'s SpO2 and 30 nights</string>
+    <string name="card_today_rings">Today</string>
+    <string name="card_today_rings_summary">Steps, active minutes and active calories</string>
+    <string name="card_trends">Trends</string>
+    <string name="card_trends_summary">Distance, minutes, steps and calories over time</string>
+    <string name="card_workouts">Recent activities</string>
+    <string name="card_workouts_summary">Your latest workouts</string>
+    <string name="card_macros_today">Protein and macros</string>
+    <string name="card_macros_today_summary">Protein, carbs and fat for the day shown</string>
+    <string name="card_water">Water</string>
+    <string name="card_water_summary">Glasses of water for the day shown</string>
+
+    <!-- Macros card -->
+    <string name="unit_g">g</string>
+    <string name="grams_value">%1$s g</string>
+    <string name="macros_protein">protein</string>
+    <string name="macros_carbs">carbs</string>
+    <string name="macros_fat">fat</string>
+    <string name="macros_protein_goal">protein · goal %1$s g</string>
+    <string name="macros_protein_auto">protein · %1$s g for your weight</string>
+    <string name="macros_carbs_goal">carbs · goal %1$s g</string>
+    <string name="macros_fat_goal">fat · goal %1$s g</string>
+    <string name="macros_set_goal">Set a goal</string>
+    <string name="macros_empty">Log a meal to see protein, carbs and fat.</string>
+    <string name="macros_description">Macros today. Protein %1$s, carbs %2$s, fat %3$s. Double tap to open Food.</string>
+    <string name="macros_today_description">Macros for the day. Protein %1$s, carbs %2$s, fat %3$s. Double tap to open Goals.</string>
+
+    <!-- Steps card -->
+    <string name="steps_label">steps</string>
+    <string name="steps_goal">steps · goal %1$s</string>
+    <string name="active_min_label">active min</string>
+    <string name="active_min_goal">active min · goal %1$s</string>
+    <string name="steps_empty">No steps yet today. Sync your watch to see them.</string>
+    <string name="steps_description">Today: %1$s steps, %2$s active minutes. Double tap to open Activity.</string>
+
+    <!-- Intensity card -->
+    <string name="intensity_week_label">vigorous, last 7 days</string>
+    <string name="intensity_week_goal">vigorous, last 7 days · goal %1$s min</string>
+    <string name="intensity_today">Today %1$s min</string>
+    <string name="intensity_done">Today %1$s min · weekly goal reached. Strong work.</string>
+    <string name="intensity_empty">No activity this week yet. Hard efforts from your watch show up here.</string>
+    <string name="intensity_description">Vigorous minutes: %1$s in the last 7 days of a %2$s minute goal, %3$s today. Double tap to open Activity.</string>
+
+    <!-- Blood oxygen card -->
+    <string name="spo2_last_night">last night</string>
+    <string name="spo2_empty">No blood oxygen readings yet. Turn on Pulse Ox during sleep on your watch.</string>
+    <string name="spo2_description">Blood oxygen %1$s, %2$s. Double tap to open Sleep.</string>
+
+    <!-- Edit cards -->
+    <string name="edit_cards_title_body">Body cards</string>
+    <string name="edit_cards_title_activity">Activity cards</string>
+    <string name="edit_cards_title_food">Food cards</string>
+    <string name="edit_cards_help">Drag to reorder. Switch off what you don\'t need.</string>
+    <string name="edit_cards_reset">Reset to defaults for my goal</string>
+    <string name="edit_cards_reset_done">Cards set for %1$s</string>
+    <string name="edit_cards_drag">Drag to move %1$s</string>
+    <string name="edit_cards_move_up">Move up</string>
+    <string name="edit_cards_move_down">Move down</string>
+
+    <!-- Main goal -->
+    <string name="main_goal_title">What\'s your main goal?</string>
+    <string name="main_goal_help">It picks the cards on Body, Activity and Food. You can change them any time.</string>
+    <string name="main_goal_weight_loss">Lose weight</string>
+    <string name="main_goal_weight_loss_help">Eat a little less, move a little more</string>
+    <string name="main_goal_weight_management">Weight management</string>
+    <string name="main_goal_weight_management_help">Keep your weight steady</string>
+    <string name="main_goal_build_muscle">Build muscle</string>
+    <string name="main_goal_build_muscle_help">Enough protein, steady gains</string>
+    <string name="main_goal_athletic">Athletic performance</string>
+    <string name="main_goal_athletic_help">Train hard, fuel well, recover</string>
+    <string name="main_goal_endurance">Endurance training</string>
+    <string name="main_goal_endurance_help">Go longer: runs, rides, swims</string>
+    <string name="main_goal_heart_health">Heart health</string>
+    <string name="main_goal_heart_health_help">Move often, watch your resting heart rate</string>
+    <string name="main_goal_stress">Stress and wellbeing</string>
+    <string name="main_goal_stress_help">Sleep, recovery and calm days</string>
+    <string name="main_goal_active_aging">Stay active</string>
+    <string name="main_goal_active_aging_help">Keep moving and strong as the years go by</string>
+    <string name="main_goal_general">General health</string>
+    <string name="main_goal_general_help">A bit of everything, every day</string>
+    <string name="main_goal_switch_title">Switch cards?</string>
+    <string name="main_goal_switch_message">Show the cards for %1$s on Body, Activity and Food? Your own order is replaced.</string>
+    <string name="main_goal_switch_yes">Switch</string>
+    <string name="main_goal_switch_no">Keep mine</string>
+    <string name="onboarding_goal_protein">Protein per day (g)</string>
+</resources>

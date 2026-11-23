@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Self Watch icon concepts v3</title>
+<style>
+body{margin:0;background:#2a2d31;font-family:Segoe UI,Arial,sans-serif;color:#F1EFE8}
+.grid{display:grid;grid-template-columns:repeat(4,300px);gap:28px;padding:28px}
+.c{text-align:center}
+.c svg{width:300px;height:300px;display:block}
+.n{font-size:20px;font-weight:600;margin-top:12px}
+.d{font-size:14px;color:#b9c2cc;margin-top:4px;line-height:1.35}
+.small{display:flex;gap:14px;justify-content:center;margin-top:12px;align-items:center}
+.small svg{width:48px;height:48px}
+.small svg.s2{width:32px;height:32px}
+</style></head><body>
+<div class="grid" id="grid"></div>
+<script>
+const O="#FF8A1F",B="#4DABF7",W="#F1EFE8",K="#0B0B0B",N="#16324A";
+// fork and spoon: exact paths from concept 3 (tile 1), centred on (174,168)
+const utensils=(c)=>`<g transform="translate(256 212) scale(0.9) translate(-174 -168)" stroke="${c}" stroke-width="12" stroke-linecap="round" fill="none">
+  <path d="M140 122 V156 M156 122 V156 M172 122 V156 M138 156 Q156 176 174 156 M156 168 V214"/>
+  <path d="M200 122 C218 136 218 166 204 176 V214"/></g>`;
+function icon(v){return `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="${N}"/>
+  <path d="M256 54 L420 112 V246 C420 352 348 420 256 456 C164 420 92 352 92 246 V112 Z" fill="${v.shield}" ${v.shieldLine?`stroke="${v.shieldLine}" stroke-width="10"`:""}/>
+  <rect x="200" y="100" width="112" height="312" rx="26" fill="${v.strap}"/>
+  ${v.button?`<rect x="378" y="232" width="16" height="44" rx="6" fill="${v.case}"/>`:""}
+  <rect x="138" y="146" width="236" height="220" rx="${v.rx}" fill="${v.face}" stroke="${v.case}" stroke-width="16"/>
+  ${utensils(v.food)}
+  <path d="M190 312 H214 L228 288 L248 338 L266 296 L278 312 H322" fill="none" stroke="${v.pulse}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`}
+const V=[
+ {name:"1 · Classic",d:"Black shield, blue strap, orange case; white fork and spoon, orange pulse",shield:K,strap:B,case:O,face:N,food:W,pulse:O,rx:56},
+ {name:"2 · Swapped",d:"Orange strap, blue case; orange fork and spoon, white pulse; side button",shield:K,strap:O,case:B,face:N,food:O,pulse:W,rx:56,button:1},
+ {name:"3 · Light shield",d:"Off-white shield for contrast on dark home screens; black face, rounder case",shield:W,strap:B,case:O,face:K,food:W,pulse:O,rx:72},
+ {name:"4 · Blue shield",d:"Blue shield, black strap and face, orange case; white outline on the shield",shield:B,shieldLine:W,strap:K,case:O,face:K,food:W,pulse:O,rx:56},
+];
+const g=document.getElementById("grid");
+V.forEach(v=>{const s=icon(v);g.insertAdjacentHTML("beforeend",`<div class="c">${s}<div class="n">${v.name}</div><div class="d">${v.d}</div><div class="small">${s}${s.replace("<svg ","<svg class=\"s2\" ")}</div></div>`)});
+</script>
+</body></html>

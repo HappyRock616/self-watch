@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The shell: tab container with the + button above the bottom navigation bar, and a full-screen
+     container on top for detail screens (fragments on the back stack). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="MergeRootFrame">
+
+    <LinearLayout
+        android:id="@+id/tab_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <FrameLayout
+                android:id="@+id/tab_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/add_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="@dimen/sw_space_2"
+                android:contentDescription="@string/add_button"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.SelfWatch.Fab"
+                app:srcCompat="@drawable/sw_ic_plus" />
+        </FrameLayout>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/colorBackground"
+            app:itemIconTint="@color/tab_item"
+            app:itemTextColor="@color/tab_item"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_tabs" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/detail_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>

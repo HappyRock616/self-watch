@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Card: protein, carbs and fat for a day (Body MacrosCard and Food MacrosTodayCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/macros_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_macros">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/macros_protein"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/macros_protein"
+        app:swValue="@string/dash" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/macros_protein_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <LinearLayout
+        android:id="@+id/macros_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_2"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/macros_carbs"
+            style="@style/Widget.SelfWatch.TabStat"
+            app:swLabel="@string/macros_carbs"
+            app:swValue="@string/dash" />
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/macros_fat"
+            style="@style/Widget.SelfWatch.TabStat"
+            app:swLabel="@string/macros_fat"
+            app:swValue="@string/dash" />
+    </LinearLayout>
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/macros_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/macros_empty" />
+</app.selfwatch.ui.components.SwCard>

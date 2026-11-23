@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body tab: a standing figure. Drawn for Self Watch. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:autoMirrored="false"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,1.75a2.6,2.6 0,1 1,0 5.2a2.6,2.6 0,1 1,0 -5.2z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.6,8.2h4.8a2,2 0,0 1,2 2V15.2a1,1 0,0 1,-1 1h-0.9V21.3a1,1 0,0 1,-1 1h-3a1,1 0,0 1,-1 -1V16.2H8.6a1,1 0,0 1,-1 -1V10.2a2,2 0,0 1,2 -2z" />
+</vector>

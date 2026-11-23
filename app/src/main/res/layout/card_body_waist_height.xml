@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: waist-to-height ratio with BMI beneath (WaistHeightCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/waist_height_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_waist_height">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/waist_height_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/waist_height_label"
+        app:swValue="@string/dash" />
+
+    <TextView
+        android:id="@+id/waist_height_band"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+    <TextView
+        android:id="@+id/waist_height_detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <TextView
+        android:id="@+id/waist_height_bmi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <TextView
+        android:id="@+id/waist_height_guide"
+        android:text="@string/waist_height_guide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/waist_height_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/waist_height_need_waist" />
+</app.selfwatch.ui.components.SwCard>

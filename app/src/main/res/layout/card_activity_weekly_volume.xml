@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: weekly workout time and the long-session check (WeeklyVolumeCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/weekly_volume_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_weekly_volume">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/wv_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swValue="@string/dash" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/wv_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <TextView
+        android:id="@+id/wv_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.components.BarsView
+        android:id="@+id/wv_bars"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_2" />
+
+    <TextView
+        android:id="@+id/wv_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/wv_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/wv_empty" />
+</app.selfwatch.ui.components.SwCard>

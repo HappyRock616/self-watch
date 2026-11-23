@@ -1,0 +1,79 @@
+{
+  "properties" : [
+    { "key" : "boatClass", "valueType" : "number", "defaultValue" : 1 },
+    { "id" : "startMinutes", "type" : "number", "value" : 5 },
+    { "key" : "hiddenCounter", "valueType" : "long", "defaultValue" : 0 }
+  ],
+  "settings" : [ {
+    "key" : "boatClass",
+    "configTitle" : "BoatClassTitle",
+    "configPrompt" : "BoatClassPrompt",
+    "configType" : "list",
+    "configOptions" : [
+      { "display" : "ClassDinghy", "value" : 0 },
+      { "display" : "ClassKeelboat", "value" : 1 },
+      { "display" : "ClassMultihull", "value" : 2 }
+    ],
+    "configReadonly" : false,
+    "configRequired" : false
+  }, {
+    "key" : "startMinutes",
+    "configTitle" : "StartTitle",
+    "configType" : "numeric",
+    "configMin" : 1,
+    "configMax" : 10,
+    "configOptions" : null
+  }, {
+    "key" : "windOffset",
+    "valueType" : "float",
+    "defaultValue" : 0.5,
+    "configTitle" : "WindOffsetTitle",
+    "configType" : "numeric",
+    "configMin" : -15.0,
+    "configMax" : 15.0
+  }, {
+    "key" : "haptics",
+    "valueType" : "boolean",
+    "defaultValue" : true,
+    "configTitle" : "HapticsTitle",
+    "configType" : "boolean"
+  }, {
+    "key" : "skipperName",
+    "valueType" : "string",
+    "defaultValue" : "",
+    "configTitle" : "SkipperTitle",
+    "configType" : "alphaNumeric",
+    "configMaxLength" : 12
+  }, {
+    "key" : "teamCode",
+    "valueType" : "string",
+    "defaultValue" : "TCS",
+    "configTitle" : "NoSuchString",
+    "configType" : "password",
+    "configRequired" : true
+  }, {
+    "key" : "rawKey",
+    "valueType" : "number",
+    "defaultValue" : 3
+  }, {
+    "valueType" : "number",
+    "configTitle" : "EntryWithoutKey"
+  } ],
+  "languages" : {
+    "eng" : {
+      "BoatClassTitle" : "Boat class",
+      "BoatClassPrompt" : "Used for the start timer",
+      "ClassDinghy" : "Dinghy",
+      "ClassKeelboat" : "Keelboat",
+      "ClassMultihull" : "Multihull",
+      "StartTitle" : "Start sequence (minutes)",
+      "WindOffsetTitle" : "Wind offset (°)",
+      "HapticsTitle" : "Vibrate on shifts",
+      "SkipperTitle" : "Skipper"
+    },
+    "fre" : {
+      "BoatClassTitle" : "Classe de bateau",
+      "HapticsTitle" : "Vibrer"
+    }
+  }
+}

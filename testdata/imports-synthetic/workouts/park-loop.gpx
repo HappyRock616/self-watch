@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made-up track around an invented park, for Self Watch tests. -->
+<gpx version="1.1" creator="Example Tracker" xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:ns3="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+  <metadata><time>2026-04-12T06:30:00Z</time></metadata>
+  <trk>
+    <name>Morning run</name>
+    <type>running</type>
+    <trkseg>
+      <trkpt lat="47.6000000" lon="-122.3300000"><ele>12.0</ele><time>2026-04-12T06:30:00Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:atemp>9.5</ns3:atemp><ns3:hr>118</ns3:hr><ns3:cad>80</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.6009000" lon="-122.3300000"><ele>14.5</ele><time>2026-04-12T06:30:30Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:hr>131</ns3:hr><ns3:cad>84</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.6018000" lon="-122.3290000"><ele>18.0</ele><time>2026-04-12T06:31:00Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:hr>142</ns3:hr><ns3:cad>86</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="47.6020000" lon="-122.3275000"><ele>17.0</ele><time>2026-04-12T06:31:40Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:hr>150</ns3:hr><ns3:cad>88</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.6012000" lon="-122.3265000"><ele>13.0</ele><time>2026-04-12T06:32:20Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:hr>148</ns3:hr><ns3:cad>87</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+      <trkpt lat="47.6002000" lon="-122.3280000"><ele>11.5</ele><time>2026-04-12T06:33:00Z</time>
+        <extensions><ns3:TrackPointExtension><ns3:hr>145</ns3:hr><ns3:cad>85</ns3:cad></ns3:TrackPointExtension></extensions></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text of the Activity cards added after phase 1 (WP-15): card_<id>, card_<id>_summary and the card's own strings. -->
+<resources>
+    <!-- C10 intensity_minutes -->
+    <string name="card_intensity_minutes">Intensity minutes</string>
+    <string name="card_intensity_minutes_summary">This week, vigorous minutes count double</string>
+    <string name="im_label">this week · target %1$s min</string>
+    <string name="im_label_extra">this week · target %1$s min (%2$s for extra benefit)</string>
+    <string name="im_caption_none">Some is better than none: a brisk 10-minute walk counts.</string>
+    <string name="im_caption_left">%1$s min to go this week. Every minute counts.</string>
+    <string name="im_caption_done">Weekly target reached. Anything more is a bonus.</string>
+    <string name="im_note">Moderate minutes count once, vigorous minutes twice. Tap to see exercise and sleep by week.</string>
+    <string name="im_empty">No activity minutes this week yet. Moderate and vigorous minutes from your watch show up here.</string>
+    <string name="im_description">Intensity minutes this week: %1$s of a %2$s minute target. Double tap to see exercise and sleep.</string>
+
+    <!-- C11 steps_today -->
+    <string name="card_steps_today">Steps today</string>
+    <string name="card_steps_today_summary">Steps against a daily target, last 7 days</string>
+    <string name="st_label">steps · target %1$s</string>
+    <string name="st_label_range">steps · target %1$s to %2$s</string>
+    <string name="st_label_own">steps · your goal %1$s</string>
+    <string name="st_caption_more">Every extra 1,000 steps helps. %1$s to your target.</string>
+    <string name="st_caption_done">Past your target. Every extra 1,000 still helps.</string>
+    <string name="st_note">Last 7 days, %1$s a day on average.</string>
+    <string name="st_empty">No steps yet. Sync your watch to see today\'s steps.</string>
+    <string name="st_description">Steps today: %1$s, target %2$s.</string>
+
+    <!-- C12 active_kcal -->
+    <string name="card_active_kcal">Active calories</string>
+    <string name="card_active_kcal_summary">Today, with about 400 a day as a reference</string>
+    <string name="ak_label">kcal today · reference about %1$s</string>
+    <string name="ak_label_own">kcal today · your goal %1$s</string>
+    <string name="ak_caption">Last 7 days, about %1$s kcal a day.</string>
+    <string name="ak_note">About 400 kcal a day is what people who keep lost weight off report. Watch calories are estimates.</string>
+    <string name="ak_empty">No active calories yet. Sync your watch to see them.</string>
+    <string name="ak_description">Active calories today: about %1$s, reference %2$s.</string>
+
+    <!-- C13 strength_sessions -->
+    <string name="card_strength_sessions">Strength</string>
+    <string name="card_strength_sessions_summary">Days with strength (and balance) sessions this week</string>
+    <string name="ss_label">days this week · aim %1$s or more</string>
+    <string name="ss_caption_strength">Muscle-strengthening on %1$s or more days a week. Any session counts.</string>
+    <string name="ss_caption_balance">Strength and balance (strength, yoga, pilates) on %1$s or more days a week. Any session counts.</string>
+    <string name="ss_caption_done">Done for this week. Nice work.</string>
+    <string name="ss_note_last">Last session: %1$s.</string>
+    <string name="ss_note_none">Strength and yoga workouts recorded on your watch count here.</string>
+    <string name="ss_empty">No strength sessions in the last 3 months. Strength workouts recorded on your watch show up here.</string>
+    <string name="ss_description">Strength: %1$s days this week, aim %2$s.</string>
+
+    <!-- C15 active_days -->
+    <string name="card_active_days">Active days</string>
+    <string name="card_active_days_summary">Days this week with 30 or more active minutes</string>
+    <string name="ad_label">active days this week · most days is the aim</string>
+    <string name="ad_caption">A day counts with %1$s or more active minutes (vigorous minutes count double).</string>
+    <string name="ad_note">Some is better than none: every active day helps.</string>
+    <string name="ad_empty">No activity this week yet. Active minutes from your watch show up here.</string>
+    <string name="ad_description">%1$s active days this week.</string>
+
+    <!-- C19 training_load -->
+    <string name="card_training_load">Training load</string>
+    <string name="card_training_load_summary">Weekly load from heart-rate zones</string>
+    <string name="tl_label">this week so far</string>
+    <string name="tl_caption">Recent weeks: %1$s on average. Steady, gradual steps up work best.</string>
+    <string name="tl_caption_first">Load is minutes in each heart-rate zone times the zone (1 to 5).</string>
+    <string name="tl_note">Zones from a maximum heart rate of %1$s bpm (%2$s). Tap to see training and recovery.</string>
+    <string name="tl_source_age">220 minus your age</string>
+    <string name="tl_source_stored">your setting</string>
+    <string name="tl_source_default">add your birth year in Profile for a closer number</string>
+    <string name="tl_empty">No workouts with heart rate in the last 6 weeks. Workouts from your watch show up here.</string>
+    <string name="tl_description">Training load this week: %1$s. Recent weeks: %2$s. Double tap to see training and recovery.</string>
+
+    <!-- C20 weekly_volume -->
+    <string name="card_weekly_volume">Weekly volume</string>
+    <string name="card_weekly_volume_summary">Workout time and distance, long-session check</string>
+    <string name="wv_label">this week</string>
+    <string name="wv_label_distance">this week · %1$s</string>
+    <string name="wv_caption_flag">Your %1$s on %2$s was %3$s%% longer than your longest in the 30 days before. Building up in smaller steps is easier on the body.</string>
+    <string name="wv_caption_ok">No big jumps: recent runs, walks and hikes stayed close to your recent longest.</string>
+    <string name="wv_note">Bars: workout time per week. The long-session check looks at runs, walks and hikes; the evidence comes from runners.</string>
+    <string name="wv_empty">No workouts in the last 6 weeks. Workouts from your watch show up here.</string>
+    <string name="wv_description">Workout time this week: %1$s.</string>
+
+    <!-- C21 easy_hard -->
+    <string name="card_easy_hard">Easy and hard</string>
+    <string name="card_easy_hard_summary">Share of workout time at an easy effort</string>
+    <string name="eh_label">easy, last 4 weeks · usual mix %1$s to %2$s%%</string>
+    <plurals name="eh_caption">
+        <item quantity="one">%1$s easy, %2$s hard, from %3$s workout.</item>
+        <item quantity="other">%1$s easy, %2$s hard, from %3$s workouts.</item>
+    </plurals>
+    <string name="eh_caption_hint">%1$s %2$s</string>
+    <string name="eh_hint_hard">More of your time was hard than the usual mix. Easy sessions help you recover and build a base.</string>
+    <string name="eh_hint_mix">Close to the usual mix of mostly easy time with some hard.</string>
+    <string name="eh_hint_easy">Mostly easy. A little hard time now and then adds variety.</string>
+    <string name="eh_note">Easy is under %1$s bpm, 80%% of your maximum heart rate.</string>
+    <string name="eh_empty">No workouts with heart rate in the last 4 weeks. Workouts from your watch show up here.</string>
+    <string name="eh_description">%1$s of workout time easy in the last 4 weeks.</string>
+
+    <!-- O4 training and recovery -->
+    <string name="training_title">Training and recovery</string>
+    <string name="training_layer_load">Training load</string>
+    <string name="training_layer_intensity">Intensity minutes</string>
+    <string name="training_layer_hrv">HRV, 7-day average</string>
+    <string name="training_layer_band">Your usual HRV</string>
+    <string name="training_layer_rhr">Resting heart rate, 7-day average</string>
+    <string name="training_note">Last 12 weeks. Bars show each day\'s load and intensity minutes; the lines are 7-day averages, so each morning follows the days before. The band is your usual HRV over the 60 nights before. Single days mislead, and lower HRV is not always tiredness.</string>
+    <string name="training_empty">No workouts or overnight readings in the last 12 weeks yet. They show up here after a sync.</string>
+
+    <!-- O5 exercise and sleep -->
+    <string name="exercise_sleep_title">Exercise and sleep</string>
+    <string name="exercise_sleep_layer_exercise">Exercise minutes</string>
+    <string name="exercise_sleep_layer_sleep">Sleep, weekly average</string>
+    <string name="exercise_sleep_note">Last 26 weeks, one point per week: active minutes (moderate and vigorous) and your average night\'s sleep. The link is small, and weekly patterns say more than single nights.</string>
+    <string name="exercise_sleep_empty">No activity or sleep in the last 26 weeks yet. They show up here after a sync.</string>
+</resources>

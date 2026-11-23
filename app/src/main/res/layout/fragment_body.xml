@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body (home): watch chip, then the visible cards in the saved order (filled by CardStack). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.SelfWatch.TabToolbar"
+        app:title="@string/tab_body">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/watch_chip"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="@dimen/sw_space_1"
+            android:ellipsize="end"
+            android:maxWidth="@dimen/body_chip_max_width"
+            android:text="@string/body_no_watch" />
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <app.selfwatch.shell.MaxWidthLinearLayout
+            android:id="@+id/body_cards"
+            style="@style/Widget.SelfWatch.TabColumn" />
+
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

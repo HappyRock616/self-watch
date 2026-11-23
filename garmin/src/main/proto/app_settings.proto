@@ -1,0 +1,69 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// Connect IQ app settings read and write (A22). Values travel as Monkey C serialized dictionaries.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_app_settings.proto
+//   ConnectIQAppSettingsService (1..6), GetAppSettingsRequest (1), GetAppSettingsResponse (1, 2; 0..2),
+//   SaveAppSettingsRequest (1, 2), SaveAppSettingsResponse (1, 2; 0..2), SendAppSettingsRequest (1, 2),
+//   SendAppSettingsResponse (1; 0..1)
+syntax = "proto2";
+
+package selfwatch.garmin.appsettings;
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "AppSettingsProto";
+
+message AppSettingsService {
+    optional GetAppSettingsRequest get_app_settings_request = 1;
+    optional GetAppSettingsResponse get_app_settings_response = 2;
+    optional SaveAppSettingsRequest save_app_settings_request = 3;
+    optional SaveAppSettingsResponse save_app_settings_response = 4;
+    optional SendAppSettingsRequest send_app_settings_request = 5;
+    optional SendAppSettingsResponse send_app_settings_response = 6;
+}
+
+message GetAppSettingsRequest {
+    required bytes app_identifier = 1;
+}
+
+message GetAppSettingsResponse {
+    enum Response {
+        UNKNOWN_RESPONSE = 0;
+        SUCCESS = 1;
+        APP_NOT_INSTALLED = 2;
+    }
+    required bytes app_identifier = 1;
+    optional Response response = 2;
+}
+
+message SaveAppSettingsRequest {
+    required bytes app_identifier = 1;
+    optional bytes settings_values = 2;
+}
+
+message SaveAppSettingsResponse {
+    enum Response {
+        UNKNOWN_RESPONSE = 0;
+        SUCCESS = 1;
+        FAILED_TO_SAVE = 2;
+    }
+    required bytes app_identifier = 1;
+    optional Response response = 2;
+}
+
+// Sent by the watch with the app's current values (after a GetAppSettingsRequest).
+message SendAppSettingsRequest {
+    required bytes app_identifier = 1;
+    optional bytes settings_values = 2;
+}
+
+message SendAppSettingsResponse {
+    enum Response {
+        UNKNOWN_RESPONSE = 0;
+        SUCCESS = 1;
+    }
+    optional Response response = 1;
+}

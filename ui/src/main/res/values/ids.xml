@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="sw_tag_insets_base" type="id" />
+    <item name="sw_action_read_table" type="id" />
+</resources>

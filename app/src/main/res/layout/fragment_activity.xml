@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity: streak chip, then the visible cards in the saved order (filled by CardStack). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.SelfWatch.TabToolbar"
+        app:title="@string/tab_activity">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/streak_chip"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="@dimen/sw_space_1"
+            android:visibility="gone" />
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <app.selfwatch.shell.MaxWidthLinearLayout
+            android:id="@+id/activity_cards"
+            style="@style/Widget.SelfWatch.TabColumn" />
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<resources>
+    <!-- Help (Me ⋮ Help) and Bluetooth help (Devices ⋮ Bluetooth help) -->
+    <string name="help_title">Help</string>
+    <string name="help_intro">Short answers to get you going. Everything here works offline.</string>
+
+    <string name="help_start_title">Getting started</string>
+    <string name="help_start_body">Self Watch keeps your body, activity and food in one place, on this phone only.\n\n1. Fill in Me › Profile and Me › Goals, so calories and targets fit you.\n2. Pair your watch on Devices.\n3. Log a meal or a weigh-in with the + button.\n\nSmall steps count. Check in once a day and the trends do the rest.</string>
+
+    <string name="help_pair_title">Pairing a watch</string>
+    <string name="help_pair_body">Open Devices and tap Pair watch. Allow Nearby devices when Android asks, then pick your watch from the list.\n\nKeep the watch close, awake and charged. If it does not show up, open the phone settings on the watch and choose to pair a phone, then try again.</string>
+
+    <string name="help_sync_title">Syncing</string>
+    <string name="help_sync_body">Once paired, the watch syncs by itself whenever it is near your phone. Tap Sync now on Body or Devices to sync straight away.\n\nFrom the watch come steps, heart rate, resting heart rate, sleep, stress, HRV, SpO2, intensity minutes and workouts with their GPS tracks. Devices › Data so far shows what has arrived.</string>
+
+    <string name="help_cards_title">Cards and Edit cards</string>
+    <string name="help_cards_body">Body, Activity and Food are stacks of cards. Tap a card to open its detail.\n\nUse ⋮ › Edit cards to show, hide and reorder cards, or start from a set that fits your main goal. Changes are saved at once.</string>
+
+    <string name="help_food_title">Logging food</string>
+    <string name="help_food_body">Tap + on Body or Food.\n\n• Search food: type a name and tap the food.\n• Scan barcode: point the camera at the pack.\n• Quick add calories: when you only know the number.\n\nRecent foods are one tap away. The food database is optional; add it on Me › Food data. If you do not track food, turn it off in Settings.</string>
+
+    <string name="help_data_title">Import, export and backups</string>
+    <string name="help_data_body">Me › Data brings your history in from export files and watch files (FIT, GPX, TCX), and exports your data as CSV, JSON or a full Self Watch backup.\n\nTurn on automatic backup to a folder you choose, so a new phone is never a fresh start. Activity › ⋮ › Export activities saves your workouts as GPX, FIT or TCX.</string>
+
+    <string name="help_privacy_title">Privacy</string>
+    <string name="help_privacy_body">Your data stays on this phone. No account, no ads, no analytics.\n\nMe › Privacy center gives every internet feature its own switch, and Network activity lists every request the app has made.</string>
+
+    <string name="help_trouble_title">Troubleshooting</string>
+    <string name="help_trouble_body">• Watch not found, or it will not connect: another watch app on this phone may be connected to it. Only one app can talk to the watch at a time, so close or disable the other app, then try again.\n• Bluetooth must be on. On Android 11 and older, Location must be on too while you pair.\n• Syncing stops in the background: set Self Watch\'s battery use to Unrestricted (App info › Battery).\n• Still stuck: turn Bluetooth off and on, restart the watch, or remove the watch on Devices and pair again.</string>
+
+    <string name="help_report_title">Report a problem</string>
+    <string name="help_report_body">Open an issue on the Self Watch project page on GitHub. Say what you did, what you expected and which phone and watch you use.\n\nMe › About › Export logs saves the app\'s log to attach; debug builds also have Devices › Debug for Bluetooth captures. Logs hold no health values, but read them before you share. Report security problems privately, not in a public issue.</string>
+
+    <string name="help_actions">Quick fixes</string>
+    <string name="help_bluetooth_intro">Most connection problems are fixed in a minute. Try these in order.</string>
+    <string name="help_open_bluetooth">Open Bluetooth settings</string>
+    <string name="help_open_battery">Open battery settings</string>
+    <string name="help_pair_again">Pair again</string>
+    <string name="help_all_topics">All help topics</string>
+    <string name="help_no_settings">This phone has no settings screen for that</string>
+
+    <!-- Export activities (Activity ⋮ Export activities) -->
+    <string name="export_act_title">Export activities</string>
+    <string name="export_act_intro">Save your workouts to a file you own. Each workout becomes its own file, packed in one zip.</string>
+    <string name="export_act_format">Format</string>
+    <string name="export_act_format_help">GPX for maps and most apps, TCX for training logs, FIT for the watch\'s original file.</string>
+    <string name="export_act_range">Date range</string>
+    <string name="export_act_from">From</string>
+    <string name="export_act_to">To</string>
+    <string name="export_act_last_7">Last 7 days</string>
+    <string name="export_act_last_30">Last 30 days</string>
+    <string name="export_act_last_90">Last 90 days</string>
+    <string name="export_act_this_year">This year</string>
+    <string name="export_act_all">All time</string>
+    <string name="export_act_custom">Custom</string>
+    <string name="export_act_counting">Counting workouts…</string>
+    <string name="export_act_none">No workouts in this range</string>
+    <plurals name="export_act_count">
+        <item quantity="one">%d workout in this range</item>
+        <item quantity="other">%d workouts in this range</item>
+    </plurals>
+    <string name="export_act_fit_some">%1$d of them have the watch\'s FIT file; the rest are skipped in FIT.</string>
+    <string name="export_act_button">Export</string>
+    <string name="export_act_progress">Exporting %1$d of %2$d…</string>
+    <plurals name="export_act_done">
+        <item quantity="one">Saved %d workout. Nice work keeping your history.</item>
+        <item quantity="other">Saved %d workouts. Nice work keeping your history.</item>
+    </plurals>
+    <plurals name="export_act_skipped">
+        <item quantity="one">%d skipped (no FIT file).</item>
+        <item quantity="other">%d skipped (no FIT file).</item>
+    </plurals>
+    <string name="export_act_no_fit">None of these workouts has a FIT file. Try GPX or TCX.</string>
+    <string name="export_act_failed">Export failed: %1$s</string>
+</resources>

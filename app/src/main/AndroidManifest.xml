@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- API 30+ package visibility: see launcher apps so relayed notifications can show app names
+         (COMPATIBILITY.md section 2, API 30 row). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".SelfWatchApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/full_backup_content"
+        android:localeConfig="@xml/locales_config"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.SelfWatch"
+        tools:targetApi="33">
+        <!-- Shares Bluetooth captures and logs (Devices → Debug) with read-once grants; nothing else. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/shared_files" />
+        </provider>
+
+        <activity android:name=".shell.MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".food.AddFoodActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".food.ScanActivity" android:exported="false" />
+        <activity android:name=".food.FoodEditorActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".food.RecipeActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".food.RecipeEditorActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+
+        <!-- Me screens (C18, C20) and onboarding (C21). -->
+        <activity android:name=".me.PrivacyActivity" android:exported="false" />
+        <activity android:name=".me.NetworkLogActivity" android:exported="false" />
+        <activity android:name=".me.SettingsActivity" android:exported="false" />
+        <activity android:name=".me.AboutActivity" android:exported="false" />
+        <activity android:name=".me.FoodDataActivity" android:exported="false" />
+        <activity android:name=".data.DataActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".data.ImportActivity" android:exported="false" />
+        <activity android:name=".onboarding.OnboardingActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+
+        <!-- The service's "workout added" broadcast (sent only to this package): schedules the automatic GPX export. -->
+        <receiver android:name=".data.WorkoutAddedReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="app.selfwatch.service.broadcast.WORKOUT_ADDED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

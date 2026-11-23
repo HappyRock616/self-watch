@@ -1,0 +1,190 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Self Watch wireframes</title>
+<style>
+:root{--o:#FF8A1F;--b:#4DABF7;--w:#F1EFE8;--k:#0B0B0B;--n:#16324A;--n2:#1F4766;--mut:#9fb0bf}
+body{margin:0;background:#2a2d31;font-family:Segoe UI,Arial,sans-serif;color:var(--w)}
+.row{display:flex;gap:26px;padding:26px;align-items:flex-start}
+.ph{width:290px;height:600px;background:var(--k);border-radius:34px;border:3px solid #444;overflow:hidden;position:relative;flex:none}
+.cap{width:290px;text-align:center;margin-top:10px;font-weight:600;font-size:17px}
+.scr{padding:16px 14px 0 14px;font-size:12.5px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.h{font-size:20px;font-weight:700}
+.chip{background:var(--n);border-radius:12px;padding:3px 9px;font-size:11px;color:var(--mut)}
+.chip.on{background:var(--b);color:var(--k);font-weight:600}
+.chip.off{background:transparent;border:1px solid #3a4a58;color:var(--mut)}
+.card{background:var(--n);border-radius:16px;padding:10px 12px;margin-bottom:9px}
+.big{font-size:30px;font-weight:700;color:var(--o);line-height:1.05}
+.mut{color:var(--mut)}
+.bar{height:8px;border-radius:4px;background:#0f2638;margin-top:7px;overflow:hidden;display:flex}
+.trip{display:flex;gap:8px;margin-bottom:9px}
+.ring{flex:1;background:var(--n);border-radius:16px;padding:8px 4px;text-align:center}
+.ring .c{width:46px;height:46px;border-radius:50%;margin:0 auto 4px;border:6px solid #0f2638;box-sizing:border-box}
+.sec{display:flex;justify-content:space-between;font-weight:600;margin:9px 0 4px}
+.it{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1d2a35;padding:5px 0}
+.it small{display:block;color:var(--mut);font-size:11px}
+.plus{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--o);color:var(--o);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.tag{font-size:10px;background:var(--n2);border-radius:6px;padding:1px 5px;color:var(--mut);margin-left:6px}
+.link{color:var(--b);font-size:12px}
+.nav{position:absolute;bottom:0;left:0;right:0;height:58px;background:#101820;display:flex;justify-content:space-around;align-items:center;font-size:10px;color:var(--mut)}
+.nav div{text-align:center}.nav b{display:block;width:20px;height:20px;border-radius:6px;background:#2a3a48;margin:0 auto 3px}
+.nav .act{color:var(--o)}.nav .act b{background:var(--o)}
+.fab{position:absolute;bottom:68px;right:16px;width:50px;height:50px;border-radius:50%;background:var(--o);color:var(--k);font-size:30px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.search{display:flex;gap:6px;margin-bottom:8px}.search div{background:var(--n);border-radius:12px;padding:8px 10px}
+.tabs{display:flex;gap:12px;border-bottom:1px solid #1d2a35;margin-bottom:6px;font-size:12px;color:var(--mut)}
+.tabs span{padding-bottom:5px}.tabs .a{color:var(--w);border-bottom:2px solid var(--o)}
+.li{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #1d2a35}
+.li .mut{font-size:11px}
+</style></head><body>
+
+<div class="row">
+
+<!-- BODY (home) -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div><div class="h">Body</div><div class="mut">Sun 22 Nov</div></div><span class="chip">Watch · 82% · synced</span></div>
+  <div class="card"><div style="display:flex;justify-content:space-between"><span>Energy today</span><span class="mut">−1,240 kcal</span></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="color:var(--o)">In 1,180</span><span style="color:var(--b)">Out 2,420</span></div>
+    <div class="bar"><div style="width:49%;background:var(--o)"></div></div>
+    <div class="bar"><div style="width:100%;background:var(--b)"></div></div>
+    <svg width="100%" height="40" viewBox="0 0 240 40" style="margin-top:6px">
+      <g fill="#FF8A1F"><rect x="4" y="16" width="12" height="24"/><rect x="38" y="12" width="12" height="28"/><rect x="72" y="18" width="12" height="22"/><rect x="106" y="10" width="12" height="30"/><rect x="140" y="14" width="12" height="26"/><rect x="174" y="20" width="12" height="20"/><rect x="208" y="20" width="12" height="20"/></g>
+      <g fill="#4DABF7"><rect x="17" y="6" width="12" height="34"/><rect x="51" y="8" width="12" height="32"/><rect x="85" y="4" width="12" height="36"/><rect x="119" y="10" width="12" height="30"/><rect x="153" y="6" width="12" height="34"/><rect x="187" y="2" width="12" height="38"/><rect x="221" y="4" width="12" height="36"/></g>
+    </svg><div class="mut" style="font-size:10.5px">Last 7 days: in vs out</div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between"><span>Weight</span><span class="mut">goal 78 kg · ▼3.1 in 90 days</span></div>
+    <div style="display:flex;align-items:baseline;gap:8px"><span class="big" style="font-size:26px;color:var(--w)">82.4</span><span class="mut">kg · ▼0.6 this week</span></div>
+    <svg width="100%" height="30" viewBox="0 0 240 30"><polyline points="0,4 30,6 60,9 90,8 120,13 150,15 180,18 210,20 240,22" fill="none" stroke="#4DABF7" stroke-width="3"/><line x1="0" y1="28" x2="240" y2="28" stroke="#FF8A1F" stroke-dasharray="4 4"/></svg></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Measurements</span><span class="mut">30 days</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+      <div><b>91 cm</b><div class="mut">waist ▼1.5</div></div><div><b>102 cm</b><div class="mut">hips ▼0.8</div></div><div><b>24 %</b><div class="mut">body fat ▼1</div></div>
+    </div></div>
+  <div class="trip">
+    <div class="ring" style="padding:6px">7h 12m<div class="mut">sleep</div></div><div class="ring" style="padding:6px">54<div class="mut">rest HR</div></div><div class="ring" style="padding:6px">48 ms<div class="mut">HRV</div></div>
+  </div>
+</div>
+<div class="fab">+</div>
+<div class="nav"><div class="act"><b></b>Body</div><div><b></b>Activity</div><div><b></b>Food</div><div><b></b>Devices</div><div><b></b>Me</div></div>
+</div><div class="cap">Body (home)</div></div>
+
+<!-- ACTIVITY -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div class="h">Activity</div><span class="chip" style="color:var(--o)">🔥 12-day streak</span></div>
+  <div class="trip">
+    <div class="ring"><div class="c" style="border-top-color:var(--o);border-right-color:var(--o);border-bottom-color:var(--o)"></div>7,842<div class="mut">of 10,000</div></div>
+    <div class="ring"><div class="c" style="border-color:var(--b)"></div>34 min<div class="mut">active</div></div>
+    <div class="ring"><div class="c" style="border-top-color:var(--o);border-right-color:var(--o)"></div>420<div class="mut">active kcal</div></div>
+  </div>
+  <div class="card" style="padding:8px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Walking, 12 weeks</span><span class="mut">Week · Month · Year</span></div>
+    <svg width="100%" height="110" viewBox="0 0 250 110">
+      <g fill="#4DABF7"><rect x="4" y="60" width="14" height="40"/><rect x="24" y="52" width="14" height="48"/><rect x="44" y="64" width="14" height="36"/><rect x="64" y="46" width="14" height="54"/><rect x="84" y="50" width="14" height="50"/><rect x="104" y="40" width="14" height="60"/><rect x="124" y="44" width="14" height="56"/><rect x="144" y="34" width="14" height="66"/><rect x="164" y="38" width="14" height="62"/><rect x="184" y="28" width="14" height="72"/><rect x="204" y="30" width="14" height="70"/><rect x="224" y="22" width="14" height="78"/></g>
+      <polyline points="11,70 31,62 51,72 71,56 91,58 111,48 131,52 151,42 171,46 191,36 211,38 231,30" fill="none" stroke="#FF8A1F" stroke-width="2.5"/>
+      <g fill="#9fb0bf" font-size="9"><text x="2" y="109">Sep</text><text x="110" y="109">Oct</text><text x="215" y="109">Nov</text></g>
+    </svg>
+    <div style="display:flex;flex-wrap:wrap;gap:5px"><span class="chip on">✓ Distance</span><span class="chip on" style="background:var(--o)">✓ Active min</span><span class="chip off">Steps</span><span class="chip off">Active kcal</span></div>
+  </div>
+  <div class="sec"><span>Recent activities</span><span class="link">All ›</span></div>
+  <div class="it"><div>Walk<small>Today · 3.2 km · 42 min</small></div><span class="mut">210 kcal</span></div>
+  <div class="it"><div>Run<small>Fri · 5.0 km · 28:40</small></div><span class="mut">390 kcal</span></div>
+  <div class="it"><div>Bike<small>Wed · 18 km · 55 min</small></div><span class="mut">480 kcal</span></div>
+</div>
+<div class="nav"><div><b></b>Body</div><div class="act"><b></b>Activity</div><div><b></b>Food</div><div><b></b>Devices</div><div><b></b>Me</div></div>
+</div><div class="cap">Activity</div></div>
+
+<!-- FOOD DIARY -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div class="h">‹ Food ›</div><span class="chip">1,240 left</span></div>
+  <div class="sec"><span>Breakfast</span><span class="mut">430</span></div>
+  <div class="it"><div>Oatmeal<small>1 cup · USDA</small></div><span>150</span></div>
+  <div class="it"><div>Banana<small>1 medium</small></div><span>105</span></div>
+  <div class="it"><div>Coffee, milk<small>12 oz</small></div><span>175</span></div>
+  <div style="display:flex;justify-content:space-between;margin-top:5px"><span class="link">+ Add food</span><span class="link">Copy yesterday</span></div>
+  <div class="sec"><span>Lunch</span><span class="mut">750</span></div>
+  <div class="it"><div>Burrito bowl<small>restaurant · data from 2018</small></div><span>750</span></div>
+  <div class="sec"><span>Dinner</span><span class="mut">—</span></div>
+  <div class="card" style="padding:7px 10px"><span class="link">+ Add yesterday's dinner (640)</span></div>
+  <div class="sec"><span>Snacks</span><span class="mut">—</span></div>
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px"><span>Water</span><span style="letter-spacing:3px;color:var(--b)">▮▮▮▮▯▯▯▯</span></div>
+  <div class="card" style="display:flex;justify-content:space-between;padding:7px 10px"><span>Fasting</span><span class="mut">14:20 of 16:00</span></div>
+</div>
+<div class="fab">+</div>
+<div class="nav"><div><b></b>Body</div><div><b></b>Activity</div><div class="act"><b></b>Food</div><div><b></b>Devices</div><div><b></b>Me</div></div>
+</div><div class="cap">Food diary</div></div>
+
+<!-- ADD FOOD -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div class="h">Add to lunch</div><span class="chip">✕</span></div>
+  <div class="search"><div style="flex:1" class="mut">Search foods, brands, chains</div><div style="color:var(--o)">▥ Scan</div></div>
+  <div class="tabs"><span class="a">Recent</span><span>Favorites</span><span>My foods</span><span>Recipes</span></div>
+  <div class="it"><div>Greek yogurt<span class="tag">USDA</span><small>Fage · 170 g · 150 kcal</small></div><span class="plus">+</span></div>
+  <div class="it"><div>Turkey sandwich<span class="tag">Mine</span><small>1 sandwich · 420 kcal</small></div><span class="plus">+</span></div>
+  <div class="it"><div>Big burger<span class="tag">2018</span><small>Chain · 1 item · 590 kcal</small></div><span class="plus">+</span></div>
+  <div class="it"><div>Apple<span class="tag">USDA</span><small>1 medium · 95 kcal</small></div><span class="plus">+</span></div>
+  <div class="it"><div>Granola bar<span class="tag">OFF</span><small>Brand · 1 bar · 190 kcal</small></div><span class="plus">+</span></div>
+  <div class="it"><div>Lunch, Tue<span class="tag">Meal</span><small>3 items · 610 kcal</small></div><span class="plus">+</span></div>
+  <div class="mut" style="margin-top:8px;font-size:11px">"+" logs your last serving in one tap. Tap a row to change the serving.</div>
+  <div class="card" style="margin-top:10px;display:flex;justify-content:space-between"><span>Quick add calories</span><span class="link">Add</span></div>
+  <div class="card" style="display:flex;justify-content:space-between"><span>Copy from menu board</span><span class="link">New</span></div>
+</div></div><div class="cap">Add food</div></div>
+
+<!-- SLEEP OVERLAY -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div><div class="h">Sleep</div><div class="mut">Last night · 7h 12m</div></div><span class="chip">Night · Week · Month</span></div>
+  <div class="card" style="padding:8px 8px 4px">
+  <svg width="100%" height="200" viewBox="0 0 250 200">
+    <g fill="#F1EFE8"><rect x="0" y="10" width="14" height="22"/><rect x="132" y="10" width="6" height="22"/></g>
+    <g fill="#8CC8F9"><rect x="60" y="34" width="22" height="22"/><rect x="150" y="34" width="26" height="22"/><rect x="222" y="34" width="28" height="22"/></g>
+    <g fill="#2B5E85"><rect x="14" y="58" width="22" height="22"/><rect x="82" y="58" width="50" height="22"/><rect x="138" y="58" width="12" height="22"/><rect x="176" y="58" width="46" height="22"/></g>
+    <g fill="#4DABF7"><rect x="36" y="82" width="24" height="22"/><rect x="104" y="82" width="20" height="22"/><rect x="190" y="82" width="16" height="22"/></g>
+    <polyline points="0,128 20,140 40,152 60,146 80,150 100,156 120,150 140,138 160,148 180,152 200,154 220,146 250,140" fill="none" stroke="#FF8A1F" stroke-width="2.5"/>
+    <polyline points="0,176 20,170 40,160 60,166 80,162 100,158 120,164 140,172 160,164 180,160 200,158 220,166 250,170" fill="none" stroke="#F1EFE8" stroke-width="2"/>
+    <polyline points="0,150 25,146 50,152 75,148 100,150 125,144 150,150 175,148 200,152 225,146 250,148" fill="none" stroke="#FFB46B" stroke-width="1.6" stroke-dasharray="4 3"/>
+    <g fill="#9fb0bf" font-size="9"><text x="0" y="198">23:00</text><text x="110" y="198">03:00</text><text x="220" y="198">06:12</text></g>
+  </svg></div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px">
+    <span class="chip on">✓ Stages</span><span class="chip on" style="background:var(--o)">✓ Heart rate</span><span class="chip on" style="background:var(--w)">✓ HRV</span><span class="chip on" style="background:#FFB46B">✓ Breathing</span><span class="chip off">SpO2</span><span class="chip off">Movement</span><span class="chip off">Temp</span>
+  </div>
+  <div class="trip">
+    <div class="ring" style="padding:7px">1h 05m<div class="mut">deep</div></div><div class="ring" style="padding:7px">1h 38m<div class="mut">REM</div></div><div class="ring" style="padding:7px">48 ms<div class="mut">HRV</div></div><div class="ring" style="padding:7px">14<div class="mut">br/min</div></div>
+  </div>
+  <div class="mut" style="font-size:11px">Tap the chart to read every line at that minute.</div>
+</div>
+<div class="nav"><div class="act"><b></b>Body</div><div><b></b>Activity</div><div><b></b>Food</div><div><b></b>Devices</div><div><b></b>Me</div></div>
+</div><div class="cap">Body › Sleep (overlay chart)</div></div>
+
+<!-- DEVICES -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div class="h">Devices</div><span class="chip">+ Pair</span></div>
+  <div class="card"><div style="display:flex;justify-content:space-between"><b>My watch</b><span class="mut">82%</span></div><div class="mut">Connected · synced 2 min ago</div>
+    <div style="display:flex;gap:8px;margin-top:8px"><span class="chip on">Sync now</span><span class="chip">Find watch</span></div></div>
+  <div class="li"><span>Watch apps</span><span class="mut">6 installed ›</span></div>
+  <div class="li"><span>App settings</span><span class="mut">›</span></div>
+  <div class="li"><span>Install from file</span><span class="mut">.prg ›</span></div>
+  <div class="li"><span>Notifications</span><span class="mut">›</span></div>
+  <div class="li"><span>Alarms</span><span class="mut">›</span></div>
+  <div class="li"><span>Weather on watch</span><span class="mut">On ›</span></div>
+  <div class="li"><span>Phone apps linked</span><span class="mut">2 ›</span></div>
+  <div class="li"><span>Watch settings</span><span class="mut">›</span></div>
+  <div class="li"><span>Other devices</span><span class="mut">Scale ›</span></div>
+</div>
+<div class="nav"><div><b></b>Body</div><div><b></b>Activity</div><div><b></b>Food</div><div class="act"><b></b>Devices</div><div><b></b>Me</div></div>
+</div><div class="cap">Devices</div></div>
+
+<!-- ME -->
+<div><div class="ph"><div class="scr">
+  <div class="top"><div class="h">Me</div></div>
+  <div class="card"><b>Privacy center</b><div class="mut">0 requests today · no account · no ads</div></div>
+  <div class="li"><span>Goals</span><span class="mut">calories, macros, steps, weight ›</span></div>
+  <div class="li"><span>Profile</span><span class="mut">height, age ›</span></div>
+  <div class="li"><span>Network activity</span><span class="mut">›</span></div>
+  <div class="li"><span>Permissions</span><span class="mut">›</span></div>
+  <div class="li"><span>Data</span><span class="mut">import · export · backup ›</span></div>
+  <div class="li"><span>Health Connect</span><span class="mut">Off ›</span></div>
+  <div class="li"><span>Food data</span><span class="mut">updated Nov 2026 ›</span></div>
+  <div class="li"><span>Appearance</span><span class="mut">Dark · Orange ›</span></div>
+  <div class="li"><span>Settings</span><span class="mut">›</span></div>
+  <div class="li"><span>About Self Watch</span><span class="mut">›</span></div>
+</div>
+<div class="nav"><div><b></b>Body</div><div><b></b>Activity</div><div><b></b>Food</div><div><b></b>Devices</div><div class="act"><b></b>Me</div></div>
+</div><div class="cap">Me</div></div>
+
+</div>
+</body></html>

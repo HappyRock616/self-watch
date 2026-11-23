@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: last night's blood oxygen and 30 nights (Spo2Card). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/spo2_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_spo2">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/spo2_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/spo2_last_night"
+        app:swValue="@string/dash" />
+
+    <app.selfwatch.ui.components.Sparkline
+        android:id="@+id/spo2_spark"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/body_spark_height"
+        android:layout_marginTop="@dimen/sw_space_1" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/spo2_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/spo2_empty" />
+</app.selfwatch.ui.components.SwCard>

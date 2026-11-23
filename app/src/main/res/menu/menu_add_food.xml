@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_quick_add" android:title="@string/add_quick" app:showAsAction="never" />
+    <item android:id="@+id/menu_create_food" android:title="@string/menu_create_food" app:showAsAction="never" />
+    <item android:id="@+id/menu_create_recipe" android:title="@string/menu_create_recipe" app:showAsAction="never" />
+</menu>

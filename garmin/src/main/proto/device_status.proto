@@ -1,0 +1,51 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// Device status: the watch's battery over protobuf.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_device_status.proto
+//   DeviceStatusService (1, 2, 3), RemoteDeviceBatteryStatusResponse (1, 2, 3; statuses 0..2),
+//   RemoteDeviceBatteryStatusBatteryStatus (0..7)
+syntax = "proto2";
+
+package selfwatch.garmin.status;
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "DeviceStatusProto";
+
+message DeviceStatusService {
+    optional BatteryStatusChangedNotification battery_status_changed_notification = 1;
+    optional BatteryStatusRequest battery_status_request = 2;
+    optional BatteryStatusResponse battery_status_response = 3;
+}
+
+enum BatteryState {
+    UNKNOWN_STATUS = 0;
+    NORMAL = 1;
+    LOW = 2;
+    CRITICAL = 3;
+    CHARGING = 4;
+    FULLY_CHARGED = 5;
+    ERROR = 6;
+    LOW_PULSE_OX = 7;
+}
+
+message BatteryStatusChangedNotification {
+    optional BatteryState state = 1;
+}
+
+message BatteryStatusRequest {
+}
+
+message BatteryStatusResponse {
+    enum Status {
+        UNKNOWN_RESPONSE_STATUS = 0;
+        OK = 1;
+        NO_REMOTE_DEVICE = 2;
+    }
+    required Status status = 1;
+    optional uint32 current_battery_level = 2;
+    optional BatteryState state = 3;
+}

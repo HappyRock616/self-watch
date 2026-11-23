@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Devices: watch card (pair button or the paired watch), data so far, debug tools, then the watch
+     feature list (wireframe "Devices", task C06). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.SelfWatch.TabToolbar"
+        app:title="@string/tab_devices" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <app.selfwatch.shell.MaxWidthLinearLayout style="@style/Widget.SelfWatch.TabColumn">
+
+            <app.selfwatch.ui.components.SwCard
+                android:id="@+id/watch_card"
+                style="@style/Widget.SelfWatch.TabCard"
+                android:layout_marginTop="0dp"
+                app:swTitle="@string/devices_my_watch">
+
+                <app.selfwatch.ui.components.EmptyState
+                    android:id="@+id/watch_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swButtonText="@string/devices_pair"
+                    app:swIcon="@drawable/ic_tab_devices"
+                    app:swMessage="@string/devices_watch_empty" />
+
+                <LinearLayout
+                    android:id="@+id/watch_paired"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <TextView
+                        android:id="@+id/watch_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.SelfWatch.Title"
+                        tools:text="vívoactive 5" />
+
+                    <TextView
+                        android:id="@+id/watch_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/sw_space_half"
+                        android:accessibilityLiveRegion="polite"
+                        android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge"
+                        tools:text="Connected" />
+
+                    <TextView
+                        android:id="@+id/watch_detail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/sw_space_half"
+                        android:textAppearance="@style/TextAppearance.SelfWatch.Caption"
+                        tools:text="Last sync 08:12 · Battery 81%" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/sw_space_2"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/watch_sync"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:text="@string/devices_sync_now" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/watch_remove"
+                            style="@style/Widget.SelfWatch.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:text="@string/devices_remove" />
+                    </LinearLayout>
+                </LinearLayout>
+            </app.selfwatch.ui.components.SwCard>
+
+            <!-- More watches, scales, straps and cuffs: one compact card each (OtherDeviceCards). -->
+            <LinearLayout
+                android:id="@+id/other_devices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <app.selfwatch.ui.components.SwCard
+                android:id="@+id/data_card"
+                style="@style/Widget.SelfWatch.TabCard"
+                android:visibility="gone"
+                app:swTitle="@string/devices_data_so_far"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:id="@+id/data_rows"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_activity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_activity" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_steps"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_steps" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_metrics"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_metrics" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_sleep"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_sleep" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_workouts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_workouts" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_files"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_files" />
+
+                    <app.selfwatch.ui.components.ListRow
+                        android:id="@+id/data_last"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:swTitle="@string/devices_data_last" />
+                </LinearLayout>
+            </app.selfwatch.ui.components.SwCard>
+
+            <app.selfwatch.ui.components.SwCard
+                android:id="@+id/debug_card"
+                style="@style/Widget.SelfWatch.TabCard"
+                android:visibility="gone"
+                app:swTitle="@string/devices_debug"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/debug_capture"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:text="@string/devices_ble_capture"
+                        android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/debug_share_capture"
+                        style="@style/Widget.SelfWatch.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:text="@string/devices_share_capture" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/debug_share_logs"
+                        style="@style/Widget.SelfWatch.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:text="@string/devices_share_logs" />
+                </LinearLayout>
+            </app.selfwatch.ui.components.SwCard>
+
+            <LinearLayout
+                android:id="@+id/device_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sw_space_1"
+                android:orientation="vertical">
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_watch_apps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swSubtitle="@string/devices_row_watch_apps_sub"
+                    app:swTitle="@string/devices_watch_apps" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_install"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_install_file" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_notifications"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_notifications" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_calls"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_calls" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_alarms"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_alarms" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_weather"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_weather" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_linked"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_linked_apps" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_watch_settings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_watch_settings" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_other"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/devices_other" />
+            </LinearLayout>
+        </app.selfwatch.shell.MaxWidthLinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

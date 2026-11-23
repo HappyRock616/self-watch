@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navy card, 16 dp corners, flat. -->
+    <style name="Widget.SelfWatch.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.SelfWatch.Card</item>
+        <item name="cardElevation">0dp</item>
+        <item name="contentPadding">@dimen/sw_space_2</item>
+    </style>
+
+    <!-- Toggle chips, 12 dp corners. ToggleChipGroup colours each chip by its series. -->
+    <style name="Widget.SelfWatch.Chip" parent="Widget.Material3.Chip.Filter">
+        <item name="shapeAppearance">@style/ShapeAppearance.SelfWatch.Chip</item>
+        <item name="android:textAppearance">@style/TextAppearance.SelfWatch.Body</item>
+    </style>
+
+    <!-- Text buttons draw their label in swColorAccentText (the accent darkened for 4.5:1 in light mode). -->
+    <style name="ThemeOverlay.SelfWatch.Button.Text" parent="ThemeOverlay.Material3.Button.TextButton">
+        <item name="colorOnContainer">?attr/swColorAccentText</item>
+    </style>
+    <style name="Widget.SelfWatch.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.SelfWatch.Button.Text</item>
+    </style>
+    <style name="Widget.SelfWatch.Button.Text.Dialog" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.SelfWatch.Button.Text</item>
+    </style>
+    <style name="Widget.SelfWatch.Button.Text.Dialog.Flush" parent="Widget.Material3.Button.TextButton.Dialog.Flush">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.SelfWatch.Button.Text</item>
+    </style>
+
+    <!-- Outlined text field whose focused label uses the text accent. -->
+    <style name="Widget.SelfWatch.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="hintTextColor">@color/sw_textfield_label</item>
+    </style>
+
+    <!-- Small text button used for card actions ("All", "Add"). -->
+    <style name="Widget.SelfWatch.TextButton" parent="Widget.Material3.Button.TextButton">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.SelfWatch.Button.Text</item>
+        <item name="android:minHeight">@dimen/sw_touch_target</item>
+        <item name="android:minWidth">@dimen/sw_touch_target</item>
+        <item name="android:paddingStart">@dimen/sw_space_1</item>
+        <item name="android:paddingEnd">@dimen/sw_space_1</item>
+    </style>
+
+    <!-- Round icon button (stepper -/+, sheet close). -->
+    <style name="Widget.SelfWatch.IconButton" parent="Widget.Material3.Button.IconButton.Filled.Tonal">
+        <item name="android:minHeight">@dimen/sw_touch_target</item>
+        <item name="android:minWidth">@dimen/sw_touch_target</item>
+    </style>
+</resources>

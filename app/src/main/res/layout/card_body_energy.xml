@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: calories in vs out today and over the week (EnergyCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/energy_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:layout_marginTop="0dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/body_energy_today">
+
+    <LinearLayout
+        android:id="@+id/energy_numbers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/energy_in"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/body_in_empty"
+            android:textAppearance="@style/TextAppearance.SelfWatch.Body.Number" />
+
+        <TextView
+            android:id="@+id/energy_out"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="@string/body_out_empty"
+            android:textAppearance="@style/TextAppearance.SelfWatch.Body.Number" />
+    </LinearLayout>
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/energy_in_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/energy_out_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:importantForAccessibility="no"
+        app:indicatorColor="?attr/colorSecondary"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <app.selfwatch.ui.components.BarsView
+        android:id="@+id/energy_week"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_2" />
+
+    <TextView
+        android:id="@+id/energy_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:text="@string/body_energy_week_caption"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <TextView
+        android:id="@+id/energy_balance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/energy_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/body_energy_empty" />
+</app.selfwatch.ui.components.SwCard>

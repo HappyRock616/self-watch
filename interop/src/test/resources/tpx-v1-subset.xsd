@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors. AGPL-3.0-or-later.
+
+  A hand-written schema for the part of Garmin's TrackPointExtension v1 that Self Watch writes:
+  atemp (degrees Celsius), hr (beats per minute, 1-255) and cad (0-254), in that order.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+           elementFormDefault="qualified">
+  <xs:element name="TrackPointExtension">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="atemp" type="xs:double" minOccurs="0"/>
+        <xs:element name="hr" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:unsignedByte">
+              <xs:minInclusive value="1"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="cad" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:unsignedByte">
+              <xs:maxInclusive value="254"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

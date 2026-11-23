@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Component gallery (debug builds only). Sample text, not shipped. -->
+<resources>
+    <string name="gallery_label">SW Gallery</string>
+    <string name="gallery_title">Component gallery</string>
+
+    <string name="gallery_theme">Theme</string>
+    <string name="gallery_dark">Dark</string>
+    <string name="gallery_light">Light</string>
+    <string name="gallery_system">System</string>
+    <string name="gallery_color_theme">Color theme</string>
+    <string name="gallery_series">Series %1$d</string>
+    <string name="gallery_stage">Stage: %1$s</string>
+    <string name="gallery_text">Text</string>
+    <string name="gallery_muted">Muted</string>
+    <string name="gallery_track">Track</string>
+    <string name="gallery_alarm">Alarm</string>
+    <string name="gallery_font">Font size</string>
+    <string name="gallery_font_scale">%1$s×</string>
+    <string name="gallery_font_note">Components below render at %1$s× font size.</string>
+
+    <string name="gallery_sec_type">Type scale</string>
+    <string name="gallery_sec_colors">Colors</string>
+    <string name="gallery_sec_cards">Cards and bars</string>
+    <string name="gallery_sec_rings">Rings</string>
+    <string name="gallery_sec_tiles">Stat tiles</string>
+    <string name="gallery_sec_chips">Toggle chips</string>
+    <string name="gallery_sec_rows">List rows and source tags</string>
+    <string name="gallery_sec_stepper">Number stepper</string>
+    <string name="gallery_sec_empty">Empty state</string>
+    <string name="gallery_sec_sheet">Sheet and snackbar</string>
+    <string name="gallery_sec_fmt">Formatting</string>
+
+    <string name="gallery_type_display">Display 40</string>
+    <string name="gallery_type_headline">Headline 28</string>
+    <string name="gallery_type_title">Title 20</string>
+    <string name="gallery_type_body_large">Body large 16</string>
+    <string name="gallery_type_body">Body 14</string>
+    <string name="gallery_type_caption">Caption 12</string>
+
+    <string name="gallery_energy_today">Energy today</string>
+    <string name="gallery_all">All</string>
+    <string name="gallery_in">In</string>
+    <string name="gallery_out">Out</string>
+    <string name="gallery_last7">Last 7 days: in vs out</string>
+    <string-array name="gallery_days">
+        <item>M</item>
+        <item>T</item>
+        <item>W</item>
+        <item>T</item>
+        <item>F</item>
+        <item>S</item>
+        <item>S</item>
+    </string-array>
+
+    <string name="gallery_today">Today</string>
+    <string name="gallery_of">of %1$s</string>
+    <string name="gallery_active">active</string>
+    <string name="gallery_active_kcal">active kcal</string>
+    <string name="gallery_min">%1$s min</string>
+
+    <string name="gallery_weight">Weight</string>
+    <string name="gallery_this_week">%1$s this week</string>
+    <string name="gallery_rest_hr">rest HR</string>
+    <string name="gallery_hrv">HRV</string>
+    <string name="gallery_ms">ms</string>
+    <string name="gallery_waist">waist</string>
+
+    <string name="gallery_distance">Distance</string>
+    <string name="gallery_active_min">Active min</string>
+    <string name="gallery_steps">Steps</string>
+    <string name="gallery_chips_changed">%1$s: %2$s</string>
+    <string name="gallery_on">on</string>
+    <string name="gallery_off">off</string>
+
+    <string name="gallery_walk">Walk</string>
+    <string name="gallery_walk_sub">Today · 3.2 km · 42 min</string>
+    <string name="gallery_yogurt">Greek yogurt</string>
+    <string name="gallery_yogurt_sub">Fage · 170 g · 150 kcal</string>
+    <string name="gallery_burger">Big burger</string>
+    <string name="gallery_burger_sub">Chain · 1 item · 590 kcal</string>
+    <string name="gallery_weight_trend">Weight trend</string>
+    <string name="gallery_weight_trend_sub">Last 30 days</string>
+    <string name="gallery_watch_apps">Watch apps</string>
+    <string name="gallery_installed">6 installed</string>
+    <string name="gallery_tag_usda">USDA</string>
+    <string name="gallery_tag_off">OFF</string>
+    <string name="gallery_tag_2018">2018</string>
+    <string name="gallery_tag_mine">Mine</string>
+    <string name="gallery_tag_meal">Meal</string>
+    <string name="gallery_tapped">Tapped %1$s</string>
+
+    <string name="gallery_cups">cups</string>
+    <string name="gallery_value">Value: %1$s</string>
+
+    <string name="gallery_empty_message">No food logged yet today.</string>
+    <string name="gallery_add_food">Add food</string>
+
+    <string name="gallery_open_sheet">Open sheet</string>
+    <string name="gallery_show_undo">Show undo snackbar</string>
+    <string name="gallery_deleted">Deleted.</string>
+    <string name="gallery_undone">Restored.</string>
+    <string name="gallery_sheet_title">Add to lunch</string>
+    <string name="gallery_sheet_body">A bottom sheet built on SwSheet. It opens expanded, has a close button and clears the keyboard.</string>
+    <string name="gallery_quick_add">Quick add calories</string>
+    <string name="gallery_add">Add</string>
+
+    <string name="gallery_sec_charts">Charts</string>
+    <string name="gallery_sleep_title">Sleep · last night</string>
+    <string name="gallery_stages">Stages</string>
+    <string name="gallery_hr">Heart rate</string>
+    <string name="gallery_breathing">Breathing</string>
+    <string name="gallery_bpm">bpm</string>
+    <string name="gallery_br_min">br/min</string>
+    <string name="gallery_km">km</string>
+    <string name="gallery_scrub_hint">Tap the chart to read every line at that minute. Double tap or pinch to zoom.</string>
+    <string name="gallery_scrub_values">%1$s · %2$s</string>
+    <string name="gallery_walking">Walking, 12 weeks</string>
+    <string name="gallery_week_of">Week of %1$s</string>
+    <string name="gallery_weight_90">Weight, 90 days</string>
+    <string name="gallery_selected">Selected %1$s</string>
+</resources>

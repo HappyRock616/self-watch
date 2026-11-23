@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text of the Body cards added after phase 1 (WP-15): card_<id>, card_<id>_summary and the card's own strings. -->
+<resources>
+    <!-- Card names and Edit cards summaries -->
+    <string name="card_sleep">Sleep</string>
+    <string name="card_sleep_summary">Last night against 7–9 hours, stages as detail</string>
+    <string name="card_waist_height">Waist to height</string>
+    <string name="card_waist_height_summary">Your waist against half your height</string>
+    <string name="card_body_fat">Body fat</string>
+    <string name="card_body_fat_summary">Body fat trend from your scale or entries</string>
+    <string name="card_hrv_baseline">HRV</string>
+    <string name="card_hrv_baseline_summary">Overnight HRV against your usual range</string>
+    <string name="card_resting_hr">Resting heart rate</string>
+    <string name="card_resting_hr_summary">4-week trend against your usual</string>
+    <string name="card_body_stress">Body stress</string>
+    <string name="card_body_stress_summary">Body stress and rest time from your watch</string>
+    <string name="card_body_signals">Body signals</string>
+    <string name="card_body_signals_summary">Skin temperature, resting heart rate and breathing against your usual</string>
+
+    <!-- Shared -->
+    <string name="unit_celsius">°C</string>
+    <string name="unit_breaths">br/min</string>
+    <string name="card_line_pair">%1$s · %2$s</string>
+    <string name="unit_g_per_kg">g/kg</string>
+
+    <!-- Weight (goal band) -->
+    <string name="weight_trend_label">Trend · latest %1$s, %2$s</string>
+    <string name="weight_band_rate_within">%1$s a week, within the %2$s–%3$s pace</string>
+    <string name="weight_band_rate_below">%1$s a week; the usual pace is %2$s–%3$s</string>
+    <string name="weight_band_rate_above">%1$s a week, faster than %2$s–%3$s</string>
+    <string name="weight_band_rate_unknown">Your pace shows after a couple of weeks of weigh-ins (usual pace %1$s–%2$s a week)</string>
+    <string name="weight_band_maintain_within">Within 3%% either side of %1$s (%2$s–%3$s)</string>
+    <string name="weight_band_maintain_out">Outside 3%% either side of %1$s (%2$s–%3$s)</string>
+    <string name="weight_band_unplanned">Trend down %1$s in 90 days. If you did not plan this, it may be worth a check.</string>
+    <string name="weight_water_note">Daily weight swings with water; the trend smooths it out.</string>
+
+    <!-- Energy (7-day balance) -->
+    <string name="energy_balance">7-day balance: about %1$s a day (estimate)</string>
+
+    <!-- Sleep -->
+    <string name="sleep_card_last_night">Last night</string>
+    <string name="sleep_card_within">Within 7–9 h</string>
+    <string name="sleep_card_below">Under the 7–9 h guide</string>
+    <string name="sleep_card_above">Over 9 h</string>
+    <string name="sleep_card_avg">7-night average %1$s</string>
+    <string name="sleep_card_stages">Deep %1$s · Light %2$s · REM %3$s · Awake %4$s</string>
+    <string name="sleep_card_empty">Your sleep shows here after a night with your watch on.</string>
+    <string name="sleep_card_description">Sleep %1$s. %2$s. %3$s</string>
+
+    <!-- Waist to height -->
+    <string name="waist_height_label">Waist ÷ height</string>
+    <string name="waist_height_under">Under 0.5, inside the guide</string>
+    <string name="waist_height_raised">0.5 to 0.59, above the 0.5 guide</string>
+    <string name="waist_height_high">0.6 or more, well above the 0.5 guide</string>
+    <string name="waist_height_detail">Waist %1$s · height %2$s</string>
+    <string name="waist_height_change">Waist %1$s in 30 days</string>
+    <string name="waist_height_bmi">BMI %1$s</string>
+    <string name="waist_height_guide">Guide: keep your waist under half your height.</string>
+    <string name="waist_height_need_height">Add your height to your profile to see your waist against it.</string>
+    <string name="waist_height_add_height">Add height</string>
+    <string name="waist_height_need_waist">Log your waist to see it against your height. Measure around your middle, just above the belly button.</string>
+    <string name="waist_height_log_waist">Log waist</string>
+    <string name="waist_height_description">Waist to height %1$s. %2$s</string>
+
+    <!-- Body fat -->
+    <string name="body_fat_change">%1$s in 90 days</string>
+    <string name="body_fat_note">Scale body fat varies from day to day; read the long trend. Not a medical measurement.</string>
+    <string name="body_fat_empty">Log body fat or weigh in on a body-fat scale to see your trend.</string>
+    <string name="body_fat_description">Body fat trend %1$s. %2$s</string>
+
+    <!-- HRV against baseline -->
+    <string name="hrv_card_label">7-night average</string>
+    <string name="hrv_card_within">Within your usual range</string>
+    <string name="hrv_card_below">Lower than your usual</string>
+    <string name="hrv_card_above">Higher than your usual</string>
+    <string name="hrv_card_band">Your usual: %1$s–%2$s ms</string>
+    <string name="hrv_card_note">A lower week is not always tiredness; read it alongside sleep and training.</string>
+    <string name="hrv_card_learning">Learning your usual range: %1$d of %2$d nights so far. Wear your watch to sleep and it fills in.</string>
+    <string name="hrv_card_recent">This week\'s average shows once there are three nights with HRV in the last seven. Wear your watch to sleep.</string>
+    <string name="hrv_card_description">HRV %1$s milliseconds. %2$s</string>
+
+    <!-- Resting heart rate -->
+    <string name="rhr_card_label">4-week average</string>
+    <string name="rhr_card_steady">Steady against your usual</string>
+    <string name="rhr_card_lower">Lower than your usual (%1$s bpm)</string>
+    <string name="rhr_card_higher">Higher than your usual (+%1$s bpm)</string>
+    <string name="rhr_card_usual">Your usual: %1$s bpm</string>
+    <string name="rhr_card_no_baseline">Your usual level shows after about two months of readings.</string>
+    <string name="rhr_card_empty">Your resting heart rate shows here after a week with your watch on.</string>
+    <string name="rhr_card_description">Resting heart rate %1$s beats per minute. %2$s</string>
+
+    <!-- Body stress -->
+    <string name="stress_card_avg">Body stress</string>
+    <string name="stress_card_rest">Rest time</string>
+    <string name="stress_card_today">Today so far</string>
+    <string name="stress_card_rest_level">Your body was mostly at rest</string>
+    <string name="stress_card_low_level">Your body was lightly working</string>
+    <string name="stress_card_mid_level">Your body was working moderately hard</string>
+    <string name="stress_card_high_level">Your body was working hard</string>
+    <string name="stress_card_note">Worked out from heart rate. Context only: it describes your body, not how you feel.</string>
+    <string name="stress_card_empty">Body stress and rest time show here once your watch records them.</string>
+    <string name="stress_card_description">%1$s: body stress %2$s, rest time %3$s. %4$s</string>
+
+    <!-- Body signals -->
+    <string name="signals_card_calm">Signals within your usual range</string>
+    <string name="signals_card_one">One signal is up; the others are within your usual range</string>
+    <string name="signals_card_flag">Several signals are up; take it easy</string>
+    <string name="signals_card_up_count">%1$d of %2$d up</string>
+    <string name="signals_skin">Skin temperature</string>
+    <string name="signals_rhr">Resting heart rate</string>
+    <string name="signals_resp">Breathing rate</string>
+    <string name="signals_row">%1$s %2$s</string>
+    <string name="signals_row_up">%1$s %2$s · up</string>
+    <string name="signals_card_learning">Learning your usual: %1$d of %2$d nights so far.</string>
+    <string name="signals_card_empty">Body signals show here after nights with your watch on.</string>
+    <string name="signals_card_note">Not medical advice; signals rise for many everyday reasons.</string>
+
+    <!-- O3: body composition with protein and strength (body fat and waist screens) -->
+    <string name="body_comp_layer_protein">Protein g/kg (weekly)</string>
+    <string name="body_comp_layer_strength">Strength sessions</string>
+    <string name="body_comp_caption">Weekly protein per kg of body weight; the dashed line is 1.6 g/kg. Protein helps most alongside strength training. Read the measurement over months, not days.</string>
+
+    <!-- O6: intensity minutes and resting heart rate (Heart screen) -->
+    <string name="heart_trend_title">Intensity minutes and resting heart rate</string>
+    <string name="heart_trend_layer_intensity">Intensity minutes (weekly)</string>
+    <string name="heart_trend_layer_resting">Resting HR, 4-week average</string>
+    <string name="heart_trend_caption">About six months. Vigorous minutes count double. Resting heart rate tends to drift down over four or more weeks of regular activity.</string>
+    <string name="heart_trend_empty">This chart fills in as your watch records activity and resting heart rate.</string>
+
+    <!-- O7: body signals screen -->
+    <string name="signals_title">Body signals</string>
+    <string name="signals_chart_title">Against your usual</string>
+    <string name="signals_layer_band">Usual range</string>
+    <string name="signals_caption">Each line shows how far a signal is from your usual (the 28 nights before); the band is your usual range. Skin temperature also rises in parts of the menstrual cycle. Not medical advice.</string>
+    <string name="signals_empty">Body signals show here after about a week of nights with your watch on.</string>
+</resources>

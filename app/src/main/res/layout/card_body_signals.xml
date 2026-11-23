@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: skin temperature, resting heart rate and breathing against baseline (BodySignalsCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/body_signals_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_body_signals">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/body_signals_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swLabel="@string/card_body_signals"
+        app:swValue="@string/dash" />
+
+    <TextView
+        android:id="@+id/body_signals_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+    <TextView
+        android:id="@+id/body_signals_rows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <TextView
+        android:id="@+id/body_signals_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/body_signals_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/signals_card_empty" />
+</app.selfwatch.ui.components.SwCard>

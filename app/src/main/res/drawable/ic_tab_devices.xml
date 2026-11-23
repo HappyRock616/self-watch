@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Devices tab: a round-faced watch with straps. Drawn for Self Watch. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M9,2h6l0.8,3.2A3,3 0,0 1,18 8v8a3,3 0,0 1,-2.2 2.8L15,22H9l-0.8,-3.2A3,3 0,0 1,6 16V8a3,3 0,0 1,2.2 -2.8z M7.8,12a4.2,4.2 0,1 0,8.4 0a4.2,4.2 0,1 0,-8.4 0z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.3,9.3h1.4v2.3l1.6,1.2l-0.85,1.1l-2.15,-1.6z" />
+</vector>

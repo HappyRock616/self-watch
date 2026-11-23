@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body, Activity, their detail screens, Goals and Profile (tasks C10-C13). -->
+<resources>
+    <!-- Shared -->
+    <string name="detail_back">Back</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="unit_ms">ms</string>
+    <string name="unit_br_min">br/min</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_celsius_delta">°C</string>
+    <string name="unit_hours">h</string>
+    <string name="unit_min">min</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_per_km">/km</string>
+    <string name="unit_per_mi">/mi</string>
+    <string name="range_night">Night</string>
+    <string name="range_day">Day</string>
+    <string name="range_week">Week</string>
+    <string name="range_month">Month</string>
+    <string name="range_year">Year</string>
+    <string name="range_all">All</string>
+    <string name="range_30d">30 days</string>
+    <string name="range_90d">90 days</string>
+    <string name="range_1y">1 year</string>
+    <string name="range_last_7">Last 7 days</string>
+    <string name="range_last_30">Last 30 days</string>
+    <string name="chart_previous">Earlier</string>
+    <string name="chart_next">Later</string>
+    <string name="chart_previous_symbol">‹</string>
+    <string name="chart_next_symbol">›</string>
+    <string name="chart_scrub_hint">Tap the chart to read every line at that moment. Double tap or pinch to zoom.</string>
+    <string name="chart_scrub_values">%1$s · %2$s</string>
+    <string name="series_hr">Heart rate</string>
+    <string name="series_resting_hr">Resting HR</string>
+    <string name="series_breathing">Breathing</string>
+    <string name="series_spo2">SpO2</string>
+    <string name="series_temp">Skin temp</string>
+    <string name="entry_when">%1$s · %2$s</string>
+    <string name="entry_edit_description">%1$s, %2$s. Double tap to edit or delete.</string>
+
+    <!-- Body home -->
+    <string name="body_watch">Watch</string>
+    <string name="body_no_watch">No watch</string>
+    <string name="body_no_watch_description">No watch paired. Double tap to open Devices.</string>
+    <string name="body_watch_description">%1$s: %2$s. Double tap to open Devices.</string>
+    <string name="body_synced">synced %1$s</string>
+    <string name="body_connected">connected</string>
+    <string name="body_not_synced">not synced yet</string>
+    <string name="body_in">In %1$s</string>
+    <string name="body_out">Out %1$s</string>
+    <string name="body_in_label">In</string>
+    <string name="body_out_label">Out</string>
+    <string name="body_left">%1$s left</string>
+    <string name="body_how">How it works</string>
+    <string name="body_energy_week_caption">Last 7 days: in vs out</string>
+    <string name="body_energy_description">Energy today. %1$s, %2$s, %3$s. Double tap for how it is worked out.</string>
+    <string name="body_log_weight">Log weight</string>
+    <string name="body_this_week">%1$s this week</string>
+    <string name="body_goal">goal %1$s</string>
+    <string name="body_down_90">▼%1$s in 90 days</string>
+    <string name="body_up_90">▲%1$s in 90 days</string>
+    <string name="body_30_days">30 days</string>
+
+    <!-- Energy info sheet -->
+    <string name="energy_sheet_title">Calories today</string>
+    <string name="energy_formula">Goal − Food + Activity = Remaining</string>
+    <string name="energy_no_goal">Set a calorie goal to see how much is left today.</string>
+    <string name="energy_explain_goal"><b>Goal</b> is your daily calorie target from Goals. It already counts the calories your body burns at rest.</string>
+    <string name="energy_explain_food"><b>Food</b> is everything you logged today.</string>
+    <string name="energy_explain_activity"><b>Activity</b> is the active calories your watch measured today: walks, workouts and moving about. Moving more earns more food.</string>
+    <string name="energy_explain_out"><b>Out</b> on the card is everything burned so far today: active calories plus resting calories (from your watch, or worked out from your profile).</string>
+    <string name="energy_set_goal">Set a calorie goal</string>
+    <string name="energy_change_goal">Change goals</string>
+
+    <!-- Measurement kinds and editor -->
+    <string name="kind_weight">Weight</string>
+    <string name="kind_body_fat">Body fat</string>
+    <string name="kind_bmi">BMI</string>
+    <string name="kind_waist">Waist</string>
+    <string name="kind_hips">Hips</string>
+    <string name="kind_chest">Chest</string>
+    <string name="kind_arm">Arm</string>
+    <string name="kind_thigh">Thigh</string>
+    <string name="kind_neck">Neck</string>
+    <string name="kind_muscle">Muscle mass</string>
+    <string name="kind_bone">Bone mass</string>
+    <string name="kind_water">Body water</string>
+    <string name="kind_custom">Measurement</string>
+    <string name="measure_value">Value</string>
+    <string name="measure_value_in">Value (%1$s)</string>
+    <string name="measure_date">Date: %1$s</string>
+    <string name="measure_log_title">Log %1$s</string>
+    <string name="measure_edit_title">Edit %1$s</string>
+    <string name="measure_save">Save</string>
+    <string name="measure_cancel">Cancel</string>
+    <string name="measure_delete">Delete</string>
+    <string name="measure_deleted">Deleted</string>
+    <string name="measure_invalid">Enter a number in a sensible range</string>
+    <string name="measure_none">Not measured yet</string>
+    <string name="measure_hint">Tap a measurement to see its history or log a new one.</string>
+    <string name="measure_empty">Nothing logged yet. Measure in the morning, before breakfast, for the steadiest numbers.</string>
+    <string name="measure_add_custom">Add custom measurement</string>
+    <string name="measure_custom_name">Name (for example Calf)</string>
+    <string name="measure_custom_unit">Unit (for example cm)</string>
+    <string name="measure_custom_name_needed">Give it a name</string>
+
+    <!-- Weight -->
+    <string name="weight_empty">No weigh-ins yet. Log one, or sync a scale or your watch.</string>
+    <string name="weight_latest">latest</string>
+    <string name="weight_trend">trend</string>
+    <string name="weight_goal">goal</string>
+    <string name="weight_bmi">BMI</string>
+    <string name="weight_entries">History</string>
+    <string name="weight_chart">Weight, calories and activity</string>
+    <string name="weight_set_goal">Set weight goal</string>
+    <string name="weight_goal_note">The new goal applies from today; earlier days keep the goal they had.</string>
+    <string name="weight_goal_since">Goal %1$s since %2$s</string>
+
+    <!-- Sleep -->
+    <string name="sleep_title">Sleep</string>
+    <string name="sleep_last_night">Last night</string>
+    <string name="sleep_subtitle">%1$s · %2$s</string>
+    <string name="sleep_stages">Stages</string>
+    <string name="sleep_empty">No sleep recorded for this night. Wear your watch to bed and sync in the morning.</string>
+    <string name="sleep_asleep">asleep</string>
+    <string name="sleep_avg_hr">avg HR</string>
+    <string name="sleep_breathing">breathing</string>
+    <string name="sleep_avg">avg sleep</string>
+    <string name="sleep_nights">nights</string>
+    <string name="sleep_time">Sleep</string>
+    <string name="stage_deep">deep</string>
+    <string name="stage_light">light</string>
+    <string name="stage_rem">REM</string>
+    <string name="stage_awake">awake</string>
+
+    <!-- Heart -->
+    <string name="heart_title">Heart</string>
+    <string name="heart_empty">No heart data for this period yet. It arrives with every watch sync.</string>
+    <string name="heart_min">min</string>
+    <string name="heart_max">max</string>
+    <string name="heart_stress">stress</string>
+    <string name="heart_stress_series">Stress</string>
+    <string name="heart_range">HR range</string>
+
+    <!-- Activity -->
+    <string name="activity_all">All</string>
+    <plurals name="activity_streak">
+        <item quantity="one">%d-day streak</item>
+        <item quantity="other">%d-day streak</item>
+    </plurals>
+    <string name="activity_trend_caption_daily">%1$s · average %2$s a day</string>
+    <string name="activity_trend_caption_monthly">%1$s · daily average %2$s</string>
+    <string name="activity_month_average">%1$s, daily average</string>
+
+    <!-- Workouts -->
+    <string name="workout_title">Workout</string>
+    <string name="workout_list_title">Workouts</string>
+    <string name="workout_distance">distance</string>
+    <string name="workout_time">time</string>
+    <string name="workout_pace">pace</string>
+    <string name="workout_speed">Speed</string>
+    <string name="workout_avg_hr">avg HR</string>
+    <string name="workout_max_hr">max HR</string>
+    <string name="workout_ascent">ascent</string>
+    <string name="workout_kcal">calories</string>
+    <string name="workout_elevation">Elevation</string>
+    <string name="workout_route">Route</string>
+    <string name="workout_route_note">Numbered dots mark each %1$s. Drawn on the phone; no map is downloaded.</string>
+    <plurals name="workout_route_description">
+        <item quantity="one">Route map, %2$s, with %1$d distance marker, one per %3$s.</item>
+        <item quantity="other">Route map, %2$s, with %1$d distance markers, one per %3$s.</item>
+    </plurals>
+    <string name="workout_no_track">This workout has no heart rate or GPS track.</string>
+    <string name="workout_export_gpx">Export GPX</string>
+    <string name="workout_export_fit">Export FIT (original)</string>
+    <string name="workout_export_tcx">Export TCX</string>
+    <string name="workout_exported">Saved as %1$s</string>
+    <string name="workout_export_failed">Export failed: %1$s</string>
+    <string name="workout_no_fit">This workout has no original FIT file. Try GPX or TCX.</string>
+    <string name="workout_delete">Delete workout</string>
+    <string name="workout_delete_title">Delete this workout?</string>
+    <string name="workout_delete_message">The workout and its track are removed from this phone. Exported copies stay.</string>
+    <string name="workout_deleted">Workout deleted</string>
+    <string name="sport_run">Run</string>
+    <string name="sport_bike">Bike</string>
+    <string name="sport_swim">Swim</string>
+    <string name="sport_training">Training</string>
+    <string name="sport_walk">Walk</string>
+    <string name="sport_hike">Hike</string>
+    <string name="sport_row">Row</string>
+    <string name="sport_workout">Workout</string>
+
+    <!-- Goals -->
+    <string name="goal_kcal">Calories eaten per day</string>
+    <string name="goal_protein">Protein</string>
+    <string name="goal_fat">Fat</string>
+    <string name="goal_carb">Carbohydrate</string>
+    <string name="goal_steps">Steps per day</string>
+    <string name="goal_active_min">Active minutes per day</string>
+    <string name="goal_active_kcal">Active calories per day</string>
+    <string name="goal_weight">Goal weight</string>
+    <string name="goal_water">Water per day</string>
+    <string name="goal_fast">Fasting window</string>
+    <string name="goal_sleep">Sleep per night</string>
+    <string name="goal_since">since %1$s</string>
+    <string name="goal_note">A changed goal applies from today. Earlier days keep the goal they had, so past streaks and charts stay true.</string>
+    <string name="goal_saved">Goals saved</string>
+
+    <!-- Profile -->
+    <string name="profile_height">Height</string>
+    <string name="profile_birth_year">Birth year</string>
+    <string name="profile_sex">Sex (for the resting-calorie estimate)</string>
+    <string name="profile_female">Female</string>
+    <string name="profile_male">Male</string>
+    <string name="profile_unspecified">Prefer not to say</string>
+    <string name="profile_units">Units</string>
+    <string name="profile_units_phone">Follow the phone</string>
+    <string name="profile_units_metric">Metric (kg, cm, km)</string>
+    <string name="profile_units_imperial">Imperial (lb, in, mi)</string>
+    <string name="profile_note">Height, age and sex estimate the calories you burn at rest when the watch doesn\'t say. They stay on this phone.</string>
+    <string name="profile_saved">Profile saved</string>
+</resources>

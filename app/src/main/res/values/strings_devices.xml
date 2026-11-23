@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Devices: watch apps, app settings, linked apps, notifications, calls, weather, alarms, watch settings (C19). -->
+<resources>
+    <!-- Shared -->
+    <string name="devices_row_watch_apps_sub">Open on watch, settings, delete</string>
+    <string name="devices_calls">Calls</string>
+    <string name="devices_cancel">Cancel</string>
+    <string name="devices_save">Save</string>
+    <string name="devices_refresh">Refresh</string>
+    <string name="devices_need_watch">Pair your watch first (Devices → Pair watch).</string>
+    <string name="devices_watch_not_connected">Your watch isn\'t connected right now. Try again when it shows Connected.</string>
+    <string name="devices_no_answer">No answer from the watch. Check that it\'s connected and try again.</string>
+    <string name="devices_op_failed">That didn\'t work: %1$s</string>
+    <string name="devices_unknown_reason">unknown reason</string>
+    <string name="devices_permission_refused">Permission not given. You can change it any time in Settings → Apps → Self Watch → Permissions.</string>
+
+    <!-- Watch apps -->
+    <string name="menu_install_file">Install from file</string>
+    <string name="menu_refresh_apps">Refresh list</string>
+    <string name="devices_install_hint">Pick a Connect IQ .prg file. You can add its settings file and strings.xml next.</string>
+    <string name="devices_install_ready">Ready to install</string>
+    <string name="devices_install_summary">%1$s\n%2$s · %3$s</string>
+    <string name="devices_install_add_settings">Add settings file (optional)</string>
+    <string name="devices_install_add_strings">Add strings.xml (optional)</string>
+    <string name="devices_install_settings_added">Settings: %1$s</string>
+    <string name="devices_install_strings_added">Strings: %1$s</string>
+    <string name="devices_install">Install</string>
+    <string name="devices_install_unreadable">Couldn\'t read that file (too big or not allowed).</string>
+    <string name="devices_install_bad_prg">That isn\'t a watch app file: %1$s</string>
+    <string name="devices_install_bad_settings">That isn\'t a settings file: %1$s</string>
+    <string name="devices_install_bad_strings">That file has no strings.</string>
+    <string name="devices_apps_on_watch">On your watch</string>
+    <string name="devices_apps_empty">No apps listed yet. Refresh to read them from your watch.</string>
+    <string name="devices_app_unnamed">Unnamed app</string>
+    <string name="devices_app_version_kind">Version %1$d · %2$s</string>
+    <string name="devices_app_actions_cd">%1$s, actions</string>
+    <string name="devices_app_open">Open on watch</string>
+    <string name="devices_app_delete">Delete</string>
+    <string name="devices_app_delete_title">Delete %1$s from your watch?</string>
+    <string name="devices_app_delete_message">Its data on the watch goes too. You can install it again later.</string>
+    <string name="devices_kind_app">Watch app</string>
+    <string name="devices_kind_widget">Widget</string>
+    <string name="devices_kind_watch_face">Watch face</string>
+    <string name="devices_kind_data_field">Data field</string>
+    <string name="devices_kind_other">Other</string>
+    <string name="devices_progress_refresh">Reading the app list…</string>
+    <string name="devices_progress_install">Installing %1$s…</string>
+    <string name="devices_progress_delete">Deleting %1$s…</string>
+    <string name="devices_progress_launch">Opening %1$s…</string>
+    <string name="devices_progress_read_settings">Reading settings from the watch…</string>
+    <string name="devices_progress_write_settings">Saving settings to the watch…</string>
+    <string name="devices_done_refresh">App list updated</string>
+    <string name="devices_done_install">%1$s installed</string>
+    <string name="devices_done_delete">%1$s deleted</string>
+    <string name="devices_done_launch">%1$s opened on your watch</string>
+    <string name="devices_done_read_settings">Settings read from the watch</string>
+    <string name="devices_done_write_settings">Settings saved to the watch</string>
+
+    <!-- Watch app settings -->
+    <string name="menu_settings_read">Read from watch</string>
+    <string name="menu_settings_restore">Restore saved copy</string>
+    <string name="menu_settings_raw">Show raw keys</string>
+    <string name="devices_settings_empty">No settings yet. Read them from the watch, or install the app with its settings file.</string>
+    <string name="devices_settings_from_definition">From the app\'s settings file</string>
+    <string name="devices_settings_raw">Raw keys (no settings file for this app)</string>
+    <string name="devices_settings_save">Save to watch</string>
+    <string name="devices_settings_restore">Restore saved copy</string>
+    <string name="devices_settings_no_copies">No saved copies yet</string>
+    <string name="devices_settings_restored">Saved copy loaded. Tap Save to watch to use it.</string>
+    <string name="devices_settings_invalid">This value doesn\'t fit</string>
+    <string name="devices_settings_value">%1$s: %2$s</string>
+    <string name="devices_settings_choice_cd">%1$s: %2$s. Tap to change</string>
+    <plurals name="devices_settings_fix">
+        <item quantity="one">Fix %d value first</item>
+        <item quantity="other">Fix %d values first</item>
+    </plurals>
+
+    <!-- Linked phone apps -->
+    <string name="devices_link_enabled">Let phone apps talk to watch apps</string>
+    <string name="devices_link_note">Each phone app asks once per watch app. Revoke to stop it.</string>
+    <string name="devices_link_apps">Phone apps</string>
+    <string name="devices_link_empty">No phone app has asked yet.</string>
+    <string name="devices_link_watch_app">Watch app: %1$s</string>
+    <string name="devices_link_allowed">Allowed</string>
+    <string name="devices_link_refused">Not allowed</string>
+    <string name="devices_link_last_used">Last used %1$s</string>
+    <string name="devices_link_never_used">Not used yet</string>
+    <string name="devices_link_allow">Allow</string>
+    <string name="devices_link_revoke">Revoke</string>
+    <string name="devices_link_allow_cd">Allow %1$s to message %2$s</string>
+    <string name="devices_link_revoke_cd">Revoke %1$s for %2$s</string>
+    <string name="devices_calories_title">Calories left on watch</string>
+    <string name="devices_calories_app">Watch app</string>
+    <string name="devices_calories_off">Off</string>
+    <string name="devices_calories_note">Sends today\'s calories left to this watch app as you log food.</string>
+
+    <!-- Notifications -->
+    <string name="devices_notify_master">Show phone notifications on the watch</string>
+    <string name="devices_notify_access_reason">To pass your notifications to the watch, Android asks you to allow notification access for Self Watch on the next screen.</string>
+    <string name="devices_notify_access_on">Notification access is on.</string>
+    <string name="devices_notify_access_needed">Needs notification access before it works.</string>
+    <string name="devices_notify_off">Off. Nothing is read from your notifications.</string>
+    <string name="devices_notify_open_access">Open notification access</string>
+    <string name="devices_notify_access_manual">Open Settings → Notifications → Device &amp; app notifications → Self Watch.</string>
+    <string name="devices_notify_test">Send test notification</string>
+    <string name="devices_notify_test_sent">Test notification sent</string>
+    <string name="devices_notify_apps">Apps</string>
+    <string name="devices_notify_apps_loading">Loading apps…</string>
+    <string name="devices_notify_apps_note">Turn an app off to keep its notifications on the phone only.</string>
+
+    <!-- Calls -->
+    <string name="devices_calls_master">Show incoming calls on the watch</string>
+    <string name="devices_calls_note">Answer or reject from the watch.</string>
+    <string name="devices_calls_no_answer">Answering from the watch needs the \"answer calls\" permission.</string>
+    <string name="devices_calls_reason">To show calls on your watch and answer them from it, Self Watch needs the Phone permission.</string>
+    <string name="devices_calls_number">Show caller number</string>
+    <string name="devices_calls_number_note">Needs access to the call log.</string>
+    <string name="devices_calls_number_reason">To show who\'s calling, Self Watch needs to read the caller\'s number from the call log.</string>
+    <string name="devices_calls_name">Show caller name</string>
+    <string name="devices_calls_name_note">Looks the number up in your contacts, on the phone only.</string>
+    <string name="devices_calls_name_reason">To show the caller\'s name, Self Watch looks the number up in your contacts.</string>
+
+    <!-- Weather -->
+    <string name="devices_weather_master">Send weather to the watch</string>
+    <string name="devices_weather_note">Needs a weather app that sends forecasts to other apps, such as Breezy Weather (Settings → Widgets → Send Gadgetbridge data → Self Watch).</string>
+    <string name="devices_weather_last">Last forecast %1$s</string>
+    <string name="devices_weather_none">No forecast received yet</string>
+
+    <!-- Alarms -->
+    <string name="devices_alarms_unsupported">Alarms aren\'t supported by this watch.</string>
+    <string name="devices_alarms_empty">No alarms yet.</string>
+    <string name="devices_alarms_add">Add alarm</string>
+    <string name="devices_alarms_send">Send to watch</string>
+    <string name="devices_alarms_sending">Sending alarms to your watch…</string>
+    <string name="devices_alarms_note">Up to %1$d alarms. They reach the watch when you tap Send to watch.</string>
+    <string name="devices_alarms_last_ok">Sent to the watch %1$s</string>
+    <string name="devices_alarms_last_fail">Last send didn\'t work: %1$s</string>
+    <string name="devices_alarms_full">The watch keeps up to %1$d alarms.</string>
+    <string name="devices_alarm_edit">Edit alarm</string>
+    <string name="devices_alarm_delete">Delete</string>
+    <string name="devices_alarm_days">Repeat on</string>
+    <string name="devices_alarm_days_note">No days: rings once.</string>
+    <string name="devices_alarm_label">Label (optional)</string>
+    <string name="devices_alarm_enabled">On</string>
+    <string name="devices_alarm_once">Once</string>
+    <string name="devices_alarm_every_day">Every day</string>
+    <string name="devices_alarm_weekdays">Weekdays</string>
+    <string name="devices_alarm_weekends">Weekends</string>
+    <string name="devices_alarm_edit_cd">Alarm %1$s, %2$s. Tap to edit</string>
+    <string name="devices_alarm_on_cd">Alarm %1$s on</string>
+    <string name="devices_alarm_time_cd">Time %1$s. Tap to change</string>
+
+    <!-- Watch settings -->
+    <string name="devices_find_watch">Find my watch</string>
+    <string name="devices_find_note">Makes the watch beep and vibrate.</string>
+    <string name="devices_find_ring">Ring</string>
+    <string name="devices_find_stop">Stop</string>
+    <string name="devices_find_ringing">Ringing your watch…</string>
+    <string name="devices_find_stopped">Stopped</string>
+    <string name="devices_connection_mode">Connection mode</string>
+    <string name="devices_mode_always">Always connected</string>
+    <string name="devices_mode_sync_only">Sync only</string>
+
+    <!-- Several devices, Device order and Other devices -->
+    <string name="devices_kind_watch">Garmin watch</string>
+    <string name="devices_kind_scale">Weight scale</string>
+    <string name="devices_kind_hr">Heart rate strap</string>
+    <string name="devices_kind_bp">Blood pressure monitor</string>
+    <string name="devices_primary">Primary</string>
+    <string name="devices_make_primary">Make primary</string>
+    <string name="devices_device_actions_cd">%1$s, actions</string>
+    <string name="devices_sensor_waiting">Not connected. It connects by itself when it wakes up.</string>
+    <string name="devices_hr_now">Heart rate %1$d bpm</string>
+    <string name="devices_remove_device_message">Self Watch stops connecting to this device. The readings already stored stay.</string>
+    <string name="devices_pair_choose_title">Pair a device</string>
+    <string name="devices_pair_choose_watch">Garmin watch</string>
+    <string name="devices_pair_choose_other">Scale, heart rate strap or blood pressure monitor</string>
+    <string name="devices_other_intro">Self Watch works with devices that follow the standard Bluetooth health profiles. Pick the type, then your device in the list Android shows.</string>
+    <string name="devices_other_supported">Supported devices</string>
+    <string name="devices_other_scale_sub">Weight, BMI, body fat, muscle and body water from scales with the standard Bluetooth weight scale or body composition service.</string>
+    <string name="devices_other_hr_sub">Live heart rate from chest straps and arm bands with the standard Bluetooth heart rate service.</string>
+    <string name="devices_other_bp_sub">Blood pressure and pulse from cuffs with the standard Bluetooth blood pressure service.</string>
+    <string name="devices_other_pair">Pair</string>
+    <string name="devices_other_pair_cd">Pair a %1$s</string>
+    <string name="devices_other_paired">Paired</string>
+    <string name="devices_other_none">None paired yet.</string>
+    <string name="devices_other_remove">Remove</string>
+    <string name="devices_other_remove_cd">Remove %1$s</string>
+    <string name="devices_device_removed">Device removed</string>
+    <string name="devices_device_remove_forget">Removed. To remove it fully, also forget the device in Bluetooth settings.</string>
+    <string name="devices_other_unsupported_title">Not supported yet</string>
+    <string name="devices_other_unsupported">Devices that only talk to their maker\'s own app aren\'t supported yet. Many smart scales and fitness bands work that way. Scales that ask you to register as a user on the scale first aren\'t supported yet either. If your device doesn\'t show up in the list, it doesn\'t use the standard profile.</string>
+    <string name="devices_other_bt_reason">Self Watch needs \"Nearby devices\" to connect to your device over Bluetooth.</string>
+    <string name="device_order_help">Drag to change the order. The first device is the primary one: Body and Activity use it when two devices measure the same thing, and the first connected watch gets your notifications.</string>
+    <string name="device_order_empty">No devices paired yet.</string>
+    <string name="device_order_drag">Drag %1$s</string>
+    <string name="device_order_primary">Primary · %1$s</string>
+</resources>

@@ -1,0 +1,137 @@
+{
+  "_comment": "Marketing images. Run: python <skill>/make_marketing_images.py tools/marketing/config.json (needs Pillow). Raw shots are Pixel 5 captures in docs/screens.",
+  "output_dir": "../../build/marketing",
+  "icon": "../../branding/icon/png/self-watch-icon-512.png",
+  "icon_round": true,
+  "title_1": "Self",
+  "title_2": "Watch",
+  "tagline": "Food + fitness + your watch. One private app.",
+  "slogan": "Your body. Your data. Your business.",
+  "pills": [
+    [
+      "Food",
+      "#3aa56b"
+    ],
+    [
+      "Fitness",
+      "#2f8fe0"
+    ],
+    [
+      "Watch sync",
+      "#f28c28"
+    ],
+    [
+      "Sleep",
+      "#6a4fc4"
+    ],
+    [
+      "Private",
+      "#c43e3c"
+    ]
+  ],
+  "colors": {
+    "accent": "#ff8c1a",
+    "background_top": "#162c48",
+    "background_bottom": "#091321"
+  },
+  "crop": [
+    0,
+    140,
+    1080,
+    2283
+  ],
+  "shots": [
+    {
+      "key": "body",
+      "file": "../../docs/screens/body.png",
+      "pill": "Calories in vs out",
+      "color": "#f28c28",
+      "caption": [
+        "Food and activity together,",
+        "finally on one screen."
+      ]
+    },
+    {
+      "key": "food",
+      "file": "../../docs/screens/food-diary.png",
+      "pill": "Food diary",
+      "color": "#3aa56b",
+      "caption": [
+        "Calories left, with your",
+        "workout already counted."
+      ]
+    },
+    {
+      "key": "activity",
+      "file": "../../docs/screens/activity.png",
+      "pill": "Activity",
+      "color": "#2f8fe0",
+      "caption": [
+        "Steps, active minutes and",
+        "trends from your watch."
+      ]
+    },
+    {
+      "key": "add_food",
+      "file": "../../docs/screens/add-food.png",
+      "pill": "Quick logging",
+      "color": "#188a8c",
+      "caption": [
+        "Search, scan a barcode",
+        "or re-log in one tap."
+      ]
+    },
+    {
+      "key": "sleep",
+      "file": "../../docs/screens/sleep.png",
+      "pill": "Sleep",
+      "color": "#6a4fc4",
+      "caption": [
+        "Sleep stages, heart rate,",
+        "HRV and breathing."
+      ]
+    },
+    {
+      "key": "workout",
+      "file": "../../docs/screens/workout.png",
+      "pill": "Workouts",
+      "color": "#e26340",
+      "caption": [
+        "Every workout with route,",
+        "heart rate and splits."
+      ]
+    },
+    {
+      "key": "weight",
+      "file": "../../docs/screens/weight.png",
+      "pill": "Weight",
+      "color": "#284e8c",
+      "caption": [
+        "Weigh-ins, trend line",
+        "and progress to your goal."
+      ]
+    },
+    {
+      "key": "privacy",
+      "file": "../../docs/screens/privacy.png",
+      "pill": "Private by design",
+      "color": "#c43e3c",
+      "caption": [
+        "No account, no ads,",
+        "no tracking."
+      ]
+    }
+  ],
+  "hero_phones": [
+    "food",
+    "body",
+    "activity"
+  ],
+  "gallery": [
+    "body",
+    "food",
+    "activity",
+    "sleep",
+    "privacy"
+  ]
+}

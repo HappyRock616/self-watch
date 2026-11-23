@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: long trends with Week, Month, Year and All and toggle chips (TrendsCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/trend_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/activity_trends">
+
+    <FrameLayout
+        android:id="@+id/trend_segments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:id="@+id/trend_charts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/trend_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/activity_trends_empty" />
+
+    <app.selfwatch.ui.components.ToggleChipGroup
+        android:id="@+id/trend_chips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1" />
+</app.selfwatch.ui.components.SwCard>

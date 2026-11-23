@@ -1,0 +1,12 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Full-bleed square version for stores that round corners themselves -->
+  <rect width="512" height="512" fill="#16324A"/>
+  <path d="M256 54 L420 112 V246 C420 352 348 420 256 456 C164 420 92 352 92 246 V112 Z" fill="#0B0B0B"/>
+  <rect x="200" y="100" width="112" height="312" rx="26" fill="#4DABF7"/>
+  <rect x="138" y="146" width="236" height="220" rx="56" fill="#16324A" stroke="#FF8A1F" stroke-width="16"/>
+  <g transform="translate(256 212) scale(0.9) translate(-174 -168)" stroke="#F1EFE8" stroke-width="12" stroke-linecap="round" fill="none">
+    <path d="M140 122 V156 M156 122 V156 M172 122 V156 M138 156 Q156 176 174 156 M156 168 V214"/>
+    <path d="M200 122 C218 136 218 166 204 176 V214"/>
+  </g>
+  <path d="M190 312 H214 L228 288 L248 338 L266 296 L278 312 H322" fill="none" stroke="#FF8A1F" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

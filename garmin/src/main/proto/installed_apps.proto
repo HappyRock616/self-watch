@@ -1,0 +1,95 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// Connect IQ installed apps: list, delete and launch (A21). Only the messages Self Watch uses.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_installed_apps.proto
+//   ConnectIQInstalledAppsService (1, 2, 3, 4, 9, 10), AppType (0..8), GetInstalledAppsRequest (1),
+//   GetInstalledAppsResponse (1, 2, 3; InstalledApp 1..9), DeleteAppRequest (1, 2), DeleteAppResponse (1; 0..2),
+//   LaunchAppRequest (1, 2; startup modes 0..3), LaunchAppResponse (1; 0..3)
+syntax = "proto2";
+
+package selfwatch.garmin.apps;
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "InstalledAppsProto";
+
+message InstalledAppsService {
+    optional GetInstalledAppsRequest get_installed_apps_request = 1;
+    optional GetInstalledAppsResponse get_installed_apps_response = 2;
+    optional DeleteAppRequest delete_app_request = 3;
+    optional DeleteAppResponse delete_app_response = 4;
+    optional LaunchAppRequest launch_app_request = 9;
+    optional LaunchAppResponse launch_app_response = 10;
+}
+
+enum AppType {
+    UNKNOWN_APP_TYPE = 0;
+    WATCH_APP = 1;
+    WIDGET = 2;
+    WATCH_FACE = 3;
+    DATA_FIELD = 4;
+    ALL = 5;
+    NONE = 6;
+    AUDIO_CONTENT_PROVIDER = 7;
+    ACTIVITY = 8;
+}
+
+message GetInstalledAppsRequest {
+    required AppType app_type = 1;
+}
+
+message GetInstalledAppsResponse {
+    message InstalledApp {
+        required bytes store_app_id = 1;
+        required AppType app_type = 2;
+        required string name = 3;
+        required bool disabled = 4;
+        optional uint32 version = 5;
+        optional string filename = 6;
+        optional uint64 filesize = 7;
+        optional uint32 native_app_id = 8;
+        optional bool favorite = 9;
+    }
+
+    required uint64 available_space = 1;
+    required uint32 available_slots = 2;
+    repeated InstalledApp installed_app = 3;
+}
+
+message DeleteAppRequest {
+    required bytes store_app_id = 1;
+    required AppType app_type = 2;
+}
+
+message DeleteAppResponse {
+    enum Status {
+        UNKNOWN_STATUS = 0;
+        OK = 1;
+        FAILED_TO_DELETE = 2;
+    }
+    required Status status = 1;
+}
+
+message LaunchAppRequest {
+    enum StartUpMode {
+        APP_STARTUP_MODE_NORMAL = 0;
+        APP_STARTUP_MODE_MEDIA_PLAYBACK_CONFIGURATION = 1;
+        APP_STARTUP_MODE_MEDIA_SYNC_CONFIGURATION = 2;
+        APP_STARTUP_MODE_NO_UI = 3;
+    }
+    required bytes app_uuid = 1;
+    required StartUpMode app_startup_mode = 2;
+}
+
+message LaunchAppResponse {
+    enum Status {
+        LAUNCH_STATUS_SUCCESS = 0;
+        LAUNCH_STATUS_APP_ALREADY_RUNNING = 1;
+        LAUNCH_STATUS_APP_NOT_INSTALLED = 2;
+        LAUNCH_STATUS_UNKNOWN_ERROR = 3;
+    }
+    required Status status = 1;
+}

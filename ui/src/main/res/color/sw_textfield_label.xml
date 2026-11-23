@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<!-- Floating label of a text field: the text accent when focused (4.5:1), muted otherwise. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.38" android:color="?attr/colorOnSurface" android:state_enabled="false" />
+    <item android:color="?attr/swColorAccentText" android:state_focused="true" />
+    <item android:color="?attr/colorOnSurfaceVariant" />
+</selector>

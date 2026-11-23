@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Demo data (debug builds only). -->
+<resources>
+    <string name="demo_label">Demo data</string>
+    <string name="demo_load">Load demo data</string>
+    <string name="demo_clear">Clear demo data</string>
+    <string name="demo_loading">Generating watch data…</string>
+    <string name="demo_clearing">Removing demo data…</string>
+    <string name="demo_loaded">Demo data loaded</string>
+    <string name="demo_cleared">Demo data cleared</string>
+    <string name="demo_failed">Demo data failed: %1$s</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: the latest workouts (WorkoutsCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recent_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swActionText="@string/activity_all"
+    app:swTitle="@string/activity_recent">
+
+    <LinearLayout
+        android:id="@+id/recent_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/recent_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/activity_recent_empty" />
+</app.selfwatch.ui.components.SwCard>

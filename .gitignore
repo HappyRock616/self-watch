@@ -1,0 +1,39 @@
+# not part of the repo
+/references/
+/calorie-app/
+/FOODDB_SPEC.md
+/TONY_FOODDB_REVIEW.md
+# build
+build/
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+# secrets
+/keys/
+*.jks
+*.keystore
+keystore.properties
+# IDE
+.idea/
+!.idea/runConfigurations/
+*.iml
+captures/
+# internal research only: never publish
+/docs/docx-build/shots/
+/docs/docx-build/node_modules/
+/docs/Findings_*.md
+# agent worktrees
+/.claude/
+# personal health data: never commit real watch files or recorded sessions
+/testdata/fit/real/
+/testdata/sessions/*.bin
+/testdata/imports/
+/fooddb_full.db
+/*.db
+/tools/fooddb/*.db
+/tools/fooddb/*.gz
+/tools/fooddb/*.sha256
+/tools/fooddb/foods-manifest.json
+__pycache__/

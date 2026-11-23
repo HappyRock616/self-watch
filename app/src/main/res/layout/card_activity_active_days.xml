@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: active days this week (ActiveDaysCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/active_days_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_active_days">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/ad_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swValue="@string/dash" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/ad_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <TextView
+        android:id="@+id/ad_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.components.BarsView
+        android:id="@+id/ad_bars"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_2" />
+
+    <TextView
+        android:id="@+id/ad_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/ad_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/ad_empty" />
+</app.selfwatch.ui.components.SwCard>

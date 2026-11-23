@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+  Licensed under the Apache License, Version 2.0. http://www.apache.org/licenses/LICENSE-2.0
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Package visibility (API 30+): lets the consuming app see and bind Self Watch. -->
+    <queries>
+        <package android:name="app.selfwatch" />
+    </queries>
+</manifest>

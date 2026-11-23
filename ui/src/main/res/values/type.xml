@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Type scale: 12, 14, 16, 20, 28, 40 sp on the system font. ".Number" variants use tabular figures. -->
+<resources>
+    <style name="TextAppearance.SelfWatch" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Body">
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.BodyLarge">
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Title">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Headline">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Display">
+        <item name="android:textSize">40sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.SelfWatch.Caption.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Body.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.BodyLarge.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Title.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Headline.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+    <style name="TextAppearance.SelfWatch.Display.Number">
+        <item name="android:fontFeatureSettings">tnum</item>
+    </style>
+</resources>

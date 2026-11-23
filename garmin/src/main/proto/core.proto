@@ -1,0 +1,55 @@
+// Copyright (C) 2026 Self Watch contributors
+//
+// This program is free software: you can redistribute it and/or modify it under the terms of the
+// GNU Affero General Public License as published by the Free Software Foundation, either version 3
+// of the License, or (at your option) any later version. See the LICENSE file.
+
+// Core service: sync handshake, location requests, connection-ready notification.
+// Ref: Gadgetbridge 160beab41 GBProtobufGenerator/src/main/proto/garmin/gdi_core.proto
+//   CoreService (1, 2, 3, 4, 14), SyncRequest (1), SyncResponse (1; statuses 0..2),
+//   GetLocationRequest (1), GetLocationResponse (1; statuses 1..5)
+syntax = "proto2";
+
+package selfwatch.garmin.core;
+
+option java_package = "app.selfwatch.garmin.pb.proto";
+option java_outer_classname = "CoreProto";
+
+message CoreService {
+    optional SyncRequest sync_request = 1;
+    optional SyncResponse sync_response = 2;
+    optional GetLocationRequest get_location_request = 3;
+    optional GetLocationResponse get_location_response = 4;
+    optional ConnectionReadyNotification connection_ready_notification = 14;
+}
+
+message SyncRequest {
+    optional bool use_this_connection = 1;
+}
+
+message SyncResponse {
+    enum Status {
+        UNKNOWN_RESPONSE_STATUS = 0;
+        OK = 1;
+        BUSY_WITH_ANOTHER_APP = 2;
+    }
+    required Status status = 1;
+}
+
+message GetLocationRequest {
+    optional int32 request_type = 1;
+}
+
+message GetLocationResponse {
+    enum Status {
+        OK = 1;
+        NO_VALID_LOCATION = 2;
+        LOCATION_SERVICES_UNAVAILABLE = 3;
+        LOCATION_SERVICES_DISABLED = 4;
+        TRY_AGAIN_LATER = 5;
+    }
+    required Status status = 1;
+}
+
+message ConnectionReadyNotification {
+}

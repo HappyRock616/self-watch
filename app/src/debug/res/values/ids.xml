@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fixed ids so the gallery charts keep their zoom and toggles across rotation. -->
+<resources>
+    <item name="gallery_overlay_chart" type="id" />
+    <item name="gallery_trend_chart" type="id" />
+    <item name="gallery_weight_chart" type="id" />
+</resources>

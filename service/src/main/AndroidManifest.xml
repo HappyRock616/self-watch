@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- COMPATIBILITY.md section 3: the service's permissions. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+
+    <!--
+      Relays (B19-B25). Declared here but requested only by the app UI at the moment of use
+      (COMPATIBILITY section 3): READ_PHONE_STATE and ANSWER_PHONE_CALLS when calls are turned on,
+      READ_CALL_LOG only for caller numbers (API 29+), READ_CONTACTS only for caller names.
+    -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Find my phone vibrates with the alarm. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application>
+        <service
+            android:name=".SyncService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice"
+            android:process=":watch" />
+
+        <!-- API 31+: woken by the system when the associated watch comes into range. -->
+        <service
+            android:name=".presence.WatchPresenceService"
+            android:exported="true"
+            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE"
+            android:process=":watch"
+            tools:targetApi="31">
+            <intent-filter>
+                <action android:name="android.companion.CompanionDeviceService" />
+            </intent-filter>
+        </service>
+
+        <!-- Sync-only mode: JobScheduler job 1001 starts a sync every few hours. -->
+        <service
+            android:name=".schedule.SyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:process=":watch" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true"
+            android:process=":watch">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- B19/B21: notification relay and media sessions; bound by Android once access is granted. -->
+        <service
+            android:name=".relay.NotificationRelay"
+            android:exported="true"
+            android:label="@string/svc_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:process=":watch">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- B22: weather apps (Breezy Weather) send the Gadgetbridge-format broadcast; off by default. -->
+        <receiver
+            android:name=".relay.WeatherReceiver"
+            android:exported="true"
+            android:process=":watch">
+            <intent-filter>
+                <action android:name="nodomain.freeyourgadget.gadgetbridge.ACTION_GENERIC_WEATHER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- B23: the Stop action of find my phone (reached only through its PendingIntent). -->
+        <receiver
+            android:name=".relay.FindPhoneStopReceiver"
+            android:exported="false"
+            android:process=":watch" />
+
+        <!--
+          F05 (WP-13): the link service other apps bind with app.selfwatch.link.BIND. Exported on purpose
+          and without a permission: every call is checked against the caller's signing certificate and
+          the user's per-app approval (link.LinkPermissions).
+        -->
+        <service
+            android:name=".link.LinkService"
+            android:exported="true"
+            android:process=":watch"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="app.selfwatch.link.BIND" />
+            </intent-filter>
+        </service>
+
+        <!-- F05: Allow / Deny of the link approval notification (reached only through its PendingIntents). -->
+        <receiver
+            android:name=".link.LinkApprovalReceiver"
+            android:exported="false"
+            android:process=":watch" />
+
+        <!--
+          F07: apps written for Gadgetbridge's Intent. Exported without a permission on purpose (those apps
+          can't hold one of ours); every Intent goes through the per-app approval (link.LinkPermissions).
+        -->
+        <receiver
+            android:name=".link.GadgetbridgeIntentReceiver"
+            android:exported="true"
+            android:process=":watch"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="nodomain.freeyourgadget.gadgetbridge.command.SEND_WATCH_APP_MESSAGE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

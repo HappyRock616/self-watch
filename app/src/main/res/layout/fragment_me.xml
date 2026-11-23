@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Me: privacy card, then the settings list (wireframe "Me"). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.SelfWatch.TabToolbar"
+        app:title="@string/tab_me" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <app.selfwatch.shell.MaxWidthLinearLayout style="@style/Widget.SelfWatch.TabColumn">
+
+            <app.selfwatch.ui.components.SwCard
+                android:id="@+id/privacy_card"
+                style="@style/Widget.SelfWatch.TabCard"
+                android:layout_marginTop="0dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:swTitle="@string/me_privacy_center">
+
+                <TextView
+                    android:id="@+id/privacy_requests"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.SelfWatch.Body.Number" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/me_privacy_summary"
+                    android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+            </app.selfwatch.ui.components.SwCard>
+
+            <LinearLayout
+                android:id="@+id/me_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sw_space_1"
+                android:orientation="vertical">
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_goals"
+                    app:swSubtitle="@string/me_goals_sub"
+                    app:swTitle="@string/me_goals" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_profile"
+                    app:swSubtitle="@string/me_profile_sub"
+                    app:swTitle="@string/me_profile" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_network"
+                    app:swTitle="@string/me_network" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_permissions"
+                    app:swTitle="@string/me_permissions" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_data"
+                    app:swSubtitle="@string/me_data_sub"
+                    app:swTitle="@string/me_data" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_health_connect"
+                    app:swTitle="@string/me_health_connect" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_food_data"
+                    app:swTitle="@string/me_food_data" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:id="@+id/row_appearance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:swTitle="@string/me_appearance" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_settings"
+                    app:swTitle="@string/me_settings" />
+
+                <app.selfwatch.ui.components.ListRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/row_about"
+                    app:swTitle="@string/me_about" />
+            </LinearLayout>
+        </app.selfwatch.shell.MaxWidthLinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Empty in release builds; src/debug adds "Load demo data" and "Clear demo data". -->
+<menu />

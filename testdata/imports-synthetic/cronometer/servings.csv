@@ -1,0 +1,7 @@
+Day,Time,Group,Food Name,Amount,Category,Energy (kcal),Alcohol (g),Caffeine (mg),Water (g),Carbs (g),Fiber (g),Starch (g),Sugars (g),Net Carbs (g),Fat (g),Cholesterol (mg),Monounsaturated (g),Polyunsaturated (g),Saturated (g),Trans-Fats (g),Sodium (mg),Protein (g)
+2026-03-01,07:45,Breakfast,"Oats, Rolled",0.50 cup,Cereals,153.9,0.0,0.0,4.0,27.4,4.1,,0.5,23.3,2.6,0.0,0.9,1.0,0.5,0.0,2.4,5.3
+2026-03-01,07:45,Breakfast,"Milk, 2%",1.00 cup,Dairy,122.0,0.0,0.0,218.0,11.7,0.0,,12.3,11.7,4.8,19.5,1.4,0.2,3.1,0.1,115.0,8.1
+2026-03-01,12:30,Lunch,"Lentil Soup, homemade",1.50 bowl,Soups,330.0,,,,48.0,12.0,,5.0,36.0,6.0,0.0,,,0.9,,840.0,19.5
+2026-03-01,,Snacks,Apple,182.00 g,Fruits,94.6,0.0,0.0,155.7,25.1,4.4,0.1,18.9,20.7,0.3,0.0,0.0,0.1,0.1,0.0,1.8,0.5
+2026-03-02,19:05,Dinner,"Salmon, baked",150.00 g,Fish,309.0,0.0,0.0,98.0,0.0,0.0,0.0,0.0,0.0,18.5,94.5,6.6,6.6,3.7,0.0,90.0,33.6
+2026-03-02,19:05,Dinner,"Rice, brown, cooked",1.00 cup,Grains,248.2,0.0,0.0,142.0,51.7,3.2,,0.5,48.5,2.0,0.0,0.7,0.7,0.4,0.0,9.8,5.5

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 8 dp grid -->
+    <dimen name="sw_space_half">4dp</dimen>
+    <dimen name="sw_space_1">8dp</dimen>
+    <dimen name="sw_space_2">16dp</dimen>
+    <dimen name="sw_space_3">24dp</dimen>
+    <dimen name="sw_space_4">32dp</dimen>
+    <dimen name="sw_corner_card">16dp</dimen>
+    <dimen name="sw_corner_chip">12dp</dimen>
+    <dimen name="sw_touch_target">48dp</dimen>
+    <dimen name="sw_list_row_min_height">56dp</dimen>
+    <dimen name="sw_ring_size">96dp</dimen>
+    <dimen name="sw_ring_width">10dp</dimen>
+    <dimen name="sw_bars_height">120dp</dimen>
+    <dimen name="sw_sparkline_width">64dp</dimen>
+    <dimen name="sw_sparkline_height">24dp</dimen>
+    <dimen name="sw_empty_icon">64dp</dimen>
+    <dimen name="sw_icon_small">16dp</dimen>
+    <dimen name="sw_icon">24dp</dimen>
+    <dimen name="sw_content_max_width">640dp</dimen>
+</resources>

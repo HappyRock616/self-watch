@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: fill or clear the database with generated watch data for reviewing screens. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@id/demo_load" android:title="@string/demo_load" app:showAsAction="never" />
+    <item android:id="@id/demo_clear" android:title="@string/demo_clear" app:showAsAction="never" />
+</menu>

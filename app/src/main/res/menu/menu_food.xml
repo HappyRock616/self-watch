@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_edit_cards" android:title="@string/menu_edit_cards" app:showAsAction="never" />
+    <item android:id="@+id/menu_go_to_date" android:title="@string/menu_go_to_date" app:showAsAction="never" />
+    <item android:id="@+id/menu_copy_day" android:title="@string/menu_copy_day" app:showAsAction="never" />
+    <item android:id="@+id/menu_recipe_book" android:title="@string/menu_recipe_book" app:showAsAction="never" />
+    <item android:id="@+id/menu_meal_names" android:title="@string/menu_meal_names" app:showAsAction="never" />
+    <item android:id="@+id/menu_export_day" android:title="@string/menu_export_day" app:showAsAction="never" />
+</menu>

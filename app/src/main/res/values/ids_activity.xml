@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- View ids of the Activity overlay screens made in code. -->
+<resources>
+    <item name="training_chart" type="id" />
+    <item name="exercise_sleep_chart" type="id" />
+</resources>

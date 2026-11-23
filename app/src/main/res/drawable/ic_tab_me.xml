@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Me tab: head and shoulders. Drawn for Self Watch. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3.5a4.25,4.25 0,1 1,0 8.5a4.25,4.25 0,1 1,0 -8.5z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,20.5C4,16.9 7.6,14 12,14s8,2.9 8,6.5a1,1 0,0 1,-1 1H5a1,1 0,0 1,-1 -1z" />
+</vector>

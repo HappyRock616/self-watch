@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+
+  This program is free software: you can redistribute it and/or modify it under the terms of the
+  GNU Affero General Public License as published by the Free Software Foundation, either version 3
+  of the License, or (at your option) any later version. See the LICENSE file.
+-->
+<resources>
+    <string name="hc_rationale_title">Self Watch and Health Connect</string>
+    <string name="hc_rationale_body">Self Watch keeps your health data on this phone. It has no account, no cloud and no analytics.\n\nWhat it writes to Health Connect: weight, body fat, food (nutrition), water, steps, distance, active calories, workouts, sleep, heart rate, heart rate variability, blood oxygen and breathing rate, from your watch and your own entries.\n\nWhat it reads from Health Connect: weight, body fat, food, steps, workouts and sleep from other apps, so your Self Watch diary and charts are complete.\n\nWhy: so the apps you choose can share the same data, and you can see everything in one place.\n\nData from Health Connect stays on this phone. Self Watch never sends it anywhere. It reads the last 30 days unless you ask it to import older data, and reads in the background only if you turn on automatic sync.\n\nYou can change or remove these permissions at any time in Health Connect settings. Data Self Watch read can be removed again from the import history in Self Watch.</string>
+    <string name="hc_rationale_close">Close</string>
+</resources>

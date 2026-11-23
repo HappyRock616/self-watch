@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made-up indoor ride with two laps and no positions, for Self Watch tests. -->
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
+    xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+  <Activities>
+    <Activity Sport="Biking">
+      <Id>2026-04-14T18:00:00Z</Id>
+      <Lap StartTime="2026-04-14T18:00:00Z">
+        <TotalTimeSeconds>600</TotalTimeSeconds>
+        <DistanceMeters>5000</DistanceMeters>
+        <Calories>120</Calories>
+        <AverageHeartRateBpm><Value>130</Value></AverageHeartRateBpm>
+        <MaximumHeartRateBpm><Value>150</Value></MaximumHeartRateBpm>
+        <Intensity>Active</Intensity>
+        <TriggerMethod>Manual</TriggerMethod>
+        <Track>
+          <Trackpoint><Time>2026-04-14T18:00:00Z</Time><DistanceMeters>0</DistanceMeters><HeartRateBpm><Value>110</Value></HeartRateBpm><Cadence>80</Cadence>
+            <Extensions><ns3:TPX><ns3:Speed>8.0</ns3:Speed></ns3:TPX></Extensions></Trackpoint>
+          <Trackpoint><Time>2026-04-14T18:05:00Z</Time><DistanceMeters>2500</DistanceMeters><HeartRateBpm><Value>135</Value></HeartRateBpm><Cadence>88</Cadence></Trackpoint>
+          <Trackpoint><Time>2026-04-14T18:10:00Z</Time><DistanceMeters>5000</DistanceMeters><HeartRateBpm><Value>150</Value></HeartRateBpm><Cadence>90</Cadence></Trackpoint>
+        </Track>
+      </Lap>
+      <Lap StartTime="2026-04-14T18:10:00Z">
+        <TotalTimeSeconds>300</TotalTimeSeconds>
+        <DistanceMeters>2000</DistanceMeters>
+        <Calories>50</Calories>
+        <AverageHeartRateBpm><Value>120</Value></AverageHeartRateBpm>
+        <MaximumHeartRateBpm><Value>140</Value></MaximumHeartRateBpm>
+        <Intensity>Active</Intensity>
+        <TriggerMethod>Manual</TriggerMethod>
+        <Track>
+          <Trackpoint><Time>2026-04-14T18:15:00Z</Time><DistanceMeters>7000</DistanceMeters><HeartRateBpm><Value>125</Value></HeartRateBpm></Trackpoint>
+        </Track>
+      </Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>
