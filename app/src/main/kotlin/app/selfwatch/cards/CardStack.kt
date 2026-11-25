@@ -34,19 +34,23 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import app.selfwatch.ui.R as UiR
 
 /**
- * Shows the visible cards of [tab] in [column], in the saved order, and keeps them fresh. Each visible
- * card loads on its own (its [Card.load] off the main thread) when shown, when one of its tables
- * changes, and when the day or the units change; hidden cards are not loaded. Card views are built
- * once per screen and moved, not rebuilt, when the order changes.
+ * Shows the cards of [tab] in [column], in the saved order and sizes, and keeps them fresh. Large cards
+ * take a row each; small cards next to each other share a row in pairs (a lone small card keeps half the
+ * width). Each shown card loads on its own (its [Card.load] off the main thread) when shown, when one of
+ * its tables changes, and when the day or the units change; hidden cards are not loaded. A card the user
+ * chose whose data no device records shows "Your devices don't record this" and is not loaded. Card
+ * views are built once per screen and moved, not rebuilt, when the order changes.
  *
- * @param leadingGap true when something sits above [column] (Food's header), so the first card gets
- *   the usual gap too.
+ * @param leadingGap true when something sits above [column], so the first row gets the usual gap too.
+ * @param fixed when set, these slots are shown instead of the tab's saved ones (one card on its own
+ *   screen).
  */
 class CardStack(
     override val fragment: Fragment,
@@ -55,14 +59,18 @@ class CardStack(
     private val db: SelfWatchDb,
     private val clock: Clock = SystemClock,
     private val leadingGap: Boolean = false,
+    private val fixed: List<CardSlot>? = null,
 ) : CardHost {
 
-    private val store = CardStore(db.settings)
+    private val store = CardStore.of(db, clock)
     private val mounted = HashMap<String, Mounted>()
     private var arranged: List<String>? = null
 
-    /** The ids shown, in order (tests). */
-    val shownIds: List<String> get() = arranged.orEmpty()
+    /** The card ids shown, in order (tests). */
+    val shownIds: List<String> get() = arranged.orEmpty().map { it.substringBefore(':') }
+
+    /** The shown slots as `id:size` (`:w` for a card waiting for data), in order (tests). */
+    val shownKeys: List<String> get() = arranged.orEmpty()
 
     override val context: Context get() = fragment.requireContext()
 
@@ -95,40 +103,79 @@ class CardStack(
         }
     }
 
+    private fun source(): Flow<ShownCards> {
+        val f = fixed
+        if (f != null) return flowOf(ShownCards(f, Recorded.ALL))
+        return db.changes.observe(CardStore.TABLES + RecordedLoader.TABLES).conflate()
+            .map { withContext(Dispatchers.IO) { store.shown(tab) } }
+            .distinctUntilChanged()
+    }
+
     private suspend fun run(day: Flow<Day?>) = coroutineScope {
         val inputs = combine(day.distinctUntilChanged(), DisplayUnits.observe(db)) { d, u -> Inputs(d, u) }
         val jobs = HashMap<String, Job>()
-        store.observeVisible(tab, db.changes.observe(CardStore.TABLES)).collect { cards ->
-            arrange(cards)
-            val ids = cards.map { it.id }.toSet()
-            jobs.keys.filter { it !in ids }.forEach { jobs.remove(it)?.cancel() }
-            for (c in cards) {
-                if (c.id in jobs) continue
-                val m = mounted[c.id] ?: continue
-                jobs[c.id] = m.start(this, inputs)
+        source().collect { shown ->
+            val placed = shown.slots.map { Placed(it, fixed == null && !shown.recorded.records(it.card)) }
+            arrange(placed)
+            val keys = placed.map { it.key }.toSet()
+            jobs.keys.filter { it !in keys }.forEach { jobs.remove(it)?.cancel() }
+            for (p in placed) {
+                if (p.waiting || p.key in jobs) continue
+                val m = mounted[p.key] ?: continue
+                jobs[p.key] = m.start(this, inputs)
             }
         }
     }
 
-    /** Puts the views of [cards] into [column] in order; views of hidden cards are taken out. */
-    private fun arrange(cards: List<Card<*>>) {
-        val ids = cards.map { it.id }
-        if (ids == arranged) return
-        arranged = ids
+    /** Puts the views of [placed] into [column] in rows; views of hidden cards are taken out. */
+    private fun arrange(placed: List<Placed>) {
+        val keys = placed.map { it.key }
+        if (keys == arranged) return
+        arranged = keys
+        for (i in 0 until column.childCount) (column.getChildAt(i) as? ViewGroup)?.takeIf { it.tag == ROW_TAG }?.removeAllViews()
         column.removeAllViews()
         val gap = column.resources.getDimensionPixelSize(UiR.dimen.sw_space_2)
-        cards.forEachIndexed { i, card ->
-            val m = mounted.getOrPut(card.id) { mount(card) }
+        val ctx = column.context
+        var first = true
+        fun addRow(view: View) {
             val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = if (i == 0 && !leadingGap) 0 else gap
-            m.root.visibility = View.VISIBLE
-            column.addView(m.root, lp)
+            lp.topMargin = if (first && !leadingGap) 0 else gap
+            first = false
+            column.addView(view, lp)
         }
-        column.visibility = if (cards.isEmpty()) View.GONE else View.VISIBLE
+        for (row in rows(placed)) {
+            val views = row.map { p -> mounted.getOrPut(p.key) { mount(p) }.root.also { detach(it); it.visibility = View.VISIBLE } }
+            if (row.size == 1 && row[0].slot.size == CardSize.LARGE) {
+                addRow(views[0])
+                continue
+            }
+            val line = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                isBaselineAligned = false
+                tag = ROW_TAG
+            }
+            views.forEachIndexed { i, v ->
+                val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                if (i > 0) lp.marginStart = gap
+                line.addView(v, lp)
+            }
+            if (views.size == 1) line.addView(View(ctx), LinearLayout.LayoutParams(0, 0, 1f).apply { marginStart = gap })
+            addRow(line)
+        }
+        column.visibility = if (placed.isEmpty()) View.GONE else View.VISIBLE
     }
 
-    private fun <T> mount(card: Card<T>): Mounted {
-        val view = card.createView(this, column)
+    private fun detach(v: View) {
+        (v.parent as? ViewGroup)?.removeView(v)
+    }
+
+    private fun mount(p: Placed): Mounted {
+        if (p.waiting) return Mounted(WaitingCardView.create(p.slot.card, p.slot.size, column.context)) { scope, _ -> scope.launch { } }
+        return mountCard(p.slot.card, p.slot.size)
+    }
+
+    private fun <T> mountCard(card: Card<T>, size: CardSize): Mounted {
+        val view: CardView<T> = if (size == CardSize.SMALL) SmallCardView(card, this, column) else card.createView(this, column)
         return Mounted(view.root) { scope, inputs ->
             scope.launch {
                 combine(db.changes.observe(card.tables), inputs) { _, i -> i }.conflate().collect { i ->
@@ -147,11 +194,40 @@ class CardStack(
         }
     }
 
+    /** A slot and whether it waits for data (no device records it). */
+    private class Placed(val slot: CardSlot, val waiting: Boolean) {
+        val key: String = "${slot.card.id}:${if (waiting) "w${slot.size.code}" else slot.size.code}"
+    }
+
     private class Inputs(val day: Day?, val units: Units)
 
     private class Mounted(val root: View, val start: (CoroutineScope, Flow<Inputs>) -> Job)
 
-    private companion object {
-        const val TAG = "CardStack"
+    /** Pure parts. */
+    companion object {
+        private const val TAG = "CardStack"
+        private const val ROW_TAG = "card_row"
+
+        /** [items] in rows: each large one alone, small ones next to each other in pairs. */
+        fun <T> rowsOf(items: List<T>, isSmall: (T) -> Boolean): List<List<T>> {
+            val out = ArrayList<List<T>>()
+            var pending: T? = null
+            for (it in items) {
+                if (!isSmall(it)) {
+                    pending?.let { p -> out += listOf(p) }
+                    pending = null
+                    out += listOf(it)
+                } else if (pending == null) {
+                    pending = it
+                } else {
+                    out += listOf(pending, it)
+                    pending = null
+                }
+            }
+            pending?.let { out += listOf(it) }
+            return out
+        }
+
+        private fun rows(placed: List<Placed>): List<List<Placed>> = rowsOf(placed) { it.slot.size == CardSize.SMALL }
     }
 }

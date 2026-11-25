@@ -11,6 +11,8 @@ import app.selfwatch.db.CustomFoodOrigin
 import app.selfwatch.db.DbTest
 import app.selfwatch.db.RecipeOrigin
 import app.selfwatch.model.food.Basis
+import app.selfwatch.model.food.DietInfo
+import app.selfwatch.model.food.FoodCategory
 import app.selfwatch.model.food.Food
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
@@ -54,6 +56,29 @@ class FoodDaoTest : DbTest() {
     )
 
     // ---- custom food ----
+
+    @Test
+    fun customFoodKeepsV2NutrientsDietAndAllergens() = test {
+        val base = food("Oat bar")
+        val v2 = base.copy(
+            food = base.food.copy(
+                per = base.food.per.copy(transfatX10 = 0, monofatX10 = 21, polyfatX10 = 8, addsugarX10 = 90, potassiumMg = 310,
+                    calciumMg = 45, ironX10 = 23, vitaUg = 0, vitcX10 = 0, vitdX10 = null),
+                category = FoodCategory(702, "", ""),
+                dietInfo = DietInfo(3, 3, 1 or 16, false),
+            ),
+        )
+        val id = db.foods.insert(v2)
+        val got = db.foods.get(id)!!.food
+        assertEquals(v2.food.per, got.per)
+        assertEquals(702, got.category?.id)
+        assertEquals(v2.food.dietInfo, got.dietInfo)
+        // Diary copies keep the new nutrients; totals sum them.
+        db.diary.add(entry(today).copy(nutrients = got.per))
+        assertEquals(310, db.diary.dayTotals(today).potassiumMg)
+        assertNull(db.diary.dayTotals(today).vitdX10)
+        assertEquals(23, db.diary.slotTotals(today)[1L]!!.ironX10)
+    }
 
     @Test
     fun customFoodCrud() = test {

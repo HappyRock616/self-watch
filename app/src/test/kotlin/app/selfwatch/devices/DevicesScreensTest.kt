@@ -106,8 +106,9 @@ class DevicesScreensTest {
         assertTrue(a.shows("Watch app: Calories field"))
         a.open(AlarmsFragment(), "Weekends")
         a.open(WatchSettingsFragment(), "Find my watch")
-        a.open(WatchAppSettingsFragment.newInstance(id, appUuid, "Calories field"), "goal")
-        assertTrue(a.shows("Raw keys"))
+        // Wait for this screen's own text: "goal" also appears on the Body tab behind it.
+        a.open(WatchAppSettingsFragment.newInstance(id, appUuid, "Calories field"), "this app has no settings file")
+        assertTrue(a.shows("Values as stored on the watch"))
     }
 
     @Test

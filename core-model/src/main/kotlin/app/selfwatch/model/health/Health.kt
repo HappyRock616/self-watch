@@ -60,7 +60,27 @@ public enum class MetricKind(public val code: Int) {
 
     /** Diastolic blood pressure, mmHg. Added in core-model v1.2. */
     BP_DIASTOLIC(10),
+
+    /**
+     * The watch's energy level, 0..100 (FIT `stress_level` field 3), as often as the watch reports it.
+     * Added in core-model v1.3.
+     */
+    ENERGY_LEVEL(11),
+
+    /**
+     * Running VO2 max, ml/kg/min ×10, stamped when the watch updated its estimate (FIT `max_met_data`
+     * `update_time`), or at the workout's end when it comes from an activity file. Watches that keep a
+     * single VO2 max (no separate cycling value) report it here, as Garmin Connect does. One estimate per
+     * update, so a day can hold several: readers take the day's last. Added in core-model v1.4.
+     */
+    VO2_MAX_RUNNING(12),
+
+    /** Cycling VO2 max, ml/kg/min ×10, stamped as [VO2_MAX_RUNNING]. Added in core-model v1.4. */
+    VO2_MAX_CYCLING(13),
     ;
+
+    /** True for the VO2 max kinds ([VO2_MAX_RUNNING], [VO2_MAX_CYCLING]). */
+    public val isVo2Max: Boolean get() = this == VO2_MAX_RUNNING || this == VO2_MAX_CYCLING
 
     /** Lookup by stored code. */
     public companion object {

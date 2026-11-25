@@ -22,6 +22,7 @@
     <string name="gallery_sec_type">Type scale</string>
     <string name="gallery_sec_colors">Colors</string>
     <string name="gallery_sec_cards">Cards and bars</string>
+    <string name="gallery_sec_tab_cards">Tab cards: small and large</string>
     <string name="gallery_sec_rings">Rings</string>
     <string name="gallery_sec_tiles">Stat tiles</string>
     <string name="gallery_sec_chips">Toggle chips</string>

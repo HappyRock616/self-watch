@@ -158,7 +158,7 @@ class FoodCardsTest {
         assertEquals(listOf("Breakfast", "Lunch", "Dinner", "Snacks"), meals.meals.map { it.name })
         assertNull(CarbsPerKgCard.load(env(db)).value.perKg)
         assertNull(WorkoutFuelCard.load(env(db)).workout)
-        assertEquals(FuelMissing.WEIGHT, FuelBalanceCard.load(env(db)).missing)
+        assertEquals(FuelMissing.WEIGHT, FuelBalanceCard.load(env(db)).value.missing)
         assertEquals(Coverage(null, 0, 0), SodiumCard.load(env(db)).coverage)
         // With nothing logged the fibre target still comes from the calorie goal (the default goal here).
         assertEquals(true, (FibreCard.load(env(db)).targetG ?: 0) > 0)
@@ -272,18 +272,18 @@ class FoodCardsTest {
     fun fuelBalanceNeedsBodyFatAndDaysThenFlagsLowFuel() = runBlocking {
         val db = TestDb.fresh(ctx)
         weigh(db, 80_00)
-        assertEquals(FuelMissing.BODY_FAT, FuelBalanceCard.load(env(db)).missing)
+        assertEquals(FuelMissing.BODY_FAT, FuelBalanceCard.load(env(db)).value.missing)
         db.body.insert(BodyMeasure(0, today.plusDays(-1).startSec(zone) + 7 * HOUR + 60, BodyKind.BODY_FAT, null, 20_00, DataSource.SCALE, null, null))
         // Three days: not enough yet.
         for (d in 1..3) db.diary.add(entry(today.plusDays(-d), 2, nutrients(kcal = 2_400)))
-        val few = FuelBalanceCard.load(env(db))
+        val few = FuelBalanceCard.load(env(db)).value
         assertEquals(FuelMissing.DAYS, few.missing)
         assertEquals(3, few.loggedDays)
         // Today's partial log does not count; a fourth earlier day does.
         db.diary.add(entry(today, 1, nutrients(kcal = 300)))
         db.diary.add(entry(today.plusDays(-4), 2, nutrients(kcal = 2_400)))
         for (d in 1..4) db.summaries.upsertDay(summary(today.plusDays(-d), active = 480), 0)
-        val ok = FuelBalanceCard.load(env(db))
+        val ok = FuelBalanceCard.load(env(db)).value
         assertEquals(FuelMissing.NONE, ok.missing)
         assertEquals(4, ok.loggedDays)
         // (2,400 − 480) ÷ 64 kg fat-free mass = 30.
@@ -291,7 +291,7 @@ class FoodCardsTest {
         assertEquals(30, ok.kcalPerKgFfm)
         assertFalse(ok.low)
         for (d in 1..4) db.summaries.upsertDay(summary(today.plusDays(-d), active = 900), 0)
-        val low = FuelBalanceCard.load(env(db))
+        val low = FuelBalanceCard.load(env(db)).value
         assertEquals(23, low.kcalPerKgFfm) // 1,500 ÷ 64
         assertTrue(low.low)
     }

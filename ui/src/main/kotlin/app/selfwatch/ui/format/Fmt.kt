@@ -33,6 +33,18 @@ object Fmt {
     private const val M_PER_MILE: Double = 1609.344
     private const val M_PER_FOOT: Double = 0.3048
 
+    /** Millilitres in one US fluid ounce. */
+    const val ML_PER_FL_OZ: Double = 29.5735295625
+
+    /** Kilograms in one pound. */
+    const val KG_PER_POUND: Double = KG_PER_LB
+
+    /** Metres in one mile. */
+    const val METRES_PER_MILE: Double = M_PER_MILE
+
+    /** Metres in one foot. */
+    const val METRES_PER_FOOT: Double = M_PER_FOOT
+
     /** Formats [value] with exactly [decimals] fraction digits and the locale's grouping, e.g. "1,240". */
     fun number(value: Double, decimals: Int = 0, locale: Locale = Locale.getDefault()): String =
         numberFormat(locale, decimals, decimals).format(value)
@@ -103,6 +115,62 @@ object Fmt {
         }
     }
 
+    /**
+     * Elevation or climb from metres, whole numbers: "420 m" or "1,378 ft" (never switches to km or mi).
+     */
+    fun elevation(
+        m: Double,
+        units: Units,
+        locale: Locale = Locale.getDefault(),
+        labels: FmtLabels = FmtLabels.ENGLISH,
+    ): String = when (units) {
+        Units.METRIC -> withUnit(number(m, 0, locale), labels.m)
+        Units.IMPERIAL -> withUnit(number(m / M_PER_FOOT, 0, locale), labels.ft)
+    }
+
+    /** A drink volume from millilitres: "350 ml" or "2.8 L" (from 1 litre), or "12 fl oz". */
+    fun volume(
+        ml: Double,
+        units: Units,
+        locale: Locale = Locale.getDefault(),
+        labels: FmtLabels = FmtLabels.ENGLISH,
+    ): String = withUnit(volumeNumber(ml, units, locale), volumeUnit(ml, units, labels))
+
+    /** The number part of [volume]: "350", "2.8" or "12". */
+    fun volumeNumber(ml: Double, units: Units, locale: Locale = Locale.getDefault()): String = when (units) {
+        Units.METRIC -> if (ml < 1000.0) number(ml, 0, locale) else number(ml / 1000.0, 1, locale)
+        Units.IMPERIAL -> number(ml / ML_PER_FL_OZ, 0, locale)
+    }
+
+    /** The unit part of [volume] for [ml]: "ml", "L" or "fl oz". */
+    fun volumeUnit(ml: Double, units: Units, labels: FmtLabels = FmtLabels.ENGLISH): String = when (units) {
+        Units.METRIC -> if (ml < 1000.0) labels.ml else labels.l
+        Units.IMPERIAL -> labels.flOz
+    }
+
+    /** A temperature from °C: "21 °C" or "70 °F" with [decimals] fraction digits. */
+    fun temperature(
+        celsius: Double,
+        units: Units,
+        decimals: Int = 0,
+        locale: Locale = Locale.getDefault(),
+        labels: FmtLabels = FmtLabels.ENGLISH,
+    ): String = when (units) {
+        Units.METRIC -> withUnit(number(celsius, decimals, locale), labels.celsius)
+        Units.IMPERIAL -> withUnit(number(celsius * F_PER_C + F_OFFSET, decimals, locale), labels.fahrenheit)
+    }
+
+    /** A temperature change in [units]: a change of 1 °C is 1.8 °F (no offset). */
+    fun temperatureDelta(celsiusDelta: Double, units: Units): Double =
+        if (units == Units.METRIC) celsiusDelta else celsiusDelta * F_PER_C
+
+    /** The temperature unit symbol in [units]: "°C" or "°F". */
+    fun temperatureUnit(units: Units, labels: FmtLabels = FmtLabels.ENGLISH): String =
+        if (units == Units.METRIC) labels.celsius else labels.fahrenheit
+
+    private const val F_PER_C: Double = 1.8
+    private const val F_OFFSET: Double = 32.0
+
     /** Duration: "42 min" under an hour, else "7h 12m" (minutes always two digits). Negative counts as 0. */
     fun duration(
         sec: Long,
@@ -118,6 +186,15 @@ object Fmt {
             val mm = NumberFormat.getIntegerInstance(locale).apply { minimumIntegerDigits = 2 }.format(min)
             String.format(locale, labels.durationHm, number(h, locale), mm)
         }
+    }
+
+    /**
+     * Minutes and seconds, "5:07" (pace per km or mile, split times). [sec] is rounded to the whole second
+     * before splitting, so 299.6 s reads "5:00", never "4:60". Negative counts as 0.
+     */
+    fun minSec(sec: Double, locale: Locale = Locale.getDefault()): String {
+        val s = if (sec.isNaN() || sec < 0) 0L else Math.round(sec)
+        return String.format(locale, "%d:%02d", s / 60, s % 60)
     }
 
     /**

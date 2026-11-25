@@ -13,6 +13,7 @@ import app.selfwatch.food.nutrition.NutrientMath
 import app.selfwatch.model.food.Basis
 import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.model.food.Food
+import app.selfwatch.model.food.FoodCategory
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.food.Goal
@@ -80,6 +81,14 @@ class DiaryServiceTest : DbTestBase() {
         val g = db.diary.get(svc.add(today, 3, oats, NutrientMath.GRAM, 5_000))!! // 50 g
         assertEquals(1895, g.nutrients.kcalX10)
         assertEquals(500, g.gramsX10)
+    }
+
+    @Test
+    fun addKeepsTheFoodCategory() = test {
+        val svc = DiaryService(db, clock)
+        val grains = oats.copy(category = FoodCategory(203, "Breakfast cereals & oatmeal", "Grains"))
+        assertEquals(203, db.diary.get(svc.add(today, 1, grains, oats.servings[0], 100))!!.categoryId)
+        assertNull(db.diary.get(svc.add(today, 1, oats, oats.servings[0], 100))!!.categoryId)
     }
 
     @Test(expected = IllegalArgumentException::class)

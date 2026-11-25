@@ -168,7 +168,7 @@ class WorkoutExporter(private val format: TrackFormat, private val source: Expor
                     if (single(req)) {
                         val w = workouts[0]
                         if (format == TrackFormat.FIT) {
-                            val fit = source.openFit(w) ?: return@withContext Outcome.Fail(SwError.BadInput("workout has no FIT file"))
+                            val fit = source.fitFile(w) ?: return@withContext Outcome.Fail(SwError.BadInput("workout has no FIT file"))
                             fit.use { it.copyTo(stream) }
                         } else {
                             writeTrack(format, w, source.track(w), req.zone, stream)
@@ -180,7 +180,7 @@ class WorkoutExporter(private val format: TrackFormat, private val source: Expor
                             for (w in workouts) {
                                 val base = fileBase(w, req.zone)
                                 if (format == TrackFormat.FIT) {
-                                    val fit = source.openFit(w)
+                                    val fit = source.fitFile(w)
                                     if (fit == null) {
                                         warnings.add("$base: no FIT file")
                                         continue

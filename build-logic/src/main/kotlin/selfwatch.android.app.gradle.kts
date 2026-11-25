@@ -22,8 +22,8 @@ android {
         applicationId = "app.selfwatch"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 2
+        versionName = "0.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     if (canSignRelease) {
@@ -52,7 +52,13 @@ android {
     }
     androidResources { localeFilters += listOf("en") }
     dependenciesInfo { includeInApk = false; includeInBundle = false }
-    testOptions { unitTests { isIncludeAndroidResources = true } }
+    // The Robolectric screen tests build every card of every tab with demo data: 512 MB (the default) ran out.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all { it.maxHeapSize = "1536m" }
+        }
+    }
     lint { abortOnError = true; disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion") }
 }
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17); allWarningsAsErrors.set(true) } }

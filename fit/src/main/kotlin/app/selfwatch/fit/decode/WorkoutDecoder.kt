@@ -13,6 +13,8 @@ import app.selfwatch.fit.geo.RouteSimplifier
 import app.selfwatch.fit.io.FitReader
 import app.selfwatch.fit.io.FitRecord
 import app.selfwatch.model.health.DataSource
+import app.selfwatch.model.health.MetricKind
+import app.selfwatch.model.health.MetricSample
 import app.selfwatch.model.health.TrackPoint
 import app.selfwatch.model.health.Workout
 import app.selfwatch.model.log.SwLog
@@ -62,6 +64,10 @@ object WorkoutDecoder {
     private const val R_ENH_ALT = 78
 
     private const val SEMI_TO_E7 = 1.8e9 / 2147483648.0
+
+    // FIT sport codes.
+    private const val SPORT_RUNNING = 1
+    private const val SPORT_CYCLING = 2
 
     /**
      * The workout summary of [file]. `id` is 0 and the file paths are null (the caller fills them in);
@@ -173,6 +179,41 @@ object WorkoutDecoder {
                 )
             }
         }
+    }
+
+    /**
+     * The VO2 max estimates in activity [file] for device [deviceId] (see [Vo2Max]); empty when there are
+     * none or the file cannot be read.
+     *
+     * The watch's `max_met_data` wins when the file has it: that is the estimate the watch now shows,
+     * after this workout. Only without it does the workout's own `physiological_metrics.met_max` count,
+     * and then only for runs and rides (Garmin estimates VO2 max from nothing else), stamped at the
+     * message's time, else the workout's last record.
+     */
+    fun vo2Max(file: InputStream, deviceId: Long): List<MetricSample> {
+        var sessionSport: Int? = null
+        var lastT: Long? = null
+        val maxMet = LinkedHashMap<Pair<MetricKind, Long>, MetricSample>()
+        var physio: Triple<Int?, Long?, Int>? = null // sport, time, VO2 max ×10
+        val result = FitReader(file).read { rec ->
+            rec.tSec?.let { t -> lastT = maxOf(lastT ?: t, t) }
+            when (rec.global) {
+                FitMsg.SESSION -> if (sessionSport == null) sessionSport = rec.int(S_SPORT)
+                FitMsg.MAX_MET_DATA -> Vo2Max.fromMaxMet(rec)?.let { (kind, t, x10) ->
+                    maxMet[kind to t] = MetricSample(deviceId, kind, t, x10)
+                }
+                FitMsg.PHYSIOLOGICAL_METRICS -> Vo2Max.fromPhysiological(rec)?.let { x10 ->
+                    physio = Triple(rec.int(Vo2Max.PM_SPORT), rec.tSec, x10)
+                }
+            }
+        }
+        if (result is Outcome.Fail) return emptyList()
+        if (maxMet.isNotEmpty()) return maxMet.values.sortedBy { it.tSec }
+        val (sport, t, x10) = physio ?: return emptyList()
+        val s = sport ?: sessionSport
+        if (s != SPORT_RUNNING && s != SPORT_CYCLING) return emptyList()
+        val at = t ?: lastT ?: return emptyList()
+        return listOf(MetricSample(deviceId, Vo2Max.kindFor(s), at, x10))
     }
 
     /** Streams the track of [file] to [onPoint] in file order; returns the number of points. */

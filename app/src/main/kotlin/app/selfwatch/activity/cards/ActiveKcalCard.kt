@@ -7,14 +7,18 @@
  */
 package app.selfwatch.activity.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityRules
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.me.GoalField
 import app.selfwatch.model.time.Day
@@ -51,6 +55,21 @@ object ActiveKcalCard : Card<ActiveKcalCard.Data>("active_kcal", CardTab.ACTIVIT
         val week = days.map { summary[it] ?: minutes[it] }
         val own = env.db.settings.getInt(GoalField.ACTIVE_KCAL_KEY)
         return Data(week.last(), own ?: REFERENCE_KCAL, own != null, days, week)
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.ACTIVE_CALORIES)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        if (data.isEmpty) return null
+        val kcal = data.kcal ?: 0
+        val target = Fmt.number(data.target.toLong())
+        return SmallFace(
+            value = Fmt.number(kcal.toLong()),
+            label = ctx.getString(if (data.ownGoal) R.string.small_goal else R.string.small_reference, target),
+            unit = ctx.getString(R.string.unit_kcal),
+            status = CardStatusColors.ofProgress(kcal.toDouble(), data.target.toDouble()),
+            progress = if (data.target > 0) kcal.toFloat() / data.target else null,
+        )
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)

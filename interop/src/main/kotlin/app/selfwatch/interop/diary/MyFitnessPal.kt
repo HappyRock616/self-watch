@@ -74,7 +74,7 @@ class MfpImporter(sink: ImportSink = ImportSink.NONE, zone: ZoneId = ZoneId.syst
 
     override fun columnsOf(tables: Map<String, List<CsvTable>>): List<ColumnMapping> {
         val t = tables[NUTRITION]?.firstOrNull() ?: return emptyList()
-        return t.columns(NUTRITION_COLUMNS).mappings(listOf("date", "meal", "time") + NutrientColumns.ALIASES.keys)
+        return t.columns(NUTRITION_COLUMNS).mappings(listOf("date", "meal", "time") + NUTRIENTS.keys)
     }
 
     override fun build(tables: Map<String, List<CsvTable>>, choices: ImportChoices, warnings: MutableList<String>): ImportData {
@@ -152,9 +152,13 @@ class MfpImporter(sink: ImportSink = ImportSink.NONE, zone: ZoneId = ZoneId.syst
         const val EXERCISE = "exercise"
         const val MEASUREMENT = "measurement"
 
+        /** MyFitnessPal writes vitamin A, vitamin C, calcium and iron as % of the daily value, not amounts: skip them. */
+        val NUTRIENTS: Map<String, List<String>> =
+            NutrientColumns.ALIASES - setOf(NutrientColumns.VITA, NutrientColumns.VITC, NutrientColumns.CALCIUM, NutrientColumns.IRON)
+
         val NUTRITION_COLUMNS = ColumnMatcher(
             linkedMapOf("date" to listOf("date", "day"), "meal" to listOf("meal", "meal name"), "time" to listOf("time")) +
-                NutrientColumns.ALIASES,
+                NUTRIENTS,
         )
 
         val EXERCISE_COLUMNS = ColumnMatcher(

@@ -61,21 +61,18 @@ class ActivityStatsTest {
         assertEquals(0, quietBy.getValue(quiet).intensityMin)
         val per = IntensityMath.perDay(listOf(day, quiet, quiet.plusDays(1), quiet.plusDays(2)), by + quietBy, mapOf(quiet to 40, quiet.plusDays(1) to 25))
         assertEquals(listOf(20, 0, 25, null), per)
-        assertEquals(0, IntensityMath.activeDays(per))
-        assertEquals(2, IntensityMath.activeDays(listOf(30, 29, null, 45)))
+        assertEquals(0, IntensityMath.activeDays(per, 30))
+        assertEquals(2, IntensityMath.activeDays(listOf(30, 29, null, 45), 30))
     }
 
     @Test
-    fun weeklyTargetsByGoal() {
-        assertEquals(150, IntensityMath.weekTarget(MainGoal.GENERAL_HEALTH))
-        assertEquals(150, IntensityMath.weekTarget(MainGoal.HEART_HEALTH))
-        assertEquals(250, IntensityMath.weekTarget(MainGoal.WEIGHT_LOSS))
-        assertEquals(250, IntensityMath.weekTarget(MainGoal.WEIGHT_MANAGEMENT))
-        assertTrue(IntensityMath.showsExtraBenefit(MainGoal.WEIGHT_LOSS))
-        assertFalse(IntensityMath.showsExtraBenefit(MainGoal.ATHLETIC))
-        assertEquals(7_000, StepTargets.defaultFor(null))
-        assertEquals(7_000, StepTargets.defaultFor(59))
-        assertEquals(6_000, StepTargets.defaultFor(60))
+    fun activeDayIsASeventhOfTheWeeklyGoal() {
+        assertEquals(43, IntensityMath.activeDayMin(300))
+        assertEquals(21, IntensityMath.activeDayMin(150))
+        assertEquals(1, IntensityMath.activeDayMin(1))
+        assertEquals(43, ActivityGoals.dailyShare(300))
+        assertEquals(300, ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK)
+        assertEquals(10_000, ActivityGoals.DEFAULT_STEPS)
     }
 
     @Test
@@ -237,8 +234,8 @@ class ActivityStatsTest {
     @Test
     fun overlayLayerChoicesRoundTrip() {
         val store = OverlayLayers.TRAINING
-        assertEquals(emptySet<String>(), store.decode(null))
-        assertEquals(setOf("hrv", "load"), store.decode("hrv, nope ,load"))
+        assertEquals(setOf("intensity", "hrv_band", "resting_hr"), store.decode(null, MainGoal.GENERAL_HEALTH))
+        assertEquals(setOf("hrv", "load"), store.decode("hrv, nope ,load", MainGoal.GENERAL_HEALTH))
         assertEquals("load,hrv", store.encode(setOf("hrv", "load")))
         assertEquals("", store.encode(emptySet()))
         assertEquals(listOf("exercise", "sleep"), OverlayLayers.EXERCISE_SLEEP.toggleable)

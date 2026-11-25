@@ -6,8 +6,8 @@ from a foods.db release (about 5,000 rows, same schema as the full build; see
 
 When the file is present, `FoodsDbSourceTest.tonysSampleFollowsTheSpec` (module `food`) runs on it:
 
-- every FOODDB_SPEC section 13 release check (integrity, `application_id` 1398228548,
-  `user_version` 1, `meta.schema_version`, names, brands, codes, chains, calories, plausibility,
+- every FOODDB_SPEC section 13 release check, schema 2 included (integrity, `application_id` 1398228548,
+  `user_version` 2, `meta.schema_version`, names, brands, codes, chains, calories, plausibility,
   orphan servings and barcodes, default servings, barcode range, no triggers or views, FTS4);
 - the app's spot checks through `FoodsDbSource`: "mcdonalds big" finds Big Mac, "creme brulee" finds
   Crème brûlée, and the first barcode in the file finds its food.

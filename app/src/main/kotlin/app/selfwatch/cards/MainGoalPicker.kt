@@ -18,7 +18,6 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import androidx.core.content.ContextCompat
 import app.selfwatch.R
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import app.selfwatch.ui.R as UiR
 
 /**
@@ -80,27 +79,3 @@ class MainGoalPicker(ctx: Context, private val onPick: (MainGoal) -> Unit) {
     }
 }
 
-/**
- * The one question asked when the main goal changes: switch the cards on Body, Activity and Food to
- * the new goal's defaults, or keep the user's own. [answer] gets true for switch; closing the dialog
- * counts as keep.
- */
-object MainGoalSwitchDialog {
-    /** Shows the question for [goal]. */
-    fun ask(ctx: Context, goal: MainGoal, answer: (switchCards: Boolean) -> Unit) {
-        var answered = false
-        MaterialAlertDialogBuilder(ctx)
-            .setTitle(R.string.main_goal_switch_title)
-            .setMessage(ctx.getString(R.string.main_goal_switch_message, ctx.getString(goal.label)))
-            .setPositiveButton(R.string.main_goal_switch_yes) { _, _ ->
-                answered = true
-                answer(true)
-            }
-            .setNegativeButton(R.string.main_goal_switch_no) { _, _ ->
-                answered = true
-                answer(false)
-            }
-            .setOnDismissListener { if (!answered) answer(false) }
-            .show()
-    }
-}

@@ -48,6 +48,8 @@ import app.selfwatch.service.relay.WeatherStore
 import app.selfwatch.service.schedule.JobSyncScheduler
 import app.selfwatch.service.link.CaloriesLeft
 import app.selfwatch.service.link.LinkHub
+import app.selfwatch.service.live.LiveReading
+import app.selfwatch.service.live.LiveRelay
 import app.selfwatch.service.link.WatchAccess
 import app.selfwatch.service.watchapps.SideloadStore
 import app.selfwatch.service.watchapps.WatchAppsCommander
@@ -101,6 +103,7 @@ public class SyncService : LifecycleService() {
     private val broadcaster = WatchBroadcaster { cmd -> sendToConnected(cmd) }
     private var watchAccess: WatchAccess? = null
     private lateinit var commander: WatchAppsCommander
+    private lateinit var live: LiveRelay
 
     override fun onCreate() {
         super.onCreate()
@@ -119,7 +122,7 @@ public class SyncService : LifecycleService() {
             handlers = deps.handlers,
             scheduler = JobSyncScheduler(this),
         )
-        status = WatchStatusPublisher(db.settings)
+        status = WatchStatusPublisher(db.settings) { id, pct -> db.battery.add(id, SystemClock.nowSec(), pct) }
         lifecycleScope.launch {
             devices.devices.collect { list -> if (foreground) ServiceNotifications.update(this@SyncService, notification(list)) }
         }
@@ -127,6 +130,29 @@ public class SyncService : LifecycleService() {
         work.launch { devices.devices.collect { status.publish(it) } }
         startRelays()
         startLink(deps)
+        startLive()
+    }
+
+    /**
+     * Live heart rate and steps: on only while a screen asks ([SyncCommands.ACTION_LIVE]); readings go to the
+     * screens as a broadcast to this package ([LiveReading.BROADCAST]).
+     */
+    private fun startLive() {
+        live = LiveRelay(
+            scope = work,
+            connected = { devices.devices.value.filter { isConnected(it.state) && DeviceKinds.isWatch(it.info.kind) }.map { it.info.id } },
+            send = { id, cmd -> devices.send(id, cmd) },
+            publish = { r -> sendBroadcast(LiveReading.toIntent(this, r)) },
+            nowSec = { SystemClock.nowSec() },
+            // Sensor priority: a connected strap's heart rate replaces the watch's on screen.
+            isSensor = { id -> devices.devices.value.any { it.info.id == id && !DeviceKinds.isWatch(it.info.kind) } },
+        )
+        work.launch { devices.live.collect { (id, e) -> live.onEvent(id, e) } }
+        work.launch {
+            devices.devices.collect { list ->
+                live.onConnected(list.filter { isConnected(it.state) && DeviceKinds.isWatch(it.info.kind) }.map { it.info.id })
+            }
+        }
     }
 
     /**
@@ -260,6 +286,15 @@ public class SyncService : LifecycleService() {
                 }
                 return START_STICKY
             }
+            SyncCommands.ACTION_LIVE -> {
+                if (!foreground) {
+                    stopSelf(startId)
+                    return START_NOT_STICKY
+                }
+                val enable = intent?.getBooleanExtra(SyncCommands.EXTRA_ENABLE, false) ?: false
+                work.launch { live.request(enable) }
+                return START_STICKY
+            }
             SyncCommands.ACTION_FIND_WATCH, SyncCommands.ACTION_SET_ALARMS, SyncCommands.ACTION_TEST_NOTIFICATION -> {
                 if (!foreground) {
                     SwLog.i(TAG, "watch command ignored: nothing connected")
@@ -282,6 +317,7 @@ public class SyncService : LifecycleService() {
     override fun onDestroy() {
         foreground = false
         RelayHub.detach(broadcaster)
+        work.launch { live.stop() }
         watchAccess?.let { LinkHub.detach(it) }
         calls.unregister()
         timeWatcher.unregister()

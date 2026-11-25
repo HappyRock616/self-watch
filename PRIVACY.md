@@ -10,14 +10,19 @@ The app stores your health data (weight, measurements, activity, sleep, heart ra
 
 ## Internet
 
-Every internet feature has its own switch in **Me › Privacy center**, and every request is listed there with its time, address and size. Most features start off.
+Every internet feature has its own switch in **Me › Privacy center**, and every request is listed there with its time, address and size. Nothing is sent unless its switch is on; only the features the app needs out of the box start on.
 
 | Feature | What is sent | Default |
 |---|---|---|
-| Food database download | Nothing about you; downloads the food list | On, Wi-Fi only |
-| Barcode lookups | Only the barcode number, to Open Food Facts, when the food list doesn't have it | On |
-| Watch app web requests | Whatever a Connect IQ app on your watch asks to fetch, to the address it asks for | Off |
-| GPS assistance for the watch | A request for satellite data | Off |
+| Food database download | Nothing about you; downloads the food list (starts by itself the first time you add food) | On, Wi-Fi only |
+| Barcode lookups | Only the barcode number, to Open Food Facts, when the food list doesn't have it | Off |
+| Watch app web requests | Whatever a Connect IQ app on your watch asks to fetch, to the address it asks for (Garmin servers stay blocked) | On |
+| Apps on this phone | Watch apps talking to apps on this phone (127.0.0.1); never leaves the phone | On |
+| GPS assistance for the watch | A request for satellite data, only when the watch asks; a recent copy is reused | On |
+
+Weather on the watch comes from a weather app on your phone (for example Breezy Weather). Self Watch passes its forecast to the watch and makes no weather requests of its own; it is on by default and can be turned off in Devices › Weather.
+
+Every 90 days or so a Garmin watch asks to sign in to Garmin Connect. Self Watch never signs in to Garmin and sends nothing for this. If you turn on **Devices › Watch settings › Answer the watch's Garmin sign-in requests itself** (off by default, per watch), Self Watch answers the watch over Bluetooth with a made-up sign-in so weather and GPS help keep working; nothing goes over the internet.
 
 ## Permissions
 

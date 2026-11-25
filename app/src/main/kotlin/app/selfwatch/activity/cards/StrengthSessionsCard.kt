@@ -7,6 +7,7 @@
  */
 package app.selfwatch.activity.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityStatsLoader
@@ -15,8 +16,11 @@ import app.selfwatch.activity.StrengthRules
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
@@ -52,6 +56,19 @@ object StrengthSessionsCard : Card<StrengthSessionsCard.Data>(
             if (withBalance) StrengthRules.OLDER_TARGET else StrengthRules.TARGET,
             withBalance,
             recent.maxByOrNull { it.startSec }?.let { Day.of(it.startSec, zone) },
+        )
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.WORKOUTS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        if (data.lastDay == null) return null
+        return SmallFace(
+            value = Fmt.number(data.days.toLong()),
+            label = ctx.getString(R.string.small_days_aim, Fmt.number(data.target.toLong())),
+            status = CardStatusColors.ofProgress(data.days.toDouble(), data.target.toDouble()),
+            note = if (data.days >= data.target) ctx.getString(R.string.ss_caption_done) else null,
+            progress = if (data.target > 0) data.days.toFloat() / data.target else null,
         )
     }
 

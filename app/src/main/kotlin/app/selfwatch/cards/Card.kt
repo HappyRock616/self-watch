@@ -29,26 +29,75 @@ enum class CardTab(
     val key: String,
     /** Title of the tab's Edit cards screen. */
     @field:StringRes @get:StringRes val editTitle: Int,
+    /** The tab's name (group headers in Edit cards). */
+    @field:StringRes @get:StringRes val label: Int,
 ) {
     /** Body (home). */
-    BODY("body", R.string.edit_cards_title_body),
+    BODY("body", R.string.edit_cards_title_body, R.string.card_home_body),
 
     /** Activity. */
-    ACTIVITY("activity", R.string.edit_cards_title_activity),
+    ACTIVITY("activity", R.string.edit_cards_title_activity, R.string.card_home_activity),
 
-    /** Food: a strip of summary cards between the calories-left header and the meals. */
-    FOOD("food", R.string.edit_cards_title_food),
+    /** Food: the cards above the meals. */
+    FOOD("food", R.string.edit_cards_title_food, R.string.card_home_food),
     ;
 
-    /** The visible cards, in order (comma list of ids). */
+    /** The visible cards, in order (comma list of `id:size[:a]`, see [CardStore]). */
     val cardsKey: String get() = "cards.$key"
 
     /** Every card id the app knew when [cardsKey] was saved. */
     val knownKey: String get() = "cards.$key.known"
 
-    /** The main goal [cardsKey] was last reset to. */
+    /** The main goal [cardsKey] was last reset to (no longer written; removed on the next save). */
     val presetKey: String get() = "cards.$key.preset"
 }
+
+/** The two forms of every card. */
+enum class CardSize(
+    /** Stored code; never change it. */
+    val code: String,
+) {
+    /** Half the width: one number, a label, a status color. Two small cards share a row. */
+    SMALL("s"),
+
+    /** The full width: chart, details or list. */
+    LARGE("l"),
+    ;
+
+    /** Lookup. */
+    companion object {
+        /** The size stored as [code], or null. */
+        fun byCode(code: String?): CardSize? = entries.firstOrNull { it.code == code }
+    }
+}
+
+/** How a number stands against its goal or usual range; colors come from the theme. */
+enum class CardStatus {
+    /** On track (the theme's primary color). */
+    GOOD,
+
+    /** Close (the theme's secondary color). */
+    CLOSE,
+
+    /** Off track (muted). */
+    OFF,
+
+    /** No judgment (no color). */
+    NONE,
+}
+
+/**
+ * What a card shows in its small form: one main [value] (with an optional [unit]), a plain [label], an
+ * optional short [note] and a [status] color. [progress] (0–1) draws a thin bar toward a goal.
+ */
+data class SmallFace(
+    val value: CharSequence,
+    val label: CharSequence,
+    val unit: CharSequence? = null,
+    val status: CardStatus = CardStatus.NONE,
+    val note: CharSequence? = null,
+    val progress: Float? = null,
+)
 
 /** What a card's loader can read: the database, the clock, the day shown and the display units. */
 class CardEnv(
@@ -81,18 +130,22 @@ interface CardHost {
 }
 
 /**
- * One card type. A card is an `object` with a stable [id] (stored in settings, never change it), the
- * [tab] it lives on, its name and one-line summary for Edit cards, the database [tables] that should
- * reload it, a [load] that reads its data (called off the main thread, only while the card is shown)
- * and a [createView] that builds its view.
+ * One card type. A card is an `object` with a stable [id] (stored in settings, never change it; unique
+ * across all tabs), its home [tab] (where Edit cards lists it; it can be added to any tab), its name and
+ * one-line summary for Edit cards, the database [tables] that should reload it, a [load] that reads its
+ * data (called off the main thread, only while the card is shown), a [createView] that builds its large
+ * form and a [small] that says what its small form shows.
  *
- * To add a card: write the object and its layout, add it to its tab's list (`BodyCards`,
- * `ActivityCards`, `FoodCards`), and add it to the goals that should show it in [CardPresets].
+ * [needs] lists the data the card shows: it is offered (and shown by default) only when one of the
+ * user's devices records one of those kinds; empty means it always works (food log, goals).
+ *
+ * To add a card: write the object (and its layout), add it to its home tab's list (`BodyCards`,
+ * `ActivityCards`, `FoodCards`), and to [CardPresets] when it is a default.
  */
 abstract class Card<T>(
-    /** Stable id, unique within its tab. */
+    /** Stable id, unique across tabs. */
     val id: String,
-    /** The tab it lives on. */
+    /** The card's home tab. */
     val tab: CardTab,
     /** Name in Edit cards. */
     @field:StringRes @get:StringRes val title: Int,
@@ -102,11 +155,42 @@ abstract class Card<T>(
     /** Tables whose changes reload the card (never empty). */
     abstract val tables: Set<Table>
 
+    /** The data the card needs from a device (any one of them); empty = always available. */
+    open val needs: Set<DataKind> get() = emptySet()
+
+    /** The size the card gets when the user adds it. */
+    open val defaultSize: CardSize get() = CardSize.SMALL
+
     /** Reads the card's data. Runs on an IO thread; may throw (the card then keeps what it showed). */
     abstract suspend fun load(env: CardEnv): T
 
-    /** Builds the card's view inside [parent] (not attached). Runs once per screen. */
+    /** Builds the card's large view inside [parent] (not attached). Runs once per screen. */
     abstract fun createView(host: CardHost, parent: ViewGroup): CardView<T>
+
+    /** The small form for [data], or null when there is nothing to show yet ("No data yet"). */
+    abstract fun small(ctx: Context, data: T): SmallFace?
+
+    /**
+     * The group Edit cards lists the card under instead of its home tab (for example "Device cards"),
+     * or null for the home tab's group.
+     */
+    @get:StringRes
+    open val group: Int? get() = null
+
+    /**
+     * An optional picture for the small form, shown above the number (for example the Day clock's
+     * ring). Built once per small card; null for none.
+     */
+    open fun createSmallGraphic(ctx: Context): View? = null
+
+    /** Shows [data] in the picture from [createSmallGraphic]. */
+    open fun bindSmallGraphic(graphic: View, data: T) = Unit
+
+    /**
+     * Opens the card's detail screen from its small form; false when it has none (the large form then
+     * opens on its own screen).
+     */
+    open fun openDetail(host: CardHost): Boolean = false
 
     override fun toString(): String = "${tab.key}/$id"
 }

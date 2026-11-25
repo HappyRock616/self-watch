@@ -224,6 +224,27 @@ class ChartViewsTest {
     }
 
     @Test
+    fun minSecLayerReadsAsMinutesAndSeconds() {
+        val day = 86_400L
+        // Pace in seconds per km with scale 60: drawn as minutes, written m:ss (on a left axis here too).
+        val pace = DotTrendLayer(
+            "pace", "Pace", 0xFF3D4A55.toInt(), Axis.LEFT, longArrayOf(start, start + day, start + 2 * day),
+            intArrayOf(312, 298, 305), trend = intArrayOf(310, 305, 303), scale = 60, unit = "/km", style = ValueStyle.MIN_SEC,
+        )
+        val c = OverlayChartView(ctx).apply {
+            range = TimeRange(start - day, start + 3 * day)
+            layers = listOf(pace)
+        }
+        layoutAt(c)
+        draw(c)
+        val v = c.valuesAt(start + day).single()
+        assertEquals(298 / 60.0, v.value!!, 1e-9)
+        assertTrue(v.text, v.text.startsWith("4:58"))
+        assertTrue(v.text, v.text.endsWith("/km"))
+        assertTrue(c.valuesAt(start).single().text.startsWith("5:12"))
+    }
+
+    @Test
     fun lockedLayerChipStaysOn() {
         val c = OverlayChartView(ctx).apply {
             range = TimeRange(start, end)

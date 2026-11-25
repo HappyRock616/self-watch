@@ -7,13 +7,17 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 
@@ -26,6 +30,25 @@ object FibreCard : Card<FibreDay>("fibre", CardTab.FOOD, R.string.card_fibre, R.
     override val tables: Set<Table> = setOf(Table.DIARY)
 
     override suspend fun load(env: CardEnv): FibreDay = FoodCardLoader(env.db, env.clock).fibre(env.day)
+
+    override fun small(ctx: Context, data: FibreDay): SmallFace? {
+        val c = data.coverage
+        if (c.entries == 0) return null
+        val grams = FoodCardLoader.grams(c.sum) ?: return null
+        val target = data.targetG
+        return SmallFace(
+            value = Fmt.number(grams.toLong()),
+            label = if (target != null) ctx.getString(R.string.small_of_g, Fmt.number(target.toLong())) else ctx.getString(R.string.small_fiber_logged),
+            unit = ctx.getString(R.string.unit_g),
+            status = if (target != null) CardStatusColors.ofProgress(grams.toDouble(), target.toDouble()) else CardStatus.NONE,
+            note = when {
+                target == null -> null
+                grams >= target -> ctx.getString(R.string.fibre_reached)
+                else -> ctx.getString(R.string.fibre_left, Fmt.number((target - grams).toLong()))
+            },
+            progress = target?.takeIf { it > 0 }?.let { grams.toFloat() / it },
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<FibreDay> = Holder(parent)
 

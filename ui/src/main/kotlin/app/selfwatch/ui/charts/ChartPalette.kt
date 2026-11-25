@@ -19,14 +19,15 @@ import app.selfwatch.ui.components.SwContrast
  * color comes from the current [SwTheme.Theme] and look (dark or light); nothing is fixed per metric.
  *
  * Rules:
- * - Series 1 is the theme's primary, series 2 its secondary.
- * - Series 3 and 4 are tints of primary and secondary (dark look: 45% towards white; light look: 35%
- *   towards black). Series 5 and 6 are shades (dark look: 35% towards black, pulled back to 3:1; light
- *   look: 60% towards black). From series 7 the list repeats.
- * - Every series reaches 3:1 on the card surface and the background.
+ * - Series 1 is exactly the theme's primary, series 2 exactly its secondary (Just Go 5K's colors, in
+ *   both looks; as brand colors they are not adjusted for contrast on light surfaces).
+ * - Series 3 and 4 are tints of primary and secondary (dark look: 45% towards white, pulled to 3:1 on the
+ *   navy surface; light look: 30% towards white, left pale). Series 5 and 6 are neutral gray steps. Nothing
+ *   is ever shaded towards black, so yellow and orange never turn brown or olive. From series 7 the list
+ *   repeats.
  * - Sleep stages: deep = the darker secondary, light = the lighter secondary, REM = primary, awake =
- *   neutral gray, unmeasurable = track gray. (Dark look: deep = secondary, light = secondary tint.
- *   Light look: deep = secondary 45% towards black, light = secondary.)
+ *   neutral gray, unmeasurable = track gray. (Both looks: deep = secondary, light = a secondary tint; never
+ *   a darkened secondary.)
  * - Neutrals (text, muted, track) are Just Go 5K's grays. Red ([alarm]) is only for alarms and errors.
  */
 class ChartPalette private constructor(
@@ -47,23 +48,25 @@ class ChartPalette private constructor(
     @ColorInt
     val secondary: Int = colors.secondary
 
+    // Never shaded towards black: a darkened yellow or orange reads as brown or olive (owner's decision).
     private val seriesList: IntArray = if (colors.night) {
         intArrayOf(
             primary,
             secondary,
             colors.fill(SwContrast.mix(primary, WHITE, DARK_TINT)),
             colors.fill(SwContrast.mix(secondary, WHITE, DARK_TINT)),
-            colors.fill(SwContrast.mix(primary, BLACK, DARK_SHADE)),
-            colors.fill(SwContrast.mix(secondary, BLACK, DARK_SHADE)),
+            DARK_GRAY_1,
+            DARK_GRAY_2,
         )
     } else {
         intArrayOf(
             primary,
             secondary,
-            SwContrast.mix(primary, BLACK, LIGHT_TINT),
-            SwContrast.mix(secondary, BLACK, LIGHT_TINT),
-            SwContrast.mix(primary, BLACK, LIGHT_SHADE),
-            SwContrast.mix(secondary, BLACK, LIGHT_SHADE),
+            // Tints stay tints: not pulled to 3:1 on white (that would darken them again).
+            SwContrast.mix(primary, WHITE, LIGHT_TINT) or OPAQUE,
+            SwContrast.mix(secondary, WHITE, LIGHT_TINT) or OPAQUE,
+            LIGHT_GRAY_1,
+            LIGHT_GRAY_2,
         )
     }
 
@@ -74,7 +77,7 @@ class ChartPalette private constructor(
     @ColorInt
     fun series(index: Int): Int = seriesList[Math.floorMod(index, seriesList.size)]
 
-    /** Series 1 as small text (labels, legends): at least 4.5:1 on every surface. */
+    /** Series 1 as small text (labels, legends): at least 4.5:1 on every surface ([ThemeColors.accentText]). */
     @ColorInt
     val primaryText: Int = colors.accentText
 
@@ -103,10 +106,16 @@ class ChartPalette private constructor(
     fun tagFill(primary: Boolean): Int =
         SwContrast.mix(if (primary) colors.theme.primary else colors.theme.secondary, colors.neutrals.surface, TAG_FILL)
 
-    /** Text on [tagFill], at least 4.5:1. */
+    /** Text on [tagFill], at least 4.5:1 (the theme color, else its text-on color, else the text color; never darkened). */
     @ColorInt
-    fun tagText(primary: Boolean): Int =
-        ThemeColors.ensureAll(if (primary) colors.theme.primary else colors.theme.secondary, intArrayOf(tagFill(primary)), SwContrast.TEXT_MIN)
+    fun tagText(primary: Boolean): Int {
+        val t = colors.theme
+        return if (primary) {
+            ThemeColors.readableText(t.primary, t.onPrimary, colors.neutrals.text, intArrayOf(tagFill(true)))
+        } else {
+            ThemeColors.readableText(t.secondary, t.onSecondary, colors.neutrals.text, intArrayOf(tagFill(false)))
+        }
+    }
 
     /** Neutral pill fill (database tags). */
     @ColorInt
@@ -119,8 +128,8 @@ class ChartPalette private constructor(
     /** Color of a sleep stage. */
     @ColorInt
     fun stage(stage: SleepStage): Int = when (stage) {
-        SleepStage.DEEP -> if (night) secondary else SwContrast.mix(secondary, BLACK, LIGHT_DEEP)
-        SleepStage.LIGHT -> if (night) colors.fill(SwContrast.mix(secondary, WHITE, DARK_TINT)) else secondary
+        SleepStage.DEEP -> secondary
+        SleepStage.LIGHT -> if (night) colors.fill(SwContrast.mix(secondary, WHITE, DARK_TINT)) else SwContrast.mix(secondary, WHITE, LIGHT_SLEEP) or OPAQUE
         SleepStage.REM -> primary
         SleepStage.AWAKE -> if (night) muted else AWAKE_LIGHT
         SleepStage.UNMEASURABLE -> track
@@ -144,10 +153,15 @@ class ChartPalette private constructor(
         private const val BLACK: Int = 0xFF000000.toInt()
         private const val WHITE: Int = 0xFFFFFFFF.toInt()
         private const val DARK_TINT: Double = 0.45
-        private const val DARK_SHADE: Double = 0.35
-        private const val LIGHT_TINT: Double = 0.35
-        private const val LIGHT_SHADE: Double = 0.6
-        private const val LIGHT_DEEP: Double = 0.45
+        private const val LIGHT_TINT: Double = 0.3
+        private const val OPAQUE: Int = 0xFF000000.toInt()
+
+        // Series 5 and 6: neutral gray steps (Just Go 5K's muted grays), never a darkened theme color.
+        private const val DARK_GRAY_1: Int = 0xFFB4B2A9.toInt()
+        private const val DARK_GRAY_2: Int = 0xFF8A8983.toInt()
+        private const val LIGHT_GRAY_1: Int = 0xFF5F5E5A.toInt()
+        private const val LIGHT_GRAY_2: Int = 0xFF8A8983.toInt()
+        private const val LIGHT_SLEEP: Double = 0.45
         private const val TAG_FILL: Double = 0.75
 
         // Light look's awake gray: Just Go 5K's neutral, a shade darker to reach 3:1 on white.

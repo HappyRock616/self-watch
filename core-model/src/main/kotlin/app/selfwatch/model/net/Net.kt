@@ -12,14 +12,24 @@ import java.io.File
 
 /**
  * Every reason the app may use the network. The firewall allows or blocks each one; [defaultOn]
- * is its state on a fresh install. [code] is stored in the network log.
+ * is its state while the user has not touched its switch (no stored value), so changing a default
+ * changes untouched installs and keeps every stored choice. [code] is stored in the network log.
+ * [listed]: shown in the Privacy center (false for features that are not wired yet).
+ *
+ * On by default is only what the app needs out of the box: the food database download (sends nothing
+ * about the user), watch apps' web requests (the TCS Companion watch app needs them), apps on this
+ * phone (127.0.0.1, never leaves the phone) and GPS help for the watch. Everything else starts off.
  */
-public enum class NetFeature(public val code: Int, public val defaultOn: Boolean) {
+public enum class NetFeature(public val code: Int, public val defaultOn: Boolean, public val listed: Boolean = true) {
     FOOD_DATA(1, true),
-    OPEN_FOOD_FACTS(2, true),
-    WATCH_APP_WEB(3, false),
-    GPS_ASSIST(4, false),
-    RECIPE_BOOK(5, true),
+
+    /** Off by default: a lookup sends the barcode to Open Food Facts. */
+    OPEN_FOOD_FACTS(2, false),
+    WATCH_APP_WEB(3, true),
+    GPS_ASSIST(4, true),
+
+    /** The starter recipe book: no file is published and no URL is wired yet, so off and not listed. */
+    RECIPE_BOOK(5, false, listed = false),
 
     /** 127.0.0.1; never leaves the phone. */
     LOCAL_PHONE_APP(6, true),

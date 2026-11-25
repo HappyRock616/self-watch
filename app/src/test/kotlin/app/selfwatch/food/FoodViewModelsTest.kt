@@ -7,14 +7,26 @@
  */
 package app.selfwatch.food
 
+import app.selfwatch.food.nutrition.Diet
+import app.selfwatch.food.nutrition.DietConflict
+import app.selfwatch.food.nutrition.DietFilter
+import app.selfwatch.food.nutrition.DietPrefs
 import app.selfwatch.food.nutrition.NutrientMath
+import app.selfwatch.food.nutrition.NutrientTargets
+import app.selfwatch.food.nutrition.TargetInputs
+import app.selfwatch.food.nutrition.TargetStatus
 import app.selfwatch.food.source.BarcodeLookup
 import app.selfwatch.food.source.FoodHit
+import app.selfwatch.model.food.Allergen
 import app.selfwatch.model.food.Basis
+import app.selfwatch.model.food.DiaryEntry
+import app.selfwatch.model.food.DietInfo
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.food.MatchState
 import app.selfwatch.model.food.MealSlot
+import app.selfwatch.model.food.Nutrients
+import app.selfwatch.model.food.Nutrients.Field
 import app.selfwatch.model.food.Recipe
 import app.selfwatch.model.food.RecipeItem
 import app.selfwatch.model.food.RecipeKind
@@ -57,6 +69,12 @@ class FoodViewModelsTest {
     private fun test(block: suspend TestScope.() -> Unit) = runTest(dispatcher) { block() }
 
     // --- Diary ---
+
+    private fun TestScope.vegDiary(): DiaryViewModel {
+        val vm = DiaryViewModel(flowOf(true), dispatcher) { fake }
+        backgroundScope.launch { vm.state.collect {} }
+        return vm
+    }
 
     private fun TestScope.diary(enabled: Boolean = true): DiaryViewModel {
         val vm = DiaryViewModel(flowOf(enabled)) { fake }
@@ -127,9 +145,9 @@ class FoodViewModelsTest {
         val vm = diary()
         vm.tapWater(0)
         vm.tapWater(1)
-        assertEquals(500, vm.state.value.water?.totalMl)
+        assertEquals(2 * DiaryViewModel.GLASS_ML, vm.state.value.water?.totalMl)
         vm.tapWater(0) // tapping a full square removes the last glass
-        assertEquals(250, vm.state.value.water?.totalMl)
+        assertEquals(DiaryViewModel.GLASS_ML, vm.state.value.water?.totalMl)
         vm.toggleFast()
         assertEquals(DiaryViewModel.DEFAULT_FAST_MIN, vm.state.value.fast?.fast?.goalMin)
         vm.toggleFast()
@@ -278,15 +296,271 @@ class FoodViewModelsTest {
     fun detailPicksLastServingAndPreviews() = test {
         val f = FakeFoodBackend.food(1, "Milk", Basis.PER_100G, 64, listOf(Serving(0, "1 cup", 2440)))
         fake.foods[f.ref] = f
+        // Metric units: no ounces.
+        assertEquals(listOf("1 cup", "100 g", "g"), FoodRows.detailServingOptions(f, app.selfwatch.ui.format.Units.METRIC).map { it.label })
+        fake.units = app.selfwatch.ui.format.Units.IMPERIAL
         val vm = FoodDetailViewModel(FoodDetailTarget.Add(f.ref, today, 1)) { fake }
         val s = vm.state.value
-        assertEquals(listOf("1 cup", "g"), s.servings.map { it.label })
+        // US units: named servings, then 100 g, g and oz.
+        assertEquals(listOf("1 cup", "100 g", "g", "oz"), s.servings.map { it.label })
         assertEquals(156, FoodRows.kcal(s.preview))
-        vm.selectServing(1)
+        vm.selectServing(1) // 100 g × 1
+        assertEquals(FoodRows.ONE_X100, vm.state.value.amountX100)
+        assertEquals(64, FoodRows.kcal(vm.state.value.preview))
+        vm.selectServing(2) // grams
         assertEquals(FoodRows.HUNDRED_GRAMS_X100, vm.state.value.amountX100)
         assertEquals(64, FoodRows.kcal(vm.state.value.preview))
+        vm.selectServing(3) // 1 oz = 28.3 g
+        assertEquals(FoodRows.ONE_X100, vm.state.value.amountX100)
+        assertEquals(18, FoodRows.kcal(vm.state.value.preview))
+        vm.setAmount(150)
+        assertEquals(27, FoodRows.kcal(vm.state.value.preview))
         vm.save()
         assertEquals(1, fake.entries.size)
+    }
+
+    @Test
+    fun detailCarriesDietConflictsAndTargets() = test {
+        fake.prefs = DietPrefs(setOf(Diet.VEGAN, Diet.HEART_HEALTHY), emptySet())
+        fake.inputs = TargetInputs(kcalGoal = 2000)
+        val f = FakeFoodBackend.food(7, "Yogurt").copy(dietInfo = DietInfo(DietInfo.VEGETARIAN, 3, Allergen.MILK.bit, true))
+        fake.foods[f.ref] = f
+        val s = FoodDetailViewModel(FoodDetailTarget.Add(f.ref, today, 1)) { fake }.state.value
+        assertEquals(listOf(DietConflict.NotVegan), s.conflicts)
+        assertEquals(20000, s.targets.getValue(Field.KCAL).low)
+        assertEquals(1500, s.targets.getValue(Field.SODIUM).caution)
+        // A per-item food has no weight units to add.
+        assertEquals(listOf("1 cup"), FoodRows.detailServingOptions(FakeFoodBackend.food(8, "Bar"), app.selfwatch.ui.format.Units.IMPERIAL).map { it.label })
+    }
+
+    @Test
+    fun dayNutritionFollowsTheDiaryAndTargets() = test {
+        fake.prefs = DietPrefs(setOf(Diet.HEART_HEALTHY), emptySet())
+        val vm = DayNutritionViewModel(today) { fake }
+        backgroundScope.launch { vm.state.collect {} }
+        assertTrue(vm.state.value.entries.isEmpty())
+        fake.entries += DiaryEntry(100, today, 1, 0, null, "Soup", null, 100, "1 bowl", null,
+            Nutrients(2000, 80, 50, 20, 300, 40, 30, 1800, 0, potassiumMg = 400), null)
+        fake.entries += DiaryEntry(101, today, 2, 0, null, "Bread", null, 100, "1 slice", null,
+            Nutrients(800, 30, 10, 2, 150, 10, 20, 150, 0), null)
+        fake.setDietPrefs(fake.prefs) // nudges the fake diary flow
+        val s = vm.state.value
+        assertEquals(2, s.entries.size)
+        assertEquals(1950, s.totals.sodiumMg)
+        assertEquals(TargetStatus.NEAR_LIMIT, s.targets.getValue(Field.SODIUM).status(s.totals.sodiumMg))
+        assertEquals(1, s.known(Field.POTASSIUM)) // "Potassium known for 1 of 2 foods"
+        assertEquals(listOf("Soup", "Bread"), s.topFoods(Field.SODIUM).map { it.name })
+        vm.setRemaining(true)
+        assertTrue(vm.state.value.remaining)
+        vm.setRange(NutritionRange.WEEK)
+        assertEquals(NutritionRange.WEEK, vm.state.value.range)
+    }
+
+    @Test
+    fun dietScreenEditsAndSavesPrefs() = test {
+        val vm = DietViewModel { fake }
+        vm.setDiet(Diet.VEGAN, true)
+        vm.setAllergen(Allergen.PEANUT, true)
+        assertEquals(listOf(Field.IRON, Field.CALCIUM, Field.VITD), NutrientTargets.focus(vm.state.value.prefs))
+        var done = false
+        vm.save { done = true }
+        assertTrue(done)
+        assertEquals(DietPrefs(setOf(Diet.VEGAN), setOf(Allergen.PEANUT)), fake.prefs)
+    }
+
+    @Test
+    fun dayNutritionWeekShowsAveragesAndDays() = test {
+        fake.prefs = DietPrefs(setOf(Diet.HEART_HEALTHY), emptySet())
+        fake.inputs = TargetInputs(kcalGoal = 2000)
+        val vm = DayNutritionViewModel(today) { fake }
+        backgroundScope.launch { vm.state.collect {} }
+        fun add(id: Long, day: app.selfwatch.model.time.Day, kcal: Int, sodium: Int, potassium: Int?) {
+            fake.entries += DiaryEntry(id, day, 1, 0, null, "Food $id", null, 100, "1", null,
+                Nutrients(kcal * 10, 100, 50, 10, 200, 10, 30, sodium, 0, potassiumMg = potassium), null)
+        }
+        add(1, today, 2000, 2000, 400)
+        add(2, today.plusDays(-2), 1600, 1000, null)
+        add(3, today.plusDays(-2), 400, 500, 200)
+        add(4, today.plusDays(-9), 9000, 9000, 9000) // outside the week
+        vm.setRange(NutritionRange.WEEK)
+        val s = vm.state.value
+        assertEquals(NutritionRange.WEEK, s.range)
+        val w = requireNotNull(s.week)
+        assertEquals(2, w.logged)
+        assertEquals(today, w.days.last())
+        assertEquals(20000, s.totals.kcalX10) // (2000 + 2000) / 2 days
+        assertEquals(1750, s.totals.sodiumMg) // (2000 + 1500) / 2
+        assertEquals(300, s.totals.potassiumMg) // (400 + 200) / 2: both days know some potassium
+        assertEquals(3, s.entries.size)
+        assertEquals(2, s.known(Field.POTASSIUM)) // "Potassium known for 2 of 3 foods"
+        assertEquals(listOf(null, null, null, null, 20000, null, 20000), w.perDay(Field.KCAL))
+        assertEquals(TargetStatus.NEAR_LIMIT, s.targets.getValue(Field.SODIUM).status(s.totals.sodiumMg))
+        // Back a week, then forward again (never past today).
+        vm.step(forward = false)
+        assertEquals(today.plusDays(-7), vm.state.value.day)
+        assertEquals(1, vm.state.value.week?.logged)
+        vm.step(forward = true)
+        vm.step(forward = true)
+        assertEquals(today, vm.state.value.day)
+        vm.setRange(NutritionRange.DAY)
+        assertNull(vm.state.value.week)
+        assertEquals(1, vm.state.value.entries.size)
+    }
+
+    @Test
+    fun dietScreenOverridesTargetsAndResets() = test {
+        fake.inputs = TargetInputs(kcalGoal = 2000)
+        fake.overrides = mapOf(Field.IRON to 150)
+        val vm = DietViewModel { fake }
+        assertEquals(150, vm.state.value.targets.getValue(Field.IRON).low)
+        assertEquals(130, vm.state.value.recommended.getValue(Field.IRON).low) // 8 and 18 mg averaged without a sex
+        vm.setOverride(Field.SODIUM, 1800)
+        vm.setOverride(Field.KCAL, 30000) // calories follow the goal: ignored
+        assertEquals(1800, vm.state.value.targets.getValue(Field.SODIUM).limit)
+        assertEquals(20000, vm.state.value.targets.getValue(Field.KCAL).low)
+        vm.resetOverride(Field.IRON)
+        assertEquals(130, vm.state.value.targets.getValue(Field.IRON).low)
+        vm.setOverride(Field.CALCIUM, 0) // 0 means back to recommended
+        var done = false
+        vm.save { done = true }
+        assertTrue(done)
+        assertEquals(mapOf(Field.SODIUM to 1800), fake.overrides)
+        // Typed amounts in display units become stored units.
+        assertEquals(1800, NutrientUi.parse(Field.SODIUM, "1800"))
+        assertEquals(2300, NutrientUi.parse(Field.SODIUM, NutrientUi.editText(Field.SODIUM, 2300)))
+        assertEquals(125, NutrientUi.parse(Field.IRON, NutrientUi.editText(Field.IRON, 125)))
+        assertEquals(125, NutrientUi.parse(Field.IRON, "12.5"))
+        assertEquals(15, NutrientUi.parse(Field.VITD, "1.5"))
+        assertNull(NutrientUi.parse(Field.IRON, "abc"))
+        assertNull(NutrientUi.parse(Field.IRON, "-2"))
+    }
+
+    @Test
+    fun addFoodFiltersHideKnownClashesAndMarkUnknowns() = test {
+        fake.prefs = DietPrefs(setOf(Diet.VEGAN), setOf(Allergen.PEANUT))
+        val vegan = FakeFoodBackend.food(1, "Tofu").copy(dietInfo = DietInfo(DietInfo.VEGAN or DietInfo.VEGETARIAN, 3, 0, true))
+        val cheese = FakeFoodBackend.food(2, "Cheese").copy(dietInfo = DietInfo(DietInfo.VEGETARIAN, 3, Allergen.MILK.bit, true))
+        val bar = FakeFoodBackend.food(3, "Peanut bar").copy(dietInfo = DietInfo(DietInfo.VEGAN or DietInfo.VEGETARIAN, 3, Allergen.PEANUT.bit, false))
+        val mystery = FakeFoodBackend.food(4, "Mystery stew")
+        for (f in listOf(vegan, cheese, bar, mystery)) fake.foods[f.ref] = f
+        val vm = AddFoodViewModel(today, 1) { fake }
+        vm.selectTab(AddFoodTab.MINE)
+        val s = vm.state.value
+        assertEquals(listOf(DietFilter.Vegan, DietFilter.Without(Allergen.PEANUT)), s.filters)
+        assertEquals(s.filters.toSet(), s.activeFilters)
+        assertEquals(listOf("Tofu", "Mystery stew"), s.rows.map { it.name })
+        assertEquals(setOf(mystery.ref), s.unsure)
+        assertEquals(2, s.hiddenCount)
+        vm.setFilter(DietFilter.Vegan, false)
+        assertEquals(listOf("Tofu", "Cheese", "Mystery stew"), vm.state.value.rows.map { it.name })
+        vm.setFilter(DietFilter.Without(Allergen.PEANUT), false)
+        assertEquals(4, vm.state.value.rows.size)
+        assertTrue(vm.state.value.unsure.isEmpty())
+        // No diet, no chips.
+        fake.prefs = DietPrefs.NONE
+        assertTrue(AddFoodViewModel(today, 1) { fake }.state.value.filters.isEmpty())
+    }
+
+    @Test
+    fun vegetarianOfferShowsOnceAfterTwoMeatFreeWeeks() = test {
+        val yogurt = FakeFoodBackend.food(1, "Yogurt")
+        fake.foods[yogurt.ref] = yogurt
+        fake.categories[yogurt.ref] = 302
+        for (d in 0 until 14) fake.entry(today.plusDays(-d), 1, "Yogurt", 100, yogurt.ref)
+        val vm = vegDiary()
+        vm.checkVegHint()
+        assertTrue(vm.vegHint.value)
+        vm.answerVegHint(accept = true)
+        assertFalse(vm.vegHint.value)
+        assertTrue(Diet.VEGETARIAN in fake.prefs.diets)
+        assertTrue(fake.vegHintDone)
+        // Never again, even with the diet removed.
+        fake.prefs = DietPrefs.NONE
+        val again = vegDiary()
+        again.checkVegHint()
+        assertFalse(again.vegHint.value)
+    }
+
+    @Test
+    fun vegetarianOfferStaysAwayWithMeatOrAfterNoThanks() = test {
+        val chicken = FakeFoodBackend.food(2, "Chicken")
+        val yogurt = FakeFoodBackend.food(1, "Yogurt")
+        fake.categories[chicken.ref] = 402
+        fake.categories[yogurt.ref] = 302
+        for (d in 0 until 14) fake.entry(today.plusDays(-d), 1, "Yogurt", 100, yogurt.ref)
+        fake.entry(today.plusDays(-3), 3, "Chicken", 300, chicken.ref)
+        val meat = vegDiary()
+        meat.checkVegHint()
+        assertFalse(meat.vegHint.value)
+        fake.entries.removeAll { it.name == "Chicken" }
+        val vm = vegDiary()
+        vm.checkVegHint()
+        assertTrue(vm.vegHint.value)
+        vm.answerVegHint(accept = false)
+        assertFalse(vm.vegHint.value)
+        assertTrue(fake.prefs.diets.isEmpty())
+        assertTrue(fake.vegHintDone)
+    }
+
+    @Test
+    fun editorSavesCategoryAndExtraServings() = test {
+        val form = FoodForm(
+            name = "Sourdough", kcal = "250", perServing = false, servingLabel = "1 slice", servingGrams = "50",
+            categoryId = 202, extraServings = listOf(ServingForm("1 loaf", "800"), ServingForm("", ""), ServingForm("Half slice", "25")),
+        )
+        val food = FoodEditorViewModel.toFood(form, 0).first!!
+        assertEquals(202, food.category?.id)
+        assertEquals("Bread, bagels & tortillas", food.category?.name)
+        assertEquals(listOf("1 slice" to 500, "1 loaf" to 8000, "Half slice" to 250), food.servings.map { it.label to it.gramsX10 })
+        assertEquals(listOf(0, 1, 2), food.servings.map { it.seq })
+        val back = FoodEditorViewModel.formOf(food)
+        assertEquals(202, back.categoryId)
+        assertEquals(listOf(ServingForm("1 loaf", "800"), ServingForm("Half slice", "25")), back.extraServings)
+        // A half-typed extra serving is an error.
+        assertEquals(setOf(FoodFormError.EXTRA_SERVING), FoodEditorViewModel.toFood(form.copy(extraServings = listOf(ServingForm("1 loaf", ""))), 0).second)
+        // Per serving with extra servings: stored per 100 g so each serving weighs in.
+        val bar = FoodEditorViewModel.toFood(
+            FoodForm(name = "Bar", kcal = "200", protein = "10", perServing = true, servingLabel = "1 bar", servingGrams = "40", extraServings = listOf(ServingForm("Mini bar", "20"))),
+            0,
+        ).first!!
+        assertEquals(Basis.PER_100G, bar.basis)
+        assertEquals(5000, bar.per.kcalX10) // 200 kcal per 40 g = 500 per 100 g
+        assertEquals(250, bar.per.proteinX10)
+        assertEquals(100, FoodRows.kcal(NutrientMath.forServing(bar, bar.servings[1], 100)))
+        // ...which needs the first serving's grams.
+        assertEquals(
+            setOf(FoodFormError.SERVING_GRAMS),
+            FoodEditorViewModel.toFood(FoodForm(name = "Bar", kcal = "200", perServing = true, extraServings = listOf(ServingForm("Mini", "20"))), 0).second,
+        )
+        // Saving through the view model keeps the category the user picked.
+        val vm = FoodEditorViewModel(null, null) { fake }
+        assertEquals(42, vm.state.value.categories.size)
+        vm.save(form)
+        val saved = fake.foods.values.single { it.name == "Sourdough" }
+        assertEquals(202, saved.category?.id)
+        assertEquals(3, saved.servings.size)
+    }
+
+    @Test
+    fun editorKeepsV2NutrientsAndDietTicks() {
+        val form = FoodForm(name = "Oat bar", kcal = "190", potassiumMg = "120", ironMg = "1.5", vitdUg = "2.5", vegan = true, glutenFree = true, allergens = setOf(Allergen.TREE_NUT))
+        val food = FoodEditorViewModel.toFood(form, 0).first!!
+        assertEquals(120, food.per.potassiumMg)
+        assertEquals(15, food.per.ironX10)
+        assertEquals(25, food.per.vitdX10)
+        assertNull(food.per.calciumMg)
+        assertEquals(true, food.dietInfo.vegan)
+        assertEquals(true, food.dietInfo.vegetarian)
+        assertTrue(food.dietInfo.glutenFreeLabel)
+        assertEquals(listOf(Allergen.TREE_NUT), food.dietInfo.contains)
+        // Round trip through the form.
+        val back = FoodEditorViewModel.formOf(food)
+        assertEquals("120", back.potassiumMg)
+        assertEquals("1.5", back.ironMg)
+        assertTrue(back.vegan && back.glutenFree)
+        // Unticked claims stay unknown for a new food.
+        val plain = FoodEditorViewModel.toFood(FoodForm(name = "X", kcal = "1"), 0).first!!
+        assertNull(plain.dietInfo.vegan)
     }
 
     @Test

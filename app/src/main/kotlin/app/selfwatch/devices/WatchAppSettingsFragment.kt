@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import app.selfwatch.R
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.graph
 import app.selfwatch.model.watch.CiqValue
 import app.selfwatch.service.watchapps.SettingControl
@@ -66,6 +67,9 @@ class WatchAppSettingsFragment : DetailFragment(R.menu.menu_app_settings) {
     private val bindings = ArrayList<Binding>()
     private var updating = false
 
+    /** Checks the "Show raw keys" menu item (debug builds only). */
+    private var showRaw: ((Boolean) -> Unit)? = null
+
     override fun title(): CharSequence = requireArguments().getString(ARG_NAME) ?: getString(R.string.devices_app_settings)
 
     override fun onContent(column: LinearLayout, savedInstanceState: Bundle?) {
@@ -89,6 +93,7 @@ class WatchAppSettingsFragment : DetailFragment(R.menu.menu_app_settings) {
         actions.addView(a)
         save = DevicesUi.button(a, getString(R.string.devices_settings_save)) { vm.save() }
         restore = DevicesUi.button(a, getString(R.string.devices_settings_restore), outlined = true) { pickCopy() }
+        if (DebugTools.ENABLED) showRaw = DebugTools.addRawKeysItem(toolbar) { vm.setRaw(!vm.state.value.raw) }
         collectWhileStarted(vm.state) { render(it) }
     }
 
@@ -99,10 +104,6 @@ class WatchAppSettingsFragment : DetailFragment(R.menu.menu_app_settings) {
         }
         R.id.menu_settings_restore -> {
             pickCopy()
-            true
-        }
-        R.id.menu_settings_raw -> {
-            vm.setRaw(!vm.state.value.raw)
             true
         }
         else -> false
@@ -117,7 +118,7 @@ class WatchAppSettingsFragment : DetailFragment(R.menu.menu_app_settings) {
         emptyText.isVisible = !s.loading && s.form.fields.isEmpty()
         save.isEnabled = s.busy == null && s.form.fields.any { !it.readOnly }
         restore.isEnabled = s.history.isNotEmpty()
-        toolbar.menu.findItem(R.id.menu_settings_raw)?.isChecked = s.raw
+        showRaw?.invoke(s.raw)
         if (shownForm != s.form) build(ctx, s.form)
         updating = true
         for (b in bindings) b.update(s.values[b.field.key], b.field.key in s.invalid)

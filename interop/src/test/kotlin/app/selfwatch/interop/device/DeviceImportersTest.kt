@@ -49,7 +49,7 @@ class DeviceImportersTest {
         assertEquals(95, importer.sniff("Gadgetbridge_2026.zip", head(zip)))
         val plan = TestSupport.plan(importer, "Gadgetbridge_2026.zip", zip)
         assertEquals(
-            mapOf("body" to 2, "workout" to 2, "activity" to 10, "metric" to 20, "sleep_stage" to 4, "sleep_session" to 1),
+            mapOf("body" to 2, "workout" to 2, "activity" to 10, "metric" to 22, "sleep_stage" to 4, "sleep_session" to 1),
             plan.counts,
         )
         val data = TestSupport.data(plan)
@@ -59,6 +59,9 @@ class DeviceImportersTest {
         assertEquals(10, dev.metrics.count { it.kind == MetricKind.HEART_RATE })
         assertEquals(2, dev.metrics.count { it.kind == MetricKind.STRESS })
         assertEquals(145, dev.metrics.first { it.kind == MetricKind.RESPIRATION }.value)
+        // VO2 max by max_met_category; the workout estimate (type 12) and the placeholder 0 are skipped.
+        assertEquals(listOf(483), dev.metrics.filter { it.kind == MetricKind.VO2_MAX_RUNNING }.map { it.value })
+        assertEquals(listOf(DeviceFixtures.T0 + 1 to 510), dev.metrics.filter { it.kind == MetricKind.VO2_MAX_CYCLING }.map { it.tSec to it.value })
         assertEquals(listOf(SleepStage.LIGHT, SleepStage.DEEP, SleepStage.REM, SleepStage.AWAKE), dev.sleepStages.map { it.stage })
         val night = dev.sleepSessions.single()
         assertEquals(DeviceFixtures.T0 + 12 * 3600, night.startSec)
@@ -98,7 +101,7 @@ class DeviceImportersTest {
         assertEquals(plan.counts, r.counts)
         val after = DbTestSupport.counts()
         assertEquals(10L, after["activity_minute"])
-        assertEquals(20L, after["metric"])
+        assertEquals(22L, after["metric"])
         // Importing the same backup again finds everything already there.
         val again = (importer.plan(InputSource.ofBytes("gb.zip", DeviceFixtures.gadgetbridgeZip(cache))) as Outcome.Ok).value
         assertEquals(plan.counts.values.sum(), again.duplicates)
@@ -123,6 +126,9 @@ class DeviceImportersTest {
         assertTrue(dev.activity.isNotEmpty())
         assertTrue(dev.metrics.any { it.kind == MetricKind.HRV_RMSSD })
         assertTrue(dev.metrics.any { it.kind == MetricKind.HEART_RATE })
+        // The metrics file's VO2 max, running and cycling.
+        assertEquals(listOf(483), dev.metrics.filter { it.kind == MetricKind.VO2_MAX_RUNNING }.map { it.value })
+        assertEquals(listOf(510), dev.metrics.filter { it.kind == MetricKind.VO2_MAX_CYCLING }.map { it.value })
         assertEquals(450, dev.sleepStages.size)
         assertEquals(1, dev.sleepSessions.size)
         assertTrue(plan.warnings.toString(), plan.warnings.any { it.contains("could not be read") })

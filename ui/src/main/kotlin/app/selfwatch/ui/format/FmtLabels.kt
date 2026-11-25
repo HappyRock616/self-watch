@@ -30,6 +30,11 @@ data class FmtLabels(
     val km: String,
     val ft: String,
     val mi: String,
+    val ml: String = "ml",
+    val l: String = "L",
+    val flOz: String = "fl oz",
+    val celsius: String = "°C",
+    val fahrenheit: String = "°F",
 ) {
     companion object {
         /** English labels, matching the default `strings.xml`. */
@@ -66,6 +71,11 @@ data class FmtLabels(
                 km = r.getString(R.string.sw_unit_km),
                 ft = r.getString(R.string.sw_unit_ft),
                 mi = r.getString(R.string.sw_unit_mi),
+                ml = r.getString(R.string.sw_unit_ml),
+                l = r.getString(R.string.sw_unit_l),
+                flOz = r.getString(R.string.sw_unit_fl_oz),
+                celsius = r.getString(R.string.sw_unit_celsius),
+                fahrenheit = r.getString(R.string.sw_unit_fahrenheit),
             )
         }
     }

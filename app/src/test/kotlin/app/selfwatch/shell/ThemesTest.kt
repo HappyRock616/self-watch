@@ -61,7 +61,21 @@ class ThemesTest {
 
     /** Applies [theme] the way the app does when the setting changes (SelfWatchApp.watchAppearance). */
     private fun choose(theme: SwTheme.Theme) {
+        // Store it too: the app's appearance observer re-applies the stored theme on its own thread, and
+        // with nothing stored it would put Orange back (that race made this test fail in full runs).
+        kotlinx.coroutines.runBlocking {
+            app.selfwatch.db.SelfWatchDb.get(org.robolectric.RuntimeEnvironment.getApplication())
+                .settings.set(app.selfwatch.db.SettingKeys.ACCENT, app.selfwatch.Appearance.storedValue(theme))
+        }
         SwTheme.setCurrent(theme)
+        // Let the observer catch up (it reads on an IO thread) so it can't put an older theme back later.
+        val until = System.currentTimeMillis() + 3_000
+        do {
+            idle()
+            Thread.sleep(20)
+            idle()
+        } while (SwTheme.current != theme && System.currentTimeMillis() < until)
+        if (SwTheme.current != theme) SwTheme.setCurrent(theme)
         idle()
     }
 

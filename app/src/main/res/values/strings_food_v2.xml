@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Food database v2 screens: food detail, Day nutrition, diet and allergens, custom food extras. -->
+<resources>
+    <!-- Nutrient names (Nutrients.Field order). -->
+    <string name="nutrient_kcal">Calories</string>
+    <string name="nutrient_protein">Protein</string>
+    <string name="nutrient_fat">Fat</string>
+    <string name="nutrient_satfat">Saturated fat</string>
+    <string name="nutrient_carb">Carbs</string>
+    <string name="nutrient_sugar">Sugars</string>
+    <string name="nutrient_fiber">Fiber</string>
+    <string name="nutrient_sodium">Sodium</string>
+    <string name="nutrient_cholesterol">Cholesterol</string>
+    <string name="nutrient_transfat">Trans fat</string>
+    <string name="nutrient_monofat">Monounsaturated fat</string>
+    <string name="nutrient_polyfat">Polyunsaturated fat</string>
+    <string name="nutrient_addsugar">Added sugars</string>
+    <string name="nutrient_potassium">Potassium</string>
+    <string name="nutrient_calcium">Calcium</string>
+    <string name="nutrient_iron">Iron</string>
+    <string name="nutrient_vita">Vitamin A</string>
+    <string name="nutrient_vitc">Vitamin C</string>
+    <string name="nutrient_vitd">Vitamin D</string>
+
+    <string name="nutrient_group_energy">Energy</string>
+    <string name="nutrient_group_fats">Fats</string>
+    <string name="nutrient_group_carbs">Carbs</string>
+    <string name="nutrient_group_protein">Protein</string>
+    <string name="nutrient_group_minerals">Minerals</string>
+    <string name="nutrient_group_vitamins">Vitamins</string>
+
+    <!-- "12.5 g", "320 mg", "15 µg", "250 kcal". -->
+    <string name="nutrient_amount">%1$s %2$s</string>
+    <!-- "45%" share of a target. -->
+    <string name="nutrient_percent">%1$s%%</string>
+    <!-- TalkBack for a nutrient row: "Sodium, 460 mg, 20 percent of your target". -->
+    <string name="nutrient_row_description">%1$s, %2$s, %3$s%% of your target</string>
+    <string name="nutrient_row_description_plain">%1$s, %2$s</string>
+    <string name="nutrient_unknown_description">%1$s, not listed</string>
+
+    <!-- Allergens (foods.db bits). -->
+    <string name="allergen_gluten">gluten</string>
+    <string name="allergen_milk">milk</string>
+    <string name="allergen_egg">egg</string>
+    <string name="allergen_peanut">peanuts</string>
+    <string name="allergen_tree_nut">tree nuts</string>
+    <string name="allergen_soy">soy</string>
+    <string name="allergen_fish">fish</string>
+    <string name="allergen_shellfish">shellfish</string>
+    <string name="allergen_sesame">sesame</string>
+
+    <!-- Diet badges and conflicts. -->
+    <string name="diet_badge_vegan">Vegan</string>
+    <string name="diet_badge_vegetarian">Vegetarian</string>
+    <string name="diet_badge_gluten_free">Gluten-free</string>
+    <string name="diet_badge_natural_gluten_free">Naturally gluten-free</string>
+    <string name="diet_badge_not_vegan">Not vegan</string>
+    <string name="diet_badge_not_vegetarian">Not vegetarian</string>
+    <string name="diet_contains">Contains: %1$s</string>
+    <string name="diet_contains_one">Contains %1$s</string>
+    <string name="diet_check_label_title">Diet and allergens</string>
+    <string name="diet_check_label">From the ingredient list. Always check the label.</string>
+    <string name="diet_list_separator">, </string>
+
+    <!-- Food detail sheet. -->
+    <string name="detail_brand_source_year">%1$s · %2$s · %3$s</string>
+    <string name="detail_completeness">%1$d of %2$d nutrients listed</string>
+    <string name="detail_vitamins_missing">Vitamins and minerals not listed for this product</string>
+    <string name="detail_serving_size">Serving size</string>
+    <string name="detail_servings_count">Number of servings</string>
+    <string name="detail_grams_count">Grams</string>
+    <string name="detail_serving_100g">100 g</string>
+    <string name="detail_serving_oz">oz</string>
+    <string name="detail_serving_g">g</string>
+    <string name="detail_quick_half">½</string>
+    <string name="detail_quick_one">1</string>
+    <string name="detail_quick_one_half">1½</string>
+    <string name="detail_quick_two">2</string>
+    <string name="detail_quick_description">%1$s servings</string>
+    <string name="detail_row_value_description">%1$s: %2$s. Double-tap to change.</string>
+    <string name="detail_pick_serving">Serving size</string>
+    <string name="detail_pick_meal">Meal</string>
+    <string name="detail_macro_split">Carbs %1$s%% · Fat %2$s%% · Protein %3$s%%</string>
+    <string name="detail_macro_grams">C %1$s g · F %2$s g · P %3$s g</string>
+    <string name="detail_macro_description">%1$s. Carbs %2$s grams, %3$s percent. Fat %4$s grams, %5$s percent. Protein %6$s grams, %7$s percent.</string>
+    <string name="detail_of_your_day" formatted="false">% of your day</string>
+    <string name="detail_of_day_value">%1$s%%</string>
+    <string name="detail_show_all">Show all nutrients</string>
+    <string name="detail_hide_all">Hide nutrients</string>
+    <string name="detail_nutrition_facts">Nutrition facts</string>
+    <string name="detail_bad_amount">Type a number above 0</string>
+
+    <!-- Food tab: meal macro line "C 52 g · F 18 g · P 31 g". -->
+    <string name="meal_macros">C %1$s g · F %2$s g · P %3$s g</string>
+    <string name="meal_macros_description">Carbs %1$s grams, fat %2$s grams, protein %3$s grams</string>
+    <string name="menu_day_nutrition">Day nutrition</string>
+    <string name="search_chain_menu">%1$s menu</string>
+
+    <!-- Day nutrition screen. -->
+    <string name="day_nutrition_title">Day nutrition</string>
+    <string name="day_nutrition_day">Day</string>
+    <string name="day_nutrition_week">Week</string>
+    <!-- Week view: "Nov 17 – Nov 23", "Averages over 5 logged days". -->
+    <string name="day_nutrition_week_range">%1$s – %2$s</string>
+    <string name="day_nutrition_week_empty">Nothing logged in these 7 days yet.</string>
+    <plurals name="day_nutrition_week_logged">
+        <item quantity="one">Average over %d logged day</item>
+        <item quantity="other">Averages over %d logged days</item>
+    </plurals>
+    <string name="day_nutrition_week_macros">Daily average</string>
+    <string name="day_nutrition_week_bars">%1$s per day</string>
+    <!-- TalkBack for the per-day bars: "Mon 1,850 kcal; Tue not logged". -->
+    <string name="day_nutrition_week_bar_day">%1$s %2$s</string>
+    <string name="day_nutrition_week_not_logged">not logged</string>
+    <string name="day_nutrition_week_prev">Previous week</string>
+    <string name="day_nutrition_week_next">Next week</string>
+    <string name="day_nutrition_consumed">Eaten</string>
+    <string name="day_nutrition_remaining">Left</string>
+    <string name="day_nutrition_macros">Macro targets</string>
+    <string name="day_nutrition_your_targets">Your targets</string>
+    <string name="day_nutrition_all">All nutrients</string>
+    <string name="day_nutrition_empty">Nothing logged on this day yet.</string>
+    <string name="day_nutrition_known">%1$s known for %2$d of %3$d foods</string>
+    <string name="day_nutrition_target">of %1$s</string>
+    <string name="day_nutrition_limit">limit %1$s</string>
+    <string name="day_nutrition_left_value">%1$s left</string>
+    <string name="day_nutrition_over_value">%1$s over</string>
+    <string name="day_nutrition_top_foods">Top foods for %1$s</string>
+    <string name="day_nutrition_no_foods">No food today lists %1$s.</string>
+    <string name="day_nutrition_top_food_row">%1$s · %2$s</string>
+    <string name="day_nutrition_no_targets">Set a diet in Me → Goals → Diet to see the targets that matter for it.</string>
+    <string name="status_near_limit">Near the limit</string>
+    <string name="status_over">Over the limit</string>
+    <string name="status_met">Target reached</string>
+
+    <!-- Diet and allergen setting (Me → Goals → Diet). -->
+    <string name="goal_diet_row">Diet and allergens</string>
+    <string name="goal_diet_none">None set</string>
+    <string name="diet_title">Diet and allergens</string>
+    <string name="diet_section">Diet</string>
+    <string name="diet_help">Pick any that apply. Foods that clash get a red badge, and Day nutrition shows the targets that matter for your diet.</string>
+    <string name="diet_high_protein">High protein</string>
+    <string name="diet_heart_healthy">Heart-healthy</string>
+    <string name="diet_vegetarian">Vegetarian</string>
+    <string name="diet_vegan">Vegan</string>
+    <string name="diet_gluten_free">Gluten-free</string>
+    <string name="diet_allergens">Allergens to avoid</string>
+    <string name="diet_allergens_help">Foods that list these get a red badge. Unknown foods get none, so always check the label.</string>
+    <string name="diet_targets">Your daily targets</string>
+    <string name="diet_targets_help">From the US intake guidelines for your age and sex (Me → Profile), your goals and your diet. Tap a target to set your own number. Calories follow your calorie goal.</string>
+    <string name="diet_target_none">not set</string>
+    <string name="diet_target_custom">Your own number · recommended: %1$s</string>
+    <string name="diet_target_edit_title">%1$s target</string>
+    <string name="diet_target_goal_hint">Daily target (%1$s)</string>
+    <string name="diet_target_limit_hint">Daily limit (%1$s)</string>
+    <string name="diet_target_reset">Reset to recommended</string>
+    <string name="diet_target_edit_description">%1$s target: %2$s. Change it.</string>
+    <string name="diet_target_edit_custom_description">%1$s target: %2$s, your own number. Change it or reset it.</string>
+
+    <!-- Add food diet filter chips (only with a diet or allergen set). -->
+    <string name="filter_vegan">Vegan</string>
+    <string name="filter_vegetarian">Vegetarian</string>
+    <string name="filter_gluten_free">Gluten-free</string>
+    <string name="filter_without">No %1$s</string>
+    <string name="filter_unknown_badge">?</string>
+    <string name="filter_unknown_description">Diet not known, check the label</string>
+    <plurals name="filter_hidden_count">
+        <item quantity="one">%d food hidden by your filters</item>
+        <item quantity="other">%d foods hidden by your filters</item>
+    </plurals>
+
+    <!-- Food tab: the one-time vegetarian offer. -->
+    <string name="veg_hint_title">Set vegetarian?</string>
+    <string name="veg_hint_text">No meat in your last 14 logged days. Set a vegetarian diet to get badges and the targets that matter for it?</string>
+    <string name="veg_hint_yes">Set vegetarian</string>
+    <string name="veg_hint_no">No thanks</string>
+    <string name="veg_hint_done">Vegetarian diet set</string>
+    <string name="diet_target_at_least">at least %1$s</string>
+    <string name="diet_target_range">%1$s–%2$s</string>
+    <string name="diet_target_under">under %1$s</string>
+    <string name="diet_target_amber">amber above %1$s, red above %2$s</string>
+    <string name="diet_saved">Diet saved</string>
+
+    <string name="allergen_name_gluten">Gluten</string>
+    <string name="allergen_name_milk">Milk</string>
+    <string name="allergen_name_egg">Egg</string>
+    <string name="allergen_name_peanut">Peanuts</string>
+    <string name="allergen_name_tree_nut">Tree nuts</string>
+    <string name="allergen_name_soy">Soy</string>
+    <string name="allergen_name_fish">Fish</string>
+    <string name="allergen_name_shellfish">Shellfish</string>
+    <string name="allergen_name_sesame">Sesame</string>
+
+    <!-- Custom food editor v2. -->
+    <string name="editor_more_nutrients">More nutrients</string>
+    <string name="editor_fewer_nutrients">Fewer nutrients</string>
+    <string name="editor_transfat_g">Trans fat g</string>
+    <string name="editor_monofat_g">Mono fat g</string>
+    <string name="editor_polyfat_g">Poly fat g</string>
+    <string name="editor_addsugar_g">Added sugars g</string>
+    <string name="editor_potassium_mg">Potassium mg</string>
+    <string name="editor_calcium_mg">Calcium mg</string>
+    <string name="editor_iron_mg">Iron mg</string>
+    <string name="editor_vita_ug">Vitamin A µg</string>
+    <string name="editor_vitc_mg">Vitamin C mg</string>
+    <string name="editor_vitd_ug">Vitamin D µg</string>
+    <string name="editor_diet">Diet</string>
+    <string name="editor_contains">Contains</string>
+    <string name="editor_diet_help">Tick only what the label says. Unticked means not known.</string>
+    <string name="editor_category">Category</string>
+    <string name="editor_category_none">None</string>
+    <string name="editor_category_value">Category: %1$s</string>
+    <string name="editor_add_serving">+ Serving size</string>
+    <string name="editor_extra_serving_label">Serving, e.g. 1 slice</string>
+    <string name="editor_remove_serving">Remove serving %1$s</string>
+    <string name="editor_servings_more">More serving sizes</string>
+    <string name="editor_serving_needs_both">Enter a name and grams</string>
+</resources>

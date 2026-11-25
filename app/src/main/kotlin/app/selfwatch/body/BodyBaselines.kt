@@ -9,6 +9,7 @@ package app.selfwatch.body
 
 import app.selfwatch.cards.MainGoal
 import app.selfwatch.model.time.Day
+import app.selfwatch.ui.format.Units
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -99,8 +100,8 @@ data class BodySignals(val day: Day, val readings: List<SignalReading>, val flag
     val upCount: Int get() = readings.count { it.up }
 }
 
-/** Body signals card data: the reading once there is a baseline, else the nights so far. */
-data class SignalsInfo(val result: BodySignals?, val nights: Int, val needed: Int)
+/** Body signals card data: the reading once there is a baseline, else the nights so far, and the display units. */
+data class SignalsInfo(val result: BodySignals?, val nights: Int, val needed: Int, val units: Units = Units.METRIC)
 
 /** Pure arithmetic of the HRV baseline. */
 object HrvMath {

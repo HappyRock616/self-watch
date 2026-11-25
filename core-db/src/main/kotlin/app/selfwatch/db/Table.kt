@@ -37,6 +37,8 @@ public enum class Table(public val sql: String) {
     LINK_PERMISSION("link_permission"),
     NET_LOG("net_log"),
     IMPORT_BATCH("import_batch"),
+    DEVICE_BATTERY("device_battery"),
+    WORKOUT_TRIM("workout_trim"),
     ;
 
     /** Lookup by table name. */

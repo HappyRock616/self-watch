@@ -46,6 +46,9 @@ class ChartPaletteTest {
             val c = ThemeColors.of(p.theme, p.night)
             assertEquals(c.primary, p.series(0))
             assertEquals(c.secondary, p.series(1))
+            // Exactly Just Go 5K's colors (Theme.mc) in both looks.
+            assertEquals(p.theme.primary, p.series(0))
+            assertEquals(p.theme.secondary, p.series(1))
         }
     }
 
@@ -67,15 +70,41 @@ class ChartPaletteTest {
     }
 
     @Test
-    fun everySeriesReachesThreeToOneOnSurfaceAndBackground() {
+    fun derivedSeriesReachThreeToOneOnSurfaceAndBackground() {
+        // Series 1 and 2 are the exact brand colors; the gray steps (5, 6) and the dark look's tints reach 3:1.
+        // The light look's tints (3, 4) stay pale on purpose: pulling them to 3:1 on white darkens them to brown.
         for (p in palettes()) {
             val n = p.colors.neutrals
-            for (i in 0 until p.seriesCount) {
+            for (i in (if (p.night) 2 else 4) until p.seriesCount) {
                 for (bg in intArrayOf(n.surface, n.background)) {
                     val r = SwContrast.ratio(p.series(i), bg)
                     assertTrue("${p.theme} night=${p.night} series ${i + 1}: ${"%.2f".format(r)}", r >= SwContrast.GRAPHIC_MIN)
                 }
             }
+        }
+    }
+
+    @Test
+    fun derivedSeriesAreNeverBrownOrOlive() {
+        // Owner's decision: no shade towards black. Series 3 and 4 are tints of primary and secondary (every
+        // channel at least the source's, so lighter in the same hue); series 5 and 6 are neutral grays.
+        for (p in palettes()) {
+            for ((i, source) in listOf(2 to p.primary, 3 to p.secondary)) {
+                val c = p.series(i)
+                for (shift in intArrayOf(16, 8, 0)) {
+                    val ch = (c shr shift) and 0xFF
+                    val src = (source shr shift) and 0xFF
+                    assertTrue("${p.theme} night=${p.night} series ${i + 1} darker than its source", ch >= src)
+                }
+                assertTrue(SwContrast.luminance(c) > SwContrast.luminance(source))
+            }
+            for (i in 4..5) {
+                val c = p.series(i)
+                val ch = intArrayOf((c shr 16) and 0xFF, (c shr 8) and 0xFF, c and 0xFF)
+                assertTrue("${p.theme} night=${p.night} series ${i + 1} is not a gray", ch.max() - ch.min() <= GRAY_SPREAD)
+            }
+            // Deep sleep is the exact secondary, never a darkened one.
+            assertEquals(p.secondary, p.stage(SleepStage.DEEP))
         }
     }
 
@@ -102,6 +131,8 @@ class ChartPaletteTest {
             assertTrue(SwContrast.luminance(p.stage(SleepStage.DEEP)) < SwContrast.luminance(p.stage(SleepStage.LIGHT)))
             val n = p.colors.neutrals
             for ((s, c) in stages.zip(colors)) {
+                if (c == p.primary || c == p.secondary) continue // exact brand colors
+                if (!p.night && s == SleepStage.LIGHT) continue // a pale tint on white, on purpose (never darkened)
                 val r = SwContrast.ratio(c, n.surface)
                 assertTrue("${p.theme} night=${p.night} $s on surface ${"%.2f".format(r)}", r >= SwContrast.GRAPHIC_MIN)
             }
@@ -145,5 +176,8 @@ class ChartPaletteTest {
     private companion object {
         // Euclidean RGB distance; about the smallest step two lines can still be told apart by.
         const val MIN_DISTANCE: Double = 24.0
+
+        // Largest channel spread that still reads as a neutral gray.
+        const val GRAY_SPREAD: Int = 12
     }
 }

@@ -8,6 +8,7 @@
 package app.selfwatch.garmin.files
 
 import app.selfwatch.model.health.DataSource
+import app.selfwatch.model.health.MetricKind
 import app.selfwatch.model.result.Outcome
 import app.selfwatch.model.watch.IngestBatch
 import java.io.File
@@ -42,6 +43,17 @@ class FitModuleDecodersTest {
         val b = ok(FitModuleDecoders().decode(FitFileKind.MONITOR, bytes("monitor_day.fit"), 3, null))
         assertTrue(b.activity.isNotEmpty())
         assertTrue(b.activity.all { it.deviceId == 3L })
+    }
+
+    @Test fun metricsFileGivesVo2MaxPerSport() {
+        val b = ok(FitModuleDecoders().decode(FitFileKind.METRICS, bytes("metrics_vo2max.fit"), 3, null))
+        assertEquals(mapOf(MetricKind.VO2_MAX_RUNNING to 483, MetricKind.VO2_MAX_CYCLING to 510), b.metrics.associate { it.kind to it.value })
+        assertTrue(b.metrics.all { it.deviceId == 3L })
+    }
+
+    @Test fun activityWithoutAnEstimateAddsNoMetrics() {
+        val b = ok(FitModuleDecoders().decode(FitFileKind.ACTIVITY, bytes("activity_run_gps.fit"), 7, null))
+        assertTrue(b.metrics.isEmpty())
     }
 
     @Test fun sleepGivesStages() {

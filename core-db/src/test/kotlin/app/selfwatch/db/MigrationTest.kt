@@ -9,6 +9,9 @@ package app.selfwatch.db
 
 import android.app.Application
 import app.selfwatch.db.dao.CustomFood
+import app.selfwatch.model.device.DeviceInfo
+import app.selfwatch.model.device.DeviceKind
+import app.selfwatch.model.device.SupportTier
 import app.selfwatch.model.food.Basis
 import app.selfwatch.model.food.Food
 import app.selfwatch.model.food.FoodOrigin
@@ -17,6 +20,7 @@ import app.selfwatch.model.food.Goal
 import app.selfwatch.model.food.GoalKind
 import app.selfwatch.model.food.Nutrients
 import app.selfwatch.model.time.Day
+import app.selfwatch.model.time.TimeRange
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -33,8 +37,8 @@ import java.io.File
  * it to the newest version and checks that the data survived and the new schema is in place.
  *
  * Shipped scripts come from `assets/db/V{n}.sql`. Scripts newer than [SelfWatchDb.VERSION] may be
- * staged in test resources `db/V{n}.sql` (today: a dummy V2, never shipped) so the harness is proven
- * before a real V2 exists. When a real V2 lands, move it to assets, bump VERSION and add its checks.
+ * staged in test resources `db/V{n}.sql` (today: a dummy V5, never shipped) so the harness always
+ * runs one upgrade past the shipped schema. When a real V5 lands, rename the dummy to V6.
  */
 @RunWith(RobolectricTestRunner::class)
 class MigrationTest {
@@ -76,31 +80,53 @@ class MigrationTest {
 
     @Test
     fun harnessFindsStagedVersions() {
-        assertTrue("a staged V2 must exist for the harness to test upgrades", latest >= 2)
+        assertTrue("a staged V5 must exist for the harness to test upgrades", latest >= 5)
     }
 
     @Test
     fun everyPastVersionUpgradesToLatest() = runBlocking {
         for (from in 1 until latest) {
             app.deleteDatabase(name)
-            // 1. Build a database at version `from` and fill it through the DAOs (V1 DAOs work on V1).
+            // 1. Build a database at version `from` and fill it (through the DAOs where their tables are
+            // unchanged since `from`; the food tables gained columns in V2, so V1 rows go in as SQL).
             open(from).use { db ->
                 assertEquals(from, db.readableDatabase.version)
                 db.water.add(Day(20261123), 100, 250)
                 val fast = db.fasts.start(1000, 960)
                 db.fasts.end(fast, 5000)
                 db.goals.set(Goal(GoalKind.STEPS, 9000, Day(20260101)))
-                db.diary.add(DbTest.entry(Day(20261123), name = "Porridge"))
-                db.foods.insert(
-                    CustomFood(
-                        Food(
-                            FoodRef(FoodOrigin.MY_FOOD, 0), "Crème caramel", null, 0,
-                            Basis.PER_100G, Nutrients.ZERO, emptyList(), null, "", null,
+                // diary_entry gained category_id in V3: older diary rows go in as SQL.
+                if (from < 3) {
+                    db.writableDatabase.execSQL(
+                        "INSERT INTO diary_entry (day, meal_slot_id, t_sec, name, amount_x100, serving_label, grams_x10, kcal_x10, protein_x10) " +
+                            "VALUES (20261123, 1, 1795435200, 'Porridge', 100, '1 medium', 1820, 520, 3)",
+                    )
+                } else {
+                    db.diary.add(DbTest.entry(Day(20261123), name = "Porridge"))
+                }
+                if (from < 2) {
+                    val w = db.writableDatabase
+                    w.execSQL(
+                        "INSERT INTO custom_food (name, basis, kcal_x10, origin, created_sec, updated_sec) VALUES ('Crème caramel', 0, 0, 1, 1, 1)",
+                    )
+                    w.execSQL("INSERT INTO my_food_fts (docid, name, brand) VALUES (1099511627777, 'Crème caramel', NULL)")
+                } else {
+                    db.foods.insert(
+                        CustomFood(
+                            Food(
+                                FoodRef(FoodOrigin.MY_FOOD, 0), "Crème caramel", null, 0,
+                                Basis.PER_100G, Nutrients.UNKNOWN.copy(kcalX10 = 0), emptyList(), null, "", null,
+                            ),
+                            CustomFoodOrigin.TYPED, null, false, 1, 1, null,
                         ),
-                        CustomFoodOrigin.TYPED, null, false, 1, 1, null,
-                    ),
-                )
+                    )
+                }
                 db.settings.set(SettingKeys.THEME, "light")
+                // The workout table is unchanged since V1; the DAO reads workout_trim (V4), so raw SQL.
+                db.writableDatabase.execSQL(
+                    "INSERT INTO workout (device_id, sport, start_sec, end_sec, duration_sec, distance_m, kcal, has_track, fit_path, source) " +
+                        "VALUES (99, 1, 1795435200, 1795437000, 1800, 5000, 300, 1, '/f/run.fit', 1)",
+                )
             }
             // 2. Upgrade and check.
             open(latest).use { db ->
@@ -112,13 +138,73 @@ class MigrationTest {
                 assertEquals(1, db.foods.searchMine("creme").size)
                 assertEquals("light", db.settings.get(SettingKeys.THEME))
                 assertEquals(1000L to 5000L, db.fasts.list(1).single().let { it.startSec to it.endSec })
-                checkDummyV2(db)
+                checkV2(db)
+                checkV3(db)
+                checkV4(db)
+                checkDummyV5(db)
             }
         }
     }
 
-    /** Checks specific to the staged dummy V2. */
-    private fun checkDummyV2(db: SelfWatchDb) {
+    /** Schema 2: food database v2 nutrients stay unknown on old rows; new rows keep them. */
+    private suspend fun checkV2(db: SelfWatchDb) {
+        val old = db.diary.day(Day(20261123)).single().nutrients
+        assertEquals(null, old.potassiumMg)
+        assertEquals(null, old.vitdX10)
+        val food = db.foods.list().single().food
+        assertEquals(null, food.per.transfatX10)
+        assertEquals(0, food.dietInfo.diet)
+        db.diary.add(DbTest.entry(Day(20261124), name = "Banana").let { it.copy(nutrients = it.nutrients.copy(potassiumMg = 420, ironX10 = 3)) })
+        val banana = db.diary.day(Day(20261124)).single().nutrients
+        assertEquals(420, banana.potassiumMg)
+        assertEquals(3, banana.ironX10)
+        assertEquals(420, db.diary.dayTotals(Day(20261124)).potassiumMg)
+    }
+
+    /**
+     * Schema 3: old diary rows have no category; new rows keep theirs (also when a meal is copied); the
+     * battery history stores, reads back and goes with the device's data.
+     */
+    private suspend fun checkV3(db: SelfWatchDb) {
+        assertEquals(null, db.diary.day(Day(20261123)).single().categoryId)
+        db.diary.add(DbTest.entry(Day(20261125), name = "Apple").copy(categoryId = 101))
+        assertEquals(101, db.diary.day(Day(20261125)).single().categoryId)
+        db.diary.copyMeal(Day(20261125), 1, Day(20261126), 1_795_600_000L)
+        assertEquals(101, db.diary.day(Day(20261126)).single().categoryId)
+        val id = db.devices.upsert(
+            DeviceInfo(
+                0, DeviceKind.GARMIN_WATCH, "AA:BB:CC:DD:EE:01", "Watch", "vivoactive 5",
+                null, null, null, SupportTier.UNVERIFIED, emptySet(), null,
+            ),
+        )
+        db.battery.add(id, 1_000L, 80)
+        db.battery.add(id, 2_000L, 140)
+        assertEquals(listOf(80, 100), db.battery.readings(TimeRange(0, 3_000)).map { it.pct })
+        assertEquals(100, db.battery.latest(id)?.pct)
+        db.devices.deleteData(id, keepWorkouts = false)
+        assertEquals(null, db.battery.latest(id))
+    }
+
+    /**
+     * Schema 4: workouts from before have no trim; a trim stores the window and the originals, undo puts
+     * them back, and deleting the workout removes its trim.
+     */
+    private suspend fun checkV4(db: SelfWatchDb) {
+        val w = db.workouts.list(10).single { it.fitPath == "/f/run.fit" }
+        assertEquals(null, db.workouts.trim(w.id))
+        val cut = w.copy(endSec = w.startSec + 1200, durationSec = 1200, distanceM = 3300, kcal = 200)
+        assertTrue(db.workouts.saveTrim(cut, w.startSec, w.startSec + 1200))
+        assertEquals(3300, db.workouts.get(w.id)!!.distanceM)
+        assertEquals(w, db.workouts.trim(w.id)!!.original)
+        assertTrue(db.workouts.undoTrim(w.id))
+        assertEquals(w, db.workouts.get(w.id))
+        assertTrue(db.workouts.saveTrim(cut, w.startSec, w.startSec + 1200))
+        assertTrue(db.workouts.delete(w.id))
+        assertEquals(0, db.readableDatabase.rawQuery("SELECT COUNT(*) FROM workout_trim", null).use { it.moveToFirst(); it.getInt(0) })
+    }
+
+    /** Checks specific to the staged dummy V5. */
+    private fun checkDummyV5(db: SelfWatchDb) {
         val d = db.writableDatabase
         assertEquals(3, d.rawQuery("SELECT source FROM water", null).use { it.moveToFirst(); it.getInt(0) })
         assertEquals("", d.rawQuery("SELECT label FROM fast", null).use { it.moveToFirst(); it.getString(0) })

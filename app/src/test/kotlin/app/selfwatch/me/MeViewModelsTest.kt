@@ -69,16 +69,16 @@ class MeViewModelsTest {
         val held = listOf(HeldPermission(PermissionKind.CAMERA, false))
         val vm = make { PrivacyViewModel(Firewall(g.settings), flowOf(emptyList()), { held }) }
         MeTestSupport.waitFor("switches") { vm.state.value.switches.size == NetFeature.entries.size }
-        assertFalse(vm.state.value.switches.getValue(NetFeature.WATCH_APP_WEB))
+        assertFalse(vm.state.value.switches.getValue(NetFeature.OPEN_FOOD_FACTS))
         assertTrue(vm.state.value.switches.getValue(NetFeature.FOOD_DATA))
         assertEquals(held, vm.state.value.permissions)
 
-        vm.setAllowed(NetFeature.WATCH_APP_WEB, true)
+        vm.setAllowed(NetFeature.OPEN_FOOD_FACTS, true)
         vm.setAllowed(NetFeature.FOOD_DATA, false)
         MeTestSupport.waitFor("toggled", { vm.state.value.toString() }) {
-            vm.state.value.switches[NetFeature.WATCH_APP_WEB] == true && vm.state.value.switches[NetFeature.FOOD_DATA] == false
+            vm.state.value.switches[NetFeature.OPEN_FOOD_FACTS] == true && vm.state.value.switches[NetFeature.FOOD_DATA] == false
         }
-        assertTrue(runBlocking { g.settings.netAllowed(NetFeature.WATCH_APP_WEB) })
+        assertTrue(runBlocking { g.settings.netAllowed(NetFeature.OPEN_FOOD_FACTS) })
         assertFalse(runBlocking { Firewall(g.settings).allowed(NetFeature.FOOD_DATA) })
     }
 
@@ -125,7 +125,6 @@ class MeViewModelsTest {
         MeTestSupport.waitFor("loaded") { !vm.state.value.loading }
         val s0 = vm.state.value
         assertTrue(s0.alwaysConnected)
-        assertFalse(s0.fakeAuth)
         assertFalse(s0.bleCapture)
 
         vm.setAlwaysConnected(false)
@@ -134,20 +133,35 @@ class MeViewModelsTest {
         vm.setUnits(SettingsViewModel.UNITS_IMPERIAL)
         vm.setTheme(SwTheme.NightMode.LIGHT)
         vm.setColorTheme(SwTheme.Theme.TURQUOISE)
-        vm.setFakeAuth(true)
         vm.setBleCapture(true) // ignored: not a debug build
         MeTestSupport.waitFor("stored", { vm.state.value.toString() }) {
             val s = vm.state.value
             !s.alwaysConnected && s.syncHours == 6 && !s.foodEnabled && s.units == "imperial" &&
-                s.appearance.night == SwTheme.NightMode.LIGHT && s.appearance.theme == SwTheme.Theme.TURQUOISE && s.fakeAuth
+                s.appearance.night == SwTheme.NightMode.LIGHT && s.appearance.theme == SwTheme.Theme.TURQUOISE
         }
         val st = g.settings
         assertEquals("sync_only", runBlocking { st.get(SettingKeys.CONNECTION_MODE) })
         assertEquals("#19D3C5", runBlocking { st.get(SettingKeys.ACCENT) })
         assertEquals("light", runBlocking { st.get(SettingKeys.THEME) })
-        assertTrue(runBlocking { st.getBool(SettingKeys.GARMIN_FAKE_AUTH) })
         assertNull(runBlocking { st.get(WatchSettings.BLE_CAPTURE) })
         assertEquals(2, reconnects)
+    }
+
+    @Test
+    fun debugSettingsAreStoredInDebugBuildsOnly() {
+        val g = app.graph
+        val debug = make { SettingsViewModel(g.settings, debuggable = true) {} }
+        MeTestSupport.waitFor("loaded") { !debug.state.value.loading }
+        debug.setBleCapture(false)
+        MeTestSupport.waitFor("stored", { debug.state.value.toString() }) { !debug.state.value.bleCapture }
+
+        // A release build ignores what a debug build stored.
+        runBlocking { g.settings.setBool(WatchSettings.BLE_CAPTURE, true) }
+        val release = ViewModelProvider(store, viewModelFactory { initializer { SettingsViewModel(g.settings, debuggable = false) {} } })[
+            "release", SettingsViewModel::class.java,
+        ]
+        MeTestSupport.waitFor("loaded") { !release.state.value.loading }
+        assertFalse(release.state.value.bleCapture)
     }
 
     @Test

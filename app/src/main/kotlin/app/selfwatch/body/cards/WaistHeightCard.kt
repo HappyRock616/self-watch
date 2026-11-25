@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -21,8 +22,11 @@ import app.selfwatch.body.WaistHeightInfo
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.me.ProfileFragment
 import app.selfwatch.model.health.BodyKind
@@ -47,6 +51,30 @@ object WaistHeightCard : Card<WaistHeightCard.Data>(
     override val tables: Set<Table> = setOf(Table.BODY, Table.SETTING)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyTrendLoader(env.db, env.clock).waistHeight(), env.units)
+
+    override val needs: Set<DataKind> = setOf(DataKind.MEASUREMENTS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val i = data.info
+        val ratio = i.ratioX100 ?: return null
+        if (i.waistX100 == null) return null
+        val (status, note) = when (BodyCardMath.waistBand(ratio)) {
+            WaistBand.UNDER -> CardStatus.GOOD to R.string.small_wh_under
+            WaistBand.RAISED -> CardStatus.CLOSE to R.string.small_wh_raised
+            WaistBand.HIGH -> CardStatus.OFF to R.string.small_wh_high
+        }
+        return SmallFace(
+            value = Fmt.number(ratio / 100.0, 2),
+            label = ctx.getString(R.string.small_waist_height_label),
+            status = status,
+            note = ctx.getString(note),
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(MeasureDetailFragment.newInstance(BodyKind.WAIST, null))
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

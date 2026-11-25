@@ -117,6 +117,7 @@ class DemoData(private val ctx: Context, private val db: SelfWatchDb, private va
             nights++
         }
 
+        metrics += heartCardData(deviceId, workouts, today, zone, now)
         metrics += bodyCardHistory(deviceId, importId, today, zone, clock.nowSec())
         val weights = bodyData(importId, today, zone)
         val diary = diaryData(importId, today, zone, now) + rideFuel(importId, today, zone, now)
@@ -295,6 +296,44 @@ class DemoData(private val ctx: Context, private val db: SelfWatchDb, private va
         return out
     }
 
+    /**
+     * Additions for the heart-rate cards: heart rate every minute today, the minutes after the last two days'
+     * workouts (a recovery to read), and the watch's energy level every 15 minutes today.
+     */
+    private suspend fun heartCardData(deviceId: Long, workouts: List<DemoWorkout>, today: Day, zone: java.time.ZoneId, now: Long): Int {
+        val out = ArrayList<MetricSample>()
+        val start = today.startSec(zone)
+        val rnd = Random(SEED * 41 + today.yyyymmdd)
+        // The odd minutes between the existing every-other-minute readings, 7:00 until now.
+        var t = start + 7 * HOUR + 60
+        while (t < minOf(now, start + 22 * HOUR)) {
+            val w = workouts.firstOrNull { t >= it.startSec && t < it.startSec + it.durationSec }
+            val hr = if (w != null) w.avgHr + rnd.nextInt(-8, 9) else 68 + (8 * sin((t - start) / 7_000.0)).roundToInt() + rnd.nextInt(-4, 5)
+            out += MetricSample(deviceId, MetricKind.HEART_RATE, t, hr)
+            t += 120
+        }
+        // After each workout of today and yesterday: the end, then a fall over the next minutes.
+        for (w in workouts.filter { it.startSec >= today.plusDays(-1).startSec(zone) && it.sport != BIKE }) {
+            val end = w.startSec + w.durationSec
+            val peak = w.avgHr + 8
+            for ((i, drop) in RECOVERY_DROP.withIndex()) {
+                val at = end + i * 60L
+                if (at <= now) out += MetricSample(deviceId, MetricKind.HEART_RATE, at, peak - drop)
+            }
+            out += MetricSample(deviceId, MetricKind.HEART_RATE, end - 60, peak - 2)
+        }
+        // Energy level: refilling through the night, then down through the day with a small lift after lunch.
+        var e = start
+        while (e <= now) {
+            val h = (e - start) / 3_600.0
+            val base = if (h < 6.5) 60 + 5 * h else 92 - 3.2 * (h - 6.5) + (if (h in 12.5..14.0) 4 else 0)
+            val level = (base + rnd.nextInt(-2, 3)).roundToInt().coerceIn(5, 100)
+            out += MetricSample(deviceId, MetricKind.ENERGY_LEVEL, e, level)
+            e += 15 * 60
+        }
+        return db.metrics.insert(out)
+    }
+
     private suspend fun bodyData(importId: Long, today: Day, zone: java.time.ZoneId): Int {
         var n = 0
         val rnd = Random(SEED + 7)
@@ -450,7 +489,7 @@ class DemoData(private val ctx: Context, private val db: SelfWatchDb, private va
     private suspend fun fillGoalsAndProfile(today: Day) {
         val added = ArrayList<String>()
         val from = today.plusDays(-HISTORY_DAYS)
-        for ((kind, value) in listOf(GoalKind.KCAL_IN to 2_100, GoalKind.STEPS to 10_000, GoalKind.WEIGHT_KG_X100 to 78_00, GoalKind.ACTIVE_MIN to 30)) {
+        for ((kind, value) in listOf(GoalKind.KCAL_IN to 2_100, GoalKind.STEPS to 10_000, GoalKind.WEIGHT_KG_X100 to 78_00, GoalKind.ACTIVE_MIN to 300)) {
             if (db.goals.history(kind).isEmpty()) {
                 db.goals.set(Goal(kind, value, from))
                 added += "${kind.code}:${from.yyyymmdd}"
@@ -502,6 +541,7 @@ class DemoData(private val ctx: Context, private val db: SelfWatchDb, private va
         private const val STRENGTH_SUB_SPORT = 20
         private const val STRENGTH_FIRST_DAY = 2
         private const val BODY_NIGHT_DAYS = 70
+        private val RECOVERY_DROP = listOf(0, 22, 35, 40, 43, 45)
 
         // A neutral spot for the generated routes (a park loop; no real person's route).
         private const val BASE_LAT = 47.3600

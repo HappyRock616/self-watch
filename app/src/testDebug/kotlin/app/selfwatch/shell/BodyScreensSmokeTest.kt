@@ -22,13 +22,14 @@ import app.selfwatch.activity.ActivityFragment
 import app.selfwatch.body.BodyFragment
 import app.selfwatch.body.BodySignalsDetailFragment
 import app.selfwatch.cards.CardRegistry
+import app.selfwatch.cards.CardSize
+import app.selfwatch.cards.CardSlot
 import app.selfwatch.cards.CardStack
 import app.selfwatch.cards.CardStore
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.EditCardsFragment
 import app.selfwatch.body.EnergySheet
 import app.selfwatch.body.HeartDetailFragment
-import app.selfwatch.cards.MainGoal
 import app.selfwatch.food.FoodFragment
 import app.selfwatch.body.MeasureDetailFragment
 import app.selfwatch.body.MeasurementsFragment
@@ -123,7 +124,8 @@ class BodyScreensSmokeTest {
         TestDb.fresh(ctx)
         val activity = launch().get()
         idle()
-        waitFor("body empty states") { visibleEmptyStates(activity.findViewById(R.id.tab_container)) > 0 }
+        // No device yet: Body shows the goal card (and what can be typed in).
+        waitFor("body goal card") { activity.findViewById<View>(R.id.body_today_card)?.isShown == true }
         activity.select(Tab.ACTIVITY)
         idle()
         for (f in screens(workoutId = 1).dropLast(1)) {
@@ -189,11 +191,11 @@ class BodyScreensSmokeTest {
     }
 
     /** The root view id of each registered card, as it appears in its tab. */
+    private fun legacy(tab: CardTab) = CardRegistry.of(tab).filter { it.toString() in rootIds }
+
     private val rootIds: Map<String, Int> = mapOf(
-        "body/energy" to R.id.energy_card,
-        "body/macros" to R.id.macros_card,
-        "body/steps" to R.id.steps_card,
-        "body/intensity" to R.id.intensity_card,
+        "food/energy" to R.id.energy_card,
+        "activity/intensity" to R.id.intensity_card,
         "body/weight" to R.id.weight_card,
         "body/measurements" to R.id.measurements_card,
         "body/recovery" to R.id.recovery_row,
@@ -227,6 +229,14 @@ class BodyScreensSmokeTest {
         "body/resting_hr" to R.id.resting_hr_card,
         "body/body_stress" to R.id.body_stress_card,
         "body/body_signals" to R.id.body_signals_card,
+        "body/heart_rate_now" to R.id.heart_rate_now_card,
+        "body/heart_rate_trends" to R.id.heart_rate_trends_card,
+        "body/breathing_rate" to R.id.breathing_rate_card,
+        "body/energy_level" to R.id.energy_level_card,
+        "activity/today_timeline" to R.id.today_timeline_card,
+        "activity/recovery_hr" to R.id.recovery_hr_card,
+        "activity/distance_today" to R.id.distance_today_card,
+        "activity/calories_today" to R.id.calories_today_card,
     )
 
     private fun MainActivity.stack(tab: CardTab): CardStack? = when (tab) {
@@ -249,7 +259,7 @@ class BodyScreensSmokeTest {
         val db = SelfWatchDb.get(ctx)
         val store = CardStore(db.settings)
         for (tab in CardTab.entries) {
-            val order = CardRegistry.of(tab).reversed()
+            val order = legacy(tab).reversed()
             for (c in order) assertNotNull("$c has a root id in this test", rootIds[c.toString()])
             runBlocking { store.save(tab, order) }
             activity.select(tab.shell())
@@ -272,6 +282,9 @@ class BodyScreensSmokeTest {
         // The demo data reached the cards that always have it (earlier days' readings and workouts).
         waitFor("demo data in the cards") {
             activity.findViewById<View>(R.id.intensity_empty)?.visibility == View.GONE &&
+                activity.window.decorView.let { d ->
+                    listOf(R.id.hrn_empty, R.id.hrt_empty, R.id.br_empty, R.id.el_empty).all { d.findViewById<View>(it)?.visibility == View.GONE }
+                } &&
                 activity.findViewById<View>(R.id.spo2_empty)?.visibility == View.GONE &&
                 activity.findViewById<View>(R.id.trend_empty)?.visibility == View.GONE &&
                 activity.findViewById<View>(R.id.recent_empty)?.visibility == View.GONE &&
@@ -281,7 +294,8 @@ class BodyScreensSmokeTest {
         // Tapping a water square logs a glass for the day shown.
         val drinks = runBlocking { db.water.entries(app.selfwatch.model.time.SystemClock.today()) }
         val before = drinks.size
-        val glasses = drinks.sumOf { it.ml } / app.selfwatch.food.DiaryViewModel.GLASS_ML
+        val units = DisplayUnits.of(runBlocking { db.settings.profile().units })
+        val glasses = app.selfwatch.food.WaterGlass.glasses(drinks.sumOf { it.ml }, units)
         activity.select(Tab.FOOD)
         idle()
         assertTrue(activity.window.decorView.findViewWithTag<View>("water_$glasses")?.performClick() == true)
@@ -295,7 +309,7 @@ class BodyScreensSmokeTest {
     private fun bodyCardsShowAndOpen(activity: MainActivity) {
         everyTabShowsEveryCard(activity)
         val db = SelfWatchDb.get(ctx)
-        val order = CardRegistry.of(CardTab.BODY).reversed()
+        val order = legacy(CardTab.BODY).reversed() + listOf(app.selfwatch.body.cards.EnergyCard, app.selfwatch.body.cards.IntensityCard)
         runBlocking { CardStore(db.settings).save(CardTab.BODY, order) }
         val column = activity.findViewById<android.view.ViewGroup>(R.id.body_cards)
         waitFor("cards in order") {
@@ -333,7 +347,7 @@ class BodyScreensSmokeTest {
             activity.supportFragmentManager.executePendingTransactions()
             idle()
         }
-        val tabs = mapOf(R.id.macros_card to Tab.FOOD, R.id.steps_card to Tab.ACTIVITY, R.id.intensity_card to Tab.ACTIVITY)
+        val tabs = mapOf(R.id.intensity_card to Tab.ACTIVITY)
         for ((id, tab) in tabs) {
             assertTrue(activity.findViewById<View>(id).performClick())
             activity.supportFragmentManager.executePendingTransactions()
@@ -354,39 +368,49 @@ class BodyScreensSmokeTest {
     }
 
     @Test
-    fun editCardsReorders() {
+    fun editCardsReordersResizesAndResets() {
         val db = TestDb.fresh(ctx)
         val store = CardStore(db.settings)
+        val sleep = app.selfwatch.body.cards.SleepCard
+        val weight = app.selfwatch.body.cards.WeightCard
+        val water = app.selfwatch.food.cards.WaterCard
+        runBlocking {
+            store.saveSlots(CardTab.BODY, listOf(CardSlot(sleep, CardSize.LARGE), CardSlot(weight, CardSize.SMALL), CardSlot(water, CardSize.SMALL)))
+        }
         val activity = launch().get()
         idle()
         val shown = activity.open(EditCardsFragment.newInstance(CardTab.BODY))
         val list = shown.requireView().findViewById<RecyclerView>(R.id.edit_cards_list)
-        waitFor("rows") { list.adapter?.itemCount == CardRegistry.of(CardTab.BODY).size }
-        list.measure(
-            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-        )
-        list.layout(0, 0, 1080, list.measuredHeight)
-        idle()
-        // Hide the first card with its switch.
-        val first = list.findViewHolderForAdapterPosition(0) ?: error("no first row")
+        fun layout() {
+            list.measure(
+                View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            )
+            list.layout(0, 0, 1080, list.measuredHeight)
+            idle()
+        }
+        waitFor("rows") { (list.adapter?.itemCount ?: 0) > 4 }
+        layout()
+        // Row 0 is "On this tab"; take the first card (Sleep) off with its switch.
+        val first = list.findViewHolderForAdapterPosition(1) ?: error("no first row")
         findAll(first.itemView, MaterialSwitch::class.java).single().performClick()
-        idle()
-        val preset = MainGoal.GENERAL_HEALTH.cards(CardTab.BODY)
-        val expected = preset.drop(1)
-        waitFor("hidden card saved") { runBlocking { store.visible(CardTab.BODY) } == expected }
-        // Move the third row (the second shown card) up with the accessibility action.
-        val second = list.findViewHolderForAdapterPosition(2) ?: error("no third row")
+        waitFor("hidden card saved") { runBlocking { store.visible(CardTab.BODY) } == listOf(weight, water) }
+        layout()
+        // Move Water (row 2) up with the accessibility action.
+        val second = list.findViewHolderForAdapterPosition(2) ?: error("no second card")
         val toggle = findAll(second.itemView, MaterialSwitch::class.java).single()
-        val info = toggle.createAccessibilityNodeInfo()
-        val up = info.actionList.firstOrNull { it.label == ctx.getString(R.string.edit_cards_move_up) } ?: error("no move up")
+        val up = toggle.createAccessibilityNodeInfo().actionList.firstOrNull { it.label == ctx.getString(R.string.edit_cards_move_up) } ?: error("no move up")
         assertTrue(toggle.performAccessibilityAction(up.id, null))
-        idle()
-        val moved = listOf(expected[1], expected[0]) + expected.drop(2)
-        waitFor("move saved") { runBlocking { store.visible(CardTab.BODY) } == moved }
-        // Reset brings back the goal's set.
+        waitFor("move saved") { runBlocking { store.visible(CardTab.BODY) } == listOf(water, weight) }
+        layout()
+        // Make Water large with its size choice.
+        val row = list.findViewHolderForAdapterPosition(1) ?: error("no water row")
+        val large = findAll(row.itemView, com.google.android.material.button.MaterialButton::class.java).single { it.text == ctx.getString(R.string.edit_cards_large) }
+        large.performClick()
+        waitFor("size saved") { runBlocking { store.slots(CardTab.BODY) }.first() == CardSlot(water, CardSize.LARGE) }
+        // Reset brings back the default layout (it follows the devices again).
         shown.requireView().findViewById<View>(R.id.edit_cards_reset).performClick()
-        waitFor("reset saved") { runBlocking { store.visible(CardTab.BODY) } == preset }
+        waitFor("reset saved") { runBlocking { !store.isSaved(CardTab.BODY) } }
         activity.onBackPressedDispatcher.onBackPressed()
         activity.supportFragmentManager.executePendingTransactions()
         idle()
@@ -408,10 +432,10 @@ class BodyScreensSmokeTest {
             idle()
             val edit = activity.supportFragmentManager.findFragmentById(R.id.detail_container) as? EditCardsFragment ?: error("$tab: no Edit cards")
             val list = edit.requireView().findViewById<RecyclerView>(R.id.edit_cards_list)
-            waitFor("$tab rows") { list.adapter?.itemCount == CardRegistry.of(tab).size }
+            waitFor("$tab rows") { (list.adapter?.itemCount ?: 0) > 0 }
             // Reset on this tab writes this tab only.
             edit.requireView().findViewById<View>(R.id.edit_cards_reset).performClick()
-            waitFor("$tab reset") { runBlocking { store.preset(tab) } == MainGoal.GENERAL_HEALTH }
+            waitFor("$tab reset") { runBlocking { !store.isSaved(tab) } }
             activity.onBackPressedDispatcher.onBackPressed()
             activity.supportFragmentManager.executePendingTransactions()
             idle()

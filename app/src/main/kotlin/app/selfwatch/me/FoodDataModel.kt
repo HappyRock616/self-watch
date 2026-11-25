@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
@@ -52,14 +54,14 @@ interface FoodDataOps {
 
     /** Factory. */
     companion object {
-        /** Over the real [installer]. */
-        fun of(installer: DataInstaller): FoodDataOps = object : FoodDataOps {
+        /** Over the real [installer]; installs and removals take [lock] so two never run at once. */
+        fun of(installer: DataInstaller, lock: Mutex = Mutex()): FoodDataOps = object : FoodDataOps {
             override suspend fun installedVersion(): Int? = if (installer.isInstalled) installer.installedVersion() ?: 0 else null
             override suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) { installer.file.takeIf { it.isFile }?.length() ?: 0L }
             override suspend fun check() = installer.checkForUpdate()
-            override suspend fun install(m: DataManifest, onProgress: (Long, Long?) -> Unit) = installer.install(m, onProgress)
-            override suspend fun installFrom(input: InputStream) = installer.installFrom(input)
-            override suspend fun remove() = installer.remove()
+            override suspend fun install(m: DataManifest, onProgress: (Long, Long?) -> Unit) = lock.withLock { installer.install(m, onProgress) }
+            override suspend fun installFrom(input: InputStream) = lock.withLock { installer.installFrom(input) }
+            override suspend fun remove() = lock.withLock { installer.remove() }
         }
     }
 }
@@ -195,7 +197,7 @@ class FoodDataViewModel(private val ops: FoodDataOps) : ViewModel() {
     companion object {
         /** Builds the view model from [graph]. */
         fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {
-            initializer { FoodDataViewModel(FoodDataOps.of(graph.food.installer)) }
+            initializer { FoodDataViewModel(FoodDataOps.of(graph.food.installer, graph.food.installLock)) }
         }
 
         /** Whether the firewall lets food data downloads out. */

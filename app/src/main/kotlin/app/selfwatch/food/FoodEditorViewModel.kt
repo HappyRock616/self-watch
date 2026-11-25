@@ -10,8 +10,13 @@ package app.selfwatch.food
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.selfwatch.food.barcode.Gtin
+import app.selfwatch.food.nutrition.FoodCategories
+import app.selfwatch.food.nutrition.NutrientMath
+import app.selfwatch.model.food.Allergen
 import app.selfwatch.model.food.Basis
+import app.selfwatch.model.food.DietInfo
 import app.selfwatch.model.food.Food
+import app.selfwatch.model.food.FoodCategory
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.food.Nutrients
@@ -45,10 +50,34 @@ data class FoodForm(
     val sodiumMg: String = "",
     val cholesterolMg: String = "",
     val barcode: String = "",
+    // Food database v2 nutrients ("More nutrients"); g, mg or µg as labeled.
+    val transfat: String = "",
+    val monofat: String = "",
+    val polyfat: String = "",
+    val addsugar: String = "",
+    val potassiumMg: String = "",
+    val calciumMg: String = "",
+    val ironMg: String = "",
+    val vitaUg: String = "",
+    val vitcMg: String = "",
+    val vitdUg: String = "",
+    /** Ticked diet claims (unticked means unknown, never "no"). */
+    val vegan: Boolean = false,
+    val vegetarian: Boolean = false,
+    val glutenFree: Boolean = false,
+    /** Allergens the label lists. */
+    val allergens: Set<Allergen> = emptySet(),
+    /** Food category id (foods.db `category` table), or null for none. */
+    val categoryId: Int? = null,
+    /** Extra named servings after the first ("+ serving size"), in order. */
+    val extraServings: List<ServingForm> = emptyList(),
 )
 
+/** One extra serving as typed: a name ("1 slice") and its weight in grams (decimal text). */
+data class ServingForm(val label: String = "", val grams: String = "")
+
 /** Form problems. */
-enum class FoodFormError { NAME, KCAL, SERVING_GRAMS, BARCODE }
+enum class FoodFormError { NAME, KCAL, SERVING_GRAMS, BARCODE, EXTRA_SERVING }
 
 /** Editor state. */
 data class FoodEditorState(
@@ -56,6 +85,8 @@ data class FoodEditorState(
     val form: FoodForm = FoodForm(),
     /** Id of the custom food being edited; 0 for a new one. */
     val id: Long = 0,
+    /** The categories to pick from. */
+    val categories: List<FoodCategory> = FoodCategories.ALL,
 )
 
 /** Editor events. */
@@ -86,8 +117,8 @@ class FoodEditorViewModel(
     private val backend: FoodBackend by lazy(backendProvider)
     private val mutable = MutableStateFlow(FoodEditorState())
     private val eventChannel = Channel<FoodEditorEvent>(Channel.BUFFERED)
-    private var extraServings: List<Serving> = emptyList()
     private var per100Basis: Basis = Basis.PER_100G
+    private var baseDiet: DietInfo = DietInfo.UNKNOWN
 
     /** Screen state. */
     val state: StateFlow<FoodEditorState> = mutable.asStateFlow()
@@ -105,21 +136,29 @@ class FoodEditorViewModel(
                 SwLog.w(TAG, "load failed", e)
                 null
             }
+            val categories = try {
+                backend.foodCategories().ifEmpty { FoodCategories.ALL }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SwLog.w(TAG, "categories failed", e)
+                FoodCategories.ALL
+            }
             if (food == null) {
-                mutable.value = FoodEditorState(loading = false, form = FoodForm(barcode = barcode?.let { Gtin.shortForm(it) }.orEmpty()))
+                mutable.value = FoodEditorState(loading = false, form = FoodForm(barcode = barcode?.let { Gtin.shortForm(it) }.orEmpty()), categories = categories)
                 return@launch
             }
-            val sorted = food.servings.sortedBy { it.seq }
-            extraServings = sorted.drop(1)
             if (food.basis == Basis.PER_100ML) per100Basis = Basis.PER_100ML
+            baseDiet = food.dietInfo
             val id = if (food.ref.origin == FoodOrigin.MY_FOOD) food.ref.id else 0L
-            mutable.value = FoodEditorState(loading = false, form = formOf(food), id = id)
+            mutable.value = FoodEditorState(loading = false, form = formOf(food), id = id, categories = categories)
         }
     }
 
     /** Validates and saves [form]. */
     fun save(form: FoodForm) {
-        val result = toFood(form, mutable.value.id, per100Basis, extraServings)
+        val category = form.categoryId?.let { id -> mutable.value.categories.firstOrNull { it.id == id } ?: FoodCategory(id, "", "") }
+        val result = toFood(form, mutable.value.id, per100Basis, baseDiet, category)
         val food = result.first
         if (food == null) {
             viewModelScope.launch { eventChannel.send(FoodEditorEvent.Invalid(result.second)) }
@@ -162,7 +201,8 @@ class FoodEditorViewModel(
 
         /** [food] as form text. */
         fun formOf(food: Food): FoodForm {
-            val first = food.servings.minByOrNull { it.seq }
+            val sorted = food.servings.sortedBy { it.seq }
+            val first = sorted.firstOrNull()
             fun g(x10: Int?) = x10?.let { Fmt.x100(it * 10L, 1) }.orEmpty()
             fun mg(v: Int?) = v?.toString().orEmpty()
             return FoodForm(
@@ -181,15 +221,62 @@ class FoodEditorViewModel(
                 sodiumMg = mg(food.per.sodiumMg),
                 cholesterolMg = mg(food.per.cholesterolMg),
                 barcode = food.barcode?.let { Gtin.shortForm(it) }.orEmpty(),
+                transfat = g(food.per.transfatX10),
+                monofat = g(food.per.monofatX10),
+                polyfat = g(food.per.polyfatX10),
+                addsugar = g(food.per.addsugarX10),
+                potassiumMg = mg(food.per.potassiumMg),
+                calciumMg = mg(food.per.calciumMg),
+                ironMg = g(food.per.ironX10),
+                vitaUg = mg(food.per.vitaUg),
+                vitcMg = g(food.per.vitcX10),
+                vitdUg = g(food.per.vitdX10),
+                vegan = food.dietInfo.vegan == true,
+                vegetarian = food.dietInfo.vegetarian == true,
+                glutenFree = food.dietInfo.glutenFree,
+                allergens = food.dietInfo.contains.toSet(),
+                categoryId = food.category?.id,
+                extraServings = sorted.drop(1).map { ServingForm(it.label, g(it.gramsX10)) },
             )
+        }
+
+        /**
+         * The diet info [form] ticks, on top of what [base] (the food copied or edited) already knew:
+         * a ticked claim is a decided "yes"; unticking one [base] had decided records "no"; anything
+         * never decided stays unknown.
+         */
+        fun dietOf(form: FoodForm, base: DietInfo): DietInfo {
+            val veg = form.vegetarian || form.vegan
+            var diet = 0
+            var known = base.dietKnown
+            if (form.vegan) {
+                diet = diet or DietInfo.VEGAN
+                known = known or DietInfo.VEGAN
+            }
+            if (veg) {
+                diet = diet or DietInfo.VEGETARIAN
+                known = known or DietInfo.VEGETARIAN
+            }
+            if (form.glutenFree) diet = diet or if (base.glutenFreeNatural) DietInfo.GLUTEN_FREE_NATURAL else DietInfo.GLUTEN_FREE_LABEL
+            return DietInfo(diet, known, Allergen.maskOf(form.allergens), base.allergensFull)
         }
 
         /**
          * The food [form] describes (custom food [id], 0 for new), or null with the problems found:
          * a name and calories are required; a typed serving weight must parse; a typed barcode must be
-         * a valid GTIN.
+         * a valid GTIN; each extra serving needs a name and a weight (blank rows are dropped).
+         *
+         * Extra servings are only meaningful by weight, so a food typed "per serving" that has extra
+         * servings is stored per 100 g (its first serving then needs grams), and every serving keeps
+         * its own weight. [category] defaults to the form's category id.
          */
-        fun toFood(form: FoodForm, id: Long, per100Basis: Basis = Basis.PER_100G, extra: List<Serving> = emptyList()): Pair<Food?, Set<FoodFormError>> {
+        fun toFood(
+            form: FoodForm,
+            id: Long,
+            per100Basis: Basis = Basis.PER_100G,
+            baseDiet: DietInfo = DietInfo.UNKNOWN,
+            category: FoodCategory? = form.categoryId?.let { FoodCategories.byId(it) ?: FoodCategory(it, "", "") },
+        ): Pair<Food?, Set<FoodFormError>> {
             val errors = HashSet<FoodFormError>()
             if (form.name.isBlank()) errors.add(FoodFormError.NAME)
             val kcal = x10(form.kcal)
@@ -198,19 +285,31 @@ class FoodEditorViewModel(
             if (form.servingGrams.isNotBlank() && (grams == null || grams <= 0)) errors.add(FoodFormError.SERVING_GRAMS)
             val code = if (form.barcode.isBlank()) null else Gtin.normalize(form.barcode)
             if (form.barcode.isNotBlank() && code == null) errors.add(FoodFormError.BARCODE)
+            val extras = ArrayList<Serving>()
+            for (s in form.extraServings) {
+                if (s.label.isBlank() && s.grams.isBlank()) continue
+                val g = x10(s.grams)
+                if (s.label.isBlank() || g == null || g <= 0) {
+                    errors.add(FoodFormError.EXTRA_SERVING)
+                } else {
+                    extras.add(Serving(extras.size + 1, s.label.trim(), g))
+                }
+            }
+            if (form.perServing && extras.isNotEmpty() && grams == null) errors.add(FoodFormError.SERVING_GRAMS)
             if (errors.isNotEmpty()) return null to errors
             val label = form.servingLabel.trim().ifEmpty { if (grams != null) "" else FoodRows.ONE_SERVING }
             val servings = ArrayList<Serving>()
             if (label.isNotEmpty() || grams != null) {
                 servings.add(Serving(0, label.ifEmpty { FoodRows.ONE_SERVING }, grams))
             }
-            extra.forEachIndexed { i, s -> servings.add(s.copy(seq = i + 1)) }
+            servings.addAll(extras)
+            val byWeight = form.perServing && extras.isNotEmpty() && grams != null
             val food = Food(
                 ref = FoodRef(FoodOrigin.MY_FOOD, id),
                 name = form.name.trim(),
                 brand = form.brand.trim().ifEmpty { null },
                 kind = 0,
-                basis = if (form.perServing) Basis.PER_ITEM else per100Basis,
+                basis = if (form.perServing && !byWeight) Basis.PER_ITEM else per100Basis,
                 per = Nutrients(
                     kcalX10 = kcal,
                     proteinX10 = x10(form.protein),
@@ -221,12 +320,27 @@ class FoodEditorViewModel(
                     fibreX10 = x10(form.fibre),
                     sodiumMg = whole(form.sodiumMg),
                     cholesterolMg = whole(form.cholesterolMg),
+                    transfatX10 = x10(form.transfat),
+                    monofatX10 = x10(form.monofat),
+                    polyfatX10 = x10(form.polyfat),
+                    addsugarX10 = x10(form.addsugar),
+                    potassiumMg = whole(form.potassiumMg),
+                    calciumMg = whole(form.calciumMg),
+                    ironX10 = x10(form.ironMg),
+                    vitaUg = whole(form.vitaUg),
+                    vitcX10 = x10(form.vitcMg),
+                    vitdX10 = x10(form.vitdUg),
                 ),
                 servings = servings,
                 dataYear = null,
                 sourceLabel = "",
                 barcode = code,
+                category = category,
+                dietInfo = dietOf(form, baseDiet),
             )
+            // Per serving of `grams` → per 100 g: × 100 / grams = × 1000 / gramsX10.
+            val perGrams = grams?.takeIf { byWeight }
+            if (perGrams != null) return food.copy(per = NutrientMath.scale(food.per, 1000L, perGrams.toLong())) to emptySet()
             return food to emptySet()
         }
 

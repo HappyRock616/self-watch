@@ -24,8 +24,12 @@ public enum class FoodOrigin(public val code: Int) {
 public data class FoodRef(val origin: FoodOrigin, val id: Long)
 
 /**
- * Nutrient amounts. `X10` fields are grams ×10 (kcal ×10 for [kcalX10]); `Mg` fields are milligrams.
+ * Nutrient amounts. `X10` fields are the unit ×10 (grams for most, kcal for [kcalX10], milligrams for
+ * [ironX10] and [vitcX10], micrograms for [vitdX10]); `Mg` fields are milligrams, `Ug` micrograms.
  * Null means unknown; 0 means a known zero.
+ *
+ * The first nine fields are the original set. The ten after [cholesterolMg] came with food database
+ * schema 2 and default to unknown, so code that names only the first nine keeps working.
  *
  * **Rounding rule:** [scaled] rounds each field to the nearest integer, halves away from zero
  * (2.5 → 3, −2.5 → −3).
@@ -34,6 +38,17 @@ public data class FoodRef(val origin: FoodOrigin, val id: Long)
  * skipped: `value + value = sum`, `null + value = value`, `null + null = null`. So a day total of, say,
  * sugar is the sum of the foods that report sugar; screens that need to say a total is partial count
  * the unknown parts themselves.
+ *
+ * @property transfatX10 trans fat, g ×10.
+ * @property monofatX10 monounsaturated fat, g ×10.
+ * @property polyfatX10 polyunsaturated fat, g ×10.
+ * @property addsugarX10 added sugars, g ×10.
+ * @property potassiumMg potassium, mg.
+ * @property calciumMg calcium, mg.
+ * @property ironX10 iron, mg ×10.
+ * @property vitaUg vitamin A (RAE), µg.
+ * @property vitcX10 vitamin C, mg ×10.
+ * @property vitdX10 vitamin D, µg ×10.
  */
 public data class Nutrients(
     val kcalX10: Int?,
@@ -45,43 +60,91 @@ public data class Nutrients(
     val fibreX10: Int?,
     val sodiumMg: Int?,
     val cholesterolMg: Int?,
+    val transfatX10: Int? = null,
+    val monofatX10: Int? = null,
+    val polyfatX10: Int? = null,
+    val addsugarX10: Int? = null,
+    val potassiumMg: Int? = null,
+    val calciumMg: Int? = null,
+    val ironX10: Int? = null,
+    val vitaUg: Int? = null,
+    val vitcX10: Int? = null,
+    val vitdX10: Int? = null,
 ) {
+    /** Every field in declaration order (the order of [Field]). */
+    public fun toList(): List<Int?> = listOf(
+        kcalX10, proteinX10, fatX10, satfatX10, carbX10, sugarX10, fibreX10, sodiumMg, cholesterolMg,
+        transfatX10, monofatX10, polyfatX10, addsugarX10, potassiumMg, calciumMg, ironX10, vitaUg, vitcX10, vitdX10,
+    )
+
+    /** The stored value of [field]. */
+    public operator fun get(field: Field): Int? = toList()[field.ordinal]
+
+    /** Every field passed through [f], in [Field] order. */
+    public fun map(f: (Int?) -> Int?): Nutrients = fromList(toList().map(f))
+
+    /** Fields combined pairwise with [o] through [f]. */
+    public fun zip(o: Nutrients, f: (Int?, Int?) -> Int?): Nutrients {
+        val a = toList()
+        val b = o.toList()
+        return fromList(a.indices.map { f(a[it], b[it]) })
+    }
+
+    /** How many fields are known (not null). */
+    public val knownCount: Int get() = toList().count { it != null }
+
     /**
      * Every field multiplied by `factorX1000 / 1000` (1000 = ×1, 1500 = ×1.5), rounded half away
      * from zero and clamped to the `Int` range. Null fields stay null.
      */
-    public fun scaled(factorX1000: Int): Nutrients = Nutrients(
-        kcalX10 = scale(kcalX10, factorX1000),
-        proteinX10 = scale(proteinX10, factorX1000),
-        fatX10 = scale(fatX10, factorX1000),
-        satfatX10 = scale(satfatX10, factorX1000),
-        carbX10 = scale(carbX10, factorX1000),
-        sugarX10 = scale(sugarX10, factorX1000),
-        fibreX10 = scale(fibreX10, factorX1000),
-        sodiumMg = scale(sodiumMg, factorX1000),
-        cholesterolMg = scale(cholesterolMg, factorX1000),
-    )
+    public fun scaled(factorX1000: Int): Nutrients = map { scale(it, factorX1000) }
 
     /** Field-by-field sum of known values; null only when both sides are unknown (see the class KDoc). */
-    public operator fun plus(o: Nutrients): Nutrients = Nutrients(
-        kcalX10 = add(kcalX10, o.kcalX10),
-        proteinX10 = add(proteinX10, o.proteinX10),
-        fatX10 = add(fatX10, o.fatX10),
-        satfatX10 = add(satfatX10, o.satfatX10),
-        carbX10 = add(carbX10, o.carbX10),
-        sugarX10 = add(sugarX10, o.sugarX10),
-        fibreX10 = add(fibreX10, o.fibreX10),
-        sodiumMg = add(sodiumMg, o.sodiumMg),
-        cholesterolMg = add(cholesterolMg, o.cholesterolMg),
-    )
+    public operator fun plus(o: Nutrients): Nutrients = zip(o, ::add)
+
+    /**
+     * The nutrient fields in [Nutrients] declaration order. [unit] is the display unit, [scale] the
+     * divisor from the stored value to [unit] (10 for `X10` fields), [isV2] marks the fields that came
+     * with food database schema 2.
+     */
+    public enum class Field(public val unit: String, public val scale: Int, public val isV2: Boolean) {
+        KCAL("kcal", 10, false),
+        PROTEIN("g", 10, false),
+        FAT("g", 10, false),
+        SATFAT("g", 10, false),
+        CARB("g", 10, false),
+        SUGAR("g", 10, false),
+        FIBER("g", 10, false),
+        SODIUM("mg", 1, false),
+        CHOLESTEROL("mg", 1, false),
+        TRANSFAT("g", 10, true),
+        MONOFAT("g", 10, true),
+        POLYFAT("g", 10, true),
+        ADDSUGAR("g", 10, true),
+        POTASSIUM("mg", 1, true),
+        CALCIUM("mg", 1, true),
+        IRON("mg", 10, true),
+        VITA("µg", 1, true),
+        VITC("mg", 10, true),
+        VITD("µg", 10, true),
+    }
 
     /** Constants. */
     public companion object {
         /** All fields known and zero: the identity for [plus]. */
-        public val ZERO: Nutrients = Nutrients(0, 0, 0, 0, 0, 0, 0, 0, 0)
+        public val ZERO: Nutrients = fromList(List(Field.entries.size) { 0 })
 
         /** All fields unknown. */
         public val UNKNOWN: Nutrients = Nutrients(null, null, null, null, null, null, null, null, null)
+
+        /** Nutrients from [v], one value per [Field] in order. */
+        public fun fromList(v: List<Int?>): Nutrients {
+            require(v.size == Field.entries.size) { "need ${Field.entries.size} values, got ${v.size}" }
+            return Nutrients(
+                v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
+                v[9], v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18],
+            )
+        }
 
         private fun scale(v: Int?, factorX1000: Int): Int? {
             if (v == null) return null
@@ -100,6 +163,81 @@ public data class Nutrients(
         private fun clamp(v: Long): Int = v.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
     }
 }
+
+/**
+ * Diet flags and allergens (food database schema 2, or ticked by the user for a custom food). Bits
+ * follow foods.db: [diet] 1 vegan, 2 vegetarian, 4 gluten-free (label claim), 8 gluten-free (naturally,
+ * one ingredient); [dietKnown] 1 vegan decided, 2 vegetarian decided (decided but not set in [diet]
+ * means "no"); [allergens] see [Allergen]; [allergensFull] true when a full ingredient list was checked,
+ * so a missing allergen bit means "not listed". Unknown is never reported as "free".
+ */
+public data class DietInfo(val diet: Int, val dietKnown: Int, val allergens: Int, val allergensFull: Boolean) {
+    /** True vegan, false not vegan, null unknown. */
+    public val vegan: Boolean? get() = decided(VEGAN)
+
+    /** True vegetarian, false not vegetarian, null unknown. A vegan food is vegetarian. */
+    public val vegetarian: Boolean? get() = decided(VEGETARIAN) ?: if (vegan == true) true else null
+
+    /** Gluten-free by a label claim. */
+    public val glutenFreeLabel: Boolean get() = diet and GLUTEN_FREE_LABEL != 0
+
+    /** Gluten-free by nature (a one-ingredient food). */
+    public val glutenFreeNatural: Boolean get() = diet and GLUTEN_FREE_NATURAL != 0
+
+    /** Gluten-free by label or by nature. */
+    public val glutenFree: Boolean get() = glutenFreeLabel || glutenFreeNatural
+
+    /** True when nothing at all is known. */
+    public val isUnknown: Boolean get() = diet == 0 && dietKnown == 0 && allergens == 0
+
+    /** The allergens listed for this food, in [Allergen] order. */
+    public val contains: List<Allergen> get() = Allergen.entries.filter { allergens and it.bit != 0 }
+
+    /** True when [a] is listed, false when it is known to be absent, null when unknown. */
+    public fun has(a: Allergen): Boolean? = when {
+        allergens and a.bit != 0 -> true
+        a == Allergen.GLUTEN && glutenFree -> false
+        allergensFull -> false
+        else -> null
+    }
+
+    private fun decided(bit: Int): Boolean? = if (dietKnown and bit != 0) diet and bit != 0 else null
+
+    /** Bits and constants. */
+    public companion object {
+        /** Diet bit: vegan. */
+        public const val VEGAN: Int = 1
+
+        /** Diet bit: vegetarian. */
+        public const val VEGETARIAN: Int = 2
+
+        /** Diet bit: gluten-free by label claim. */
+        public const val GLUTEN_FREE_LABEL: Int = 4
+
+        /** Diet bit: naturally gluten-free. */
+        public const val GLUTEN_FREE_NATURAL: Int = 8
+
+        /** Nothing known. */
+        public val UNKNOWN: DietInfo = DietInfo(0, 0, 0, false)
+    }
+}
+
+/** The nine allergens foods.db tracks, with their bit in `allergens`. */
+public enum class Allergen(public val bit: Int) {
+    GLUTEN(1), MILK(2), EGG(4), PEANUT(8), TREE_NUT(16), SOY(32), FISH(64), SHELLFISH(128), SESAME(256);
+
+    /** Lookup. */
+    public companion object {
+        /** The allergens whose bits are set in [mask]. */
+        public fun of(mask: Int): Set<Allergen> = entries.filterTo(LinkedHashSet()) { mask and it.bit != 0 }
+
+        /** The bit mask of [set]. */
+        public fun maskOf(set: Collection<Allergen>): Int = set.fold(0) { m, a -> m or a.bit }
+    }
+}
+
+/** A food category from foods.db's `category` table (42 categories in 9 groups). */
+public data class FoodCategory(val id: Int, val name: String, val group: String)
 
 /** What a food's [Nutrients] are measured per. [code] is stored in the database. */
 public enum class Basis(public val code: Int) {
@@ -123,6 +261,8 @@ public data class Serving(val seq: Int, val label: String, val gramsX10: Int?)
  * @property dataYear year the nutrient data was published, if known.
  * @property sourceLabel short source credit for the UI.
  * @property barcode EAN/UPC as a number, if known.
+ * @property category food category (foods.db schema 2, or the user's pick for a custom food), if known.
+ * @property dietInfo diet flags and allergens (unknown by default).
  */
 public data class Food(
     val ref: FoodRef,
@@ -135,6 +275,8 @@ public data class Food(
     val dataYear: Int?,
     val sourceLabel: String,
     val barcode: Long?,
+    val category: FoodCategory? = null,
+    val dietInfo: DietInfo = DietInfo.UNKNOWN,
 )
 
 /** A diary meal slot (breakfast, lunch, …), in display [order]. */
@@ -146,6 +288,7 @@ public data class MealSlot(val id: Long, val name: String, val order: Int, val h
  *
  * @property amountX100 number of servings ×100.
  * @property gramsX10 total grams ×10, if known.
+ * @property categoryId the food's category ([FoodCategory.id]) when it was logged, if known.
  */
 public data class DiaryEntry(
     val id: Long,
@@ -160,6 +303,7 @@ public data class DiaryEntry(
     val gramsX10: Int?,
     val nutrients: Nutrients,
     val importId: Long?,
+    val categoryId: Int? = null,
 )
 
 /** Whether a recipe-book entry is a recipe or a saved meal. [code] is stored in the database. */

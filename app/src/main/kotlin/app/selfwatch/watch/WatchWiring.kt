@@ -8,11 +8,11 @@
 package app.selfwatch.watch
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import app.selfwatch.ble.conn.BleConnection
 import app.selfwatch.ble.log.BleLog
 import app.selfwatch.ble.profile.HealthSensorDriver
 import app.selfwatch.db.SelfWatchDb
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.db.SettingsStore
 import app.selfwatch.garmin.GarminDriver
@@ -47,6 +47,7 @@ import app.selfwatch.net.Firewall
 import app.selfwatch.net.NetClient
 import app.selfwatch.net.NetworkLog
 import app.selfwatch.service.WatchServiceDeps
+import app.selfwatch.service.device.Backoff
 import app.selfwatch.service.device.DriverFactory
 import app.selfwatch.service.device.EventHandlers
 import app.selfwatch.service.device.PortFactory
@@ -54,6 +55,7 @@ import app.selfwatch.service.relay.CallControl
 import app.selfwatch.service.relay.FindPhoneAlert
 import app.selfwatch.service.relay.MusicControlRouter
 import app.selfwatch.service.relay.NotificationActionRouter
+import app.selfwatch.service.web.FileEphemerisStore
 import app.selfwatch.service.web.WebRequestRouter
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -68,17 +70,42 @@ import kotlin.coroutines.cancellation.CancellationException
 
 /** Setting keys owned by the app layer for the watch connection (generic `setting` rows). */
 object WatchSettings {
-    /** Bluetooth capture to `files/blelog/` (bool). Default: on in debug builds, off in release. */
+    /** Bluetooth capture to `files/blelog/` (bool). Debug builds only: default on there; always off in release. */
     const val BLE_CAPTURE: String = SettingKeys.DEBUG_BLE_CAPTURE
 
     /** True while the next connection to the watch at [address] is the first one after pairing (bool). */
     fun firstConnectKey(address: String): String = "garmin.first_connect.${address.uppercase()}"
 
-    /** True when the app is a debuggable (debug) build. */
-    fun isDebuggable(ctx: Context): Boolean = (ctx.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    /**
+     * Whether Bluetooth capture is on, given the stored [value] (null = never set). Release builds
+     * ([debuggable] false, see [DebugTools.ENABLED]) never capture, even if a value was stored.
+     */
+    fun bleCaptureOn(value: String?, debuggable: Boolean): Boolean = debuggable && (value?.toBooleanStrictOrNull() ?: true)
 
-    /** Whether Bluetooth capture is on, given the stored [value] (null = never set). */
-    fun bleCaptureOn(value: String?, debuggable: Boolean): Boolean = value?.toBooleanStrictOrNull() ?: debuggable
+    /**
+     * Whether Self Watch answers watch [deviceId]'s Garmin sign-in requests itself
+     * ([SettingKeys.deviceFakeAuth], off by default; a normal setting in every build). Moves an old global
+     * "on" ([SettingKeys.GARMIN_FAKE_AUTH]) to this watch first, see [migrateFakeAuth].
+     */
+    suspend fun fakeAuthOn(settings: SettingsStore, deviceId: Long): Boolean {
+        migrateFakeAuth(settings, deviceId)
+        return settings.getBool(SettingKeys.deviceFakeAuth(deviceId))
+    }
+
+    /**
+     * Moves an old global fake sign-in "on" to watch [deviceId] (unless that watch already has its own
+     * value) and removes the global value, so it applies to one watch only.
+     */
+    suspend fun migrateFakeAuth(settings: SettingsStore, deviceId: Long) {
+        if (!settings.getBool(SettingKeys.GARMIN_FAKE_AUTH)) return
+        val key = SettingKeys.deviceFakeAuth(deviceId)
+        val updates = buildMap<String, String?> {
+            if (settings.get(key) == null) put(key, "true")
+            put(SettingKeys.GARMIN_FAKE_AUTH, null)
+        }
+        settings.setAll(updates)
+        SwLog.i("WatchSettings", "moved the Garmin sign-in setting to watch $deviceId")
+    }
 }
 
 /** One Bluetooth link as the [BlePortFactory] drives it. */
@@ -102,6 +129,8 @@ interface LinkHandle {
  */
 class BlePortFactory(
     private val scope: CoroutineScope,
+    /** Addresses (upper case) this phone has a GATT link to, from any app. */
+    private val connectedGatt: () -> Set<String> = { emptySet() },
     private val open: (address: String) -> LinkHandle,
 ) : PortFactory {
     private class Live(val handle: LinkHandle, val job: Job, val reached: AtomicBoolean)
@@ -143,6 +172,12 @@ class BlePortFactory(
         }
     }
 
+    override fun heldElsewhere(address: String): Boolean {
+        val key = address.uppercase()
+        val ours = synchronized(lock) { live.keys.any { it.address.uppercase() == key } }
+        return !ours && key in connectedGatt()
+    }
+
     /** True when the next link to [address] will use auto-connect (for tests and logs). */
     fun usesAutoConnect(address: String): Boolean = synchronized(lock) { address.uppercase() in directFailed }
 
@@ -155,7 +190,7 @@ class BlePortFactory(
  * [DriverFactory] for Garmin watches, and for scales, straps and cuffs that follow the standard
  * Bluetooth health profiles (`ble.profile.HealthSensorDriver`). Every Garmin connection reads its
  * settings fresh: `firstConnect` is true while [WatchSettings.firstConnectKey] is set (cleared once the
- * watch reaches READY), and fake sign-in follows `garmin.fake_auth`. FIT files are decoded in the
+ * watch reaches READY), and fake sign-in follows the watch's own [SettingKeys.deviceFakeAuth]. FIT files are decoded in the
  * phone's time zone.
  */
 class GarminDriverFactory(
@@ -163,6 +198,8 @@ class GarminDriverFactory(
     private val scope: CoroutineScope,
     private val models: () -> GarminModels?,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    /** End of the last successful sync (epoch seconds) for a device id, or null. */
+    private val lastSyncSec: suspend (Long) -> Long? = { null },
 ) : DriverFactory {
 
     override fun create(info: DeviceInfo): WatchDriver = when (info.kind) {
@@ -197,7 +234,7 @@ class GarminDriverFactory(
             models = models(),
             decoders = FitModuleDecoders(zone()),
             handlers = f.handlers,
-            connectConfig = { configFor(firstKey) },
+            connectConfig = { configFor(firstKey, info.id) },
         )
         scope.launch {
             driver.state.first { it is ConnectionState.Ready }
@@ -210,13 +247,25 @@ class GarminDriverFactory(
     }
 
     /** The settings for the next connection of the watch whose first-connect flag is [firstKey]. */
-    suspend fun configFor(firstKey: String): GarminConfig = GarminConfig(
-        firstConnect = settings.getBool(firstKey),
-        fakeAuth = settings.getBool(SettingKeys.GARMIN_FAKE_AUTH),
-    )
+    suspend fun configFor(firstKey: String, deviceId: Long): GarminConfig {
+        val first = settings.getBool(firstKey)
+        // A full sync on every reconnect costs the watch battery when the link is flaky; the watch still
+        // announces new files itself, and a manual Sync now always works.
+        val last = lastSyncSec(deviceId)
+        val now = System.currentTimeMillis() / 1000
+        val due = first || last == null || now - last >= SYNC_ON_CONNECT_MIN_GAP_SEC
+        return GarminConfig(
+            firstConnect = first,
+            fakeAuth = WatchSettings.fakeAuthOn(settings, deviceId),
+            syncOnConnect = due,
+        )
+    }
 
     private companion object {
         const val TAG = "GarminDriverFactory"
+
+        /** Sync on connect only when the last sync is at least this old (30 minutes). */
+        const val SYNC_ON_CONNECT_MIN_GAP_SEC = 30 * 60L
     }
 }
 
@@ -240,8 +289,8 @@ class WatchWiring(ctx: Context) {
     /** The shared Bluetooth capture (one writer per process); follows [WatchSettings.BLE_CAPTURE]. */
     val bleLog: BleLog by lazy {
         val log = BleLog.forContext(app)
-        val debuggable = WatchSettings.isDebuggable(app)
-        scope.launch {
+        val debuggable = DebugTools.ENABLED
+        if (debuggable) scope.launch {
             db.settings.observe(WatchSettings.BLE_CAPTURE).collect { v ->
                 val on = WatchSettings.bleCaptureOn(v, debuggable)
                 if (log.enabled != on) {
@@ -255,11 +304,11 @@ class WatchWiring(ctx: Context) {
 
     /** Port factory on `ble.BleConnection`. */
     val portFactory: BlePortFactory by lazy {
-        BlePortFactory(scope) { address -> BleLinkHandle(BleConnection(app, address, bleLog)) }
+        BlePortFactory(scope, connectedGatt = { gattConnected(app) }) { address -> BleLinkHandle(BleConnection(app, address, bleLog, LINK_RECONNECT_SEC)) }
     }
 
     /** Driver factory on `garmin.GarminDriver`. */
-    val driverFactory: GarminDriverFactory by lazy { GarminDriverFactory(db.settings, scope, { models }) }
+    val driverFactory: GarminDriverFactory by lazy { GarminDriverFactory(db.settings, scope, { models }, lastSyncSec = { db.devices.lastSync(it) }) }
 
     /** The `:watch` process's own HTTP client (firewall and network log shared through the database). */
     val http: Http by lazy { NetClient(app, Firewall(db.settings), NetworkLog(db)) }
@@ -277,7 +326,7 @@ class WatchWiring(ctx: Context) {
             call = CallControl(app),
             notificationAction = NotificationActionRouter(),
             appMessage = LinkHub.router(app),
-            webRequest = WebRequestRouter(http, scope),
+            webRequest = WebRequestRouter(http, scope, ephemerisStore = FileEphemerisStore(java.io.File(app.cacheDir, "gps-assist"))),
             watchApps = WatchAppsStore(db, SystemClock, SideloadStore.forContext(app), { runCatching { Locale.getDefault().isO3Language }.getOrNull() }),
         )
     }
@@ -296,6 +345,13 @@ class WatchWiring(ctx: Context) {
 
         /** App message size as the garmin driver sends it (padded Monkey C serialization, before XXTEA). */
         val GARMIN_SIZER: MessageSizer = MessageSizer { v -> AppMessages.pad(CiqCodec.encode(v)).size }
+
+        /**
+         * The link's own reconnect delays, the same as DeviceManager's [Backoff] (5 s first). The manager
+         * closes each link when it drops, so these should never run; if a link outlives a drop for a
+         * moment, it still never retries after 1 or 2 s (each try wakes the watch's radio).
+         */
+        val LINK_RECONNECT_SEC: IntArray = Backoff.DELAYS_SEC.toIntArray()
     }
 }
 
@@ -307,4 +363,13 @@ private class BleLinkHandle(private val conn: BleConnection) : LinkHandle {
     override suspend fun close() {
         conn.close()
     }
+}
+
+/** Addresses (upper case) of every device this phone has a GATT link to, from any app; empty if unknown. */
+@android.annotation.SuppressLint("MissingPermission")
+private fun gattConnected(ctx: Context): Set<String> = try {
+    val bm = ctx.getSystemService(android.bluetooth.BluetoothManager::class.java)
+    bm?.getConnectedDevices(android.bluetooth.BluetoothProfile.GATT)?.mapTo(HashSet()) { it.address.uppercase() } ?: emptySet()
+} catch (e: SecurityException) {
+    emptySet()
 }

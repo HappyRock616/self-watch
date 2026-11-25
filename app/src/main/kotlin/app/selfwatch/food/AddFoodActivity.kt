@@ -26,7 +26,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import app.selfwatch.R
+import app.selfwatch.food.nutrition.DietFilter
 import app.selfwatch.graph
+import app.selfwatch.me.AutoFoodDbState
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.time.Day
@@ -35,6 +37,7 @@ import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.SwSnackbar
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 import app.selfwatch.ui.R as UiR
@@ -57,6 +60,12 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
     private lateinit var tabs: TabLayout
     private lateinit var empty: EmptyState
     private lateinit var toolbar: MaterialToolbar
+    private lateinit var chainHeader: android.widget.TextView
+    private lateinit var filterChips: com.google.android.material.chip.ChipGroup
+    private lateinit var hiddenNote: android.widget.TextView
+    private lateinit var dbStatus: android.widget.TextView
+    private lateinit var dbProgress: LinearProgressIndicator
+    private var chipsFor: List<DietFilter>? = null
     private val adapter = FoodHitAdapter(onOpen = { vm.open(it) }, onPlus = { vm.quickLog(it) })
 
     private val editor = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
@@ -110,6 +119,36 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
         })
         root.addView(search, FoodViews.matchWrap())
 
+        // The automatic food database download (first use of food entry): one status line and a bar.
+        dbStatus = FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption).apply {
+            tag = "food_db_status"
+            visibility = View.GONE
+            setPaddingRelative(pad, pad / 2, pad, 0)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        root.addView(dbStatus, FoodViews.matchWrap())
+        dbProgress = LinearProgressIndicator(ctx).apply {
+            tag = "food_db_progress"
+            visibility = View.GONE
+            max = PROGRESS_MAX
+            setPaddingRelative(pad, pad / 4, pad, pad / 2)
+        }
+        root.addView(dbProgress, FoodViews.matchWrap())
+
+        // Diet filter chips, only for users with a diet or allergen set.
+        filterChips = com.google.android.material.chip.ChipGroup(ctx).apply {
+            tag = "diet_filters"
+            visibility = View.GONE
+            setPaddingRelative(pad, 0, pad, 0)
+        }
+        root.addView(filterChips, FoodViews.matchWrap())
+        hiddenNote = FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption).apply {
+            tag = "filter_hidden"
+            visibility = View.GONE
+            setPaddingRelative(pad, 0, pad, 0)
+        }
+        root.addView(hiddenNote, FoodViews.matchWrap())
+
         tabs = TabLayout(ctx).apply {
             tabMode = TabLayout.MODE_SCROLLABLE
             for (t in AddFoodTab.entries) addTab(newTab().setText(tabLabel(t)).setTag(t))
@@ -122,6 +161,14 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
             })
         }
         root.addView(tabs, FoodViews.matchWrap())
+
+        chainHeader = FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_BodyLarge).apply {
+            tag = "chain_header"
+            visibility = View.GONE
+            setPaddingRelative(pad, pad / 2, pad, 0)
+            androidx.core.view.ViewCompat.setAccessibilityHeading(this, true)
+        }
+        root.addView(chainHeader, FoodViews.matchWrap())
 
         val content = android.widget.FrameLayout(ctx)
         list = RecyclerView(ctx).apply {
@@ -149,9 +196,12 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
 
         setRootContent(root)
 
+        val auto = graph.food.autoInstall
+        auto.ensure()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { vm.state.collect { render(it) } }
+                launch { auto.state.collect { renderDb(it) } }
                 launch {
                     vm.events.collect { e ->
                         when (e) {
@@ -172,12 +222,56 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
         vm.refresh()
     }
 
+    /** The automatic download: progress while it runs, a note while it waits for Wi-Fi, one message at the end. */
+    private fun renderDb(s: AutoFoodDbState) {
+        val text: String? = when (s) {
+            AutoFoodDbState.Idle -> null
+            AutoFoodDbState.WaitingForWifi -> getString(R.string.fooddata_auto_wifi)
+            AutoFoodDbState.Checking -> getString(R.string.fooddata_auto_checking)
+            is AutoFoodDbState.Downloading -> {
+                val total = s.total?.takeIf { it > 0 }
+                if (total != null) {
+                    getString(R.string.fooddata_auto_progress, (s.done * 100 / total).toInt().coerceIn(0, 100))
+                } else {
+                    getString(R.string.fooddata_auto_progress_bytes, android.text.format.Formatter.formatShortFileSize(this, s.done))
+                }
+            }
+            is AutoFoodDbState.Installed, is AutoFoodDbState.Failed, AutoFoodDbState.NeedsNewerApp -> {
+                val msg = when (s) {
+                    is AutoFoodDbState.Failed -> getString(R.string.fooddata_auto_failed, s.detail)
+                    AutoFoodDbState.NeedsNewerApp -> getString(R.string.fooddata_auto_needs_app)
+                    else -> getString(R.string.fooddata_auto_done)
+                }
+                if (s is AutoFoodDbState.Installed) vm.refresh()
+                SwSnackbar.show(list, msg)
+                graph.food.autoInstall.acknowledge()
+                null
+            }
+        }
+        dbStatus.text = text
+        FoodViews.show(dbStatus, text != null)
+        val running = s == AutoFoodDbState.Checking || s is AutoFoodDbState.Downloading
+        FoodViews.show(dbProgress, running)
+        if (running) {
+            val d = s as? AutoFoodDbState.Downloading
+            val total = d?.total?.takeIf { it > 0 }
+            dbProgress.isIndeterminate = d == null || total == null
+            if (d != null && total != null) dbProgress.setProgressCompat((d.done * PROGRESS_MAX / total).toInt(), false)
+        }
+    }
+
     private fun render(s: AddFoodState) {
         toolbar.title = s.slot?.let { getString(R.string.food_add_to, it.name) } ?: getString(R.string.food_add_food)
         FoodViews.show(tabs, s.results == null)
         val wanted = tabs.getTabAt(s.tab.ordinal)
         if (wanted != null && !wanted.isSelected) wanted.select()
+        adapter.prefs = s.prefs
+        adapter.unsure = s.unsure
         adapter.submitList(s.rows)
+        renderFilters(s)
+        val chain = s.chain
+        chainHeader.text = chain?.let { getString(R.string.search_chain_menu, it) }
+        FoodViews.show(chainHeader, chain != null)
         val showEmpty = s.rows.isEmpty() && !s.searching && (s.results != null || !s.tabLoading)
         FoodViews.show(empty, showEmpty)
         if (showEmpty) {
@@ -191,6 +285,42 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
                 },
             )
         }
+    }
+
+    /** The filter chips (built once per set of filters) and the "n foods hidden" note. */
+    private fun renderFilters(s: AddFoodState) {
+        if (chipsFor != s.filters) {
+            chipsFor = s.filters
+            filterChips.removeAllViews()
+            for (f in s.filters) {
+                val chip = com.google.android.material.chip.Chip(this, null, com.google.android.material.R.attr.chipStyle).apply {
+                    id = View.generateViewId()
+                    text = filterLabel(f)
+                    tag = "filter_${f.id}"
+                    isCheckable = true
+                    minHeight = resources.getDimensionPixelSize(UiR.dimen.sw_touch_target)
+                }
+                filterChips.addView(chip)
+            }
+        }
+        for (i in 0 until filterChips.childCount) {
+            val chip = filterChips.getChildAt(i) as com.google.android.material.chip.Chip
+            val f = s.filters.getOrNull(i) ?: continue
+            chip.setOnCheckedChangeListener(null)
+            chip.isChecked = f in s.activeFilters
+            chip.setOnCheckedChangeListener { _, on -> vm.setFilter(f, on) }
+        }
+        FoodViews.show(filterChips, s.filters.isNotEmpty())
+        val hidden = s.hiddenCount
+        hiddenNote.text = if (hidden > 0) resources.getQuantityString(R.plurals.filter_hidden_count, hidden, hidden) else null
+        FoodViews.show(hiddenNote, hidden > 0)
+    }
+
+    private fun filterLabel(f: DietFilter): String = when (f) {
+        DietFilter.Vegan -> getString(R.string.filter_vegan)
+        DietFilter.Vegetarian -> getString(R.string.filter_vegetarian)
+        DietFilter.GlutenFree -> getString(R.string.filter_gluten_free)
+        is DietFilter.Without -> getString(R.string.filter_without, getString(NutrientUi.allergen(f.allergen)))
     }
 
     private fun tabLabel(t: AddFoodTab): String = getString(
@@ -221,6 +351,7 @@ class AddFoodActivity : SwActivity(), FoodLoggedListener {
     companion object {
         private const val EXTRA_DAY = "day"
         private const val EXTRA_SLOT = "slot"
+        private const val PROGRESS_MAX = 1_000
 
         /** Opens Add food for meal [slot] (0: guess from the time) on [day] (null: today). */
         fun intent(ctx: Context, day: Day?, slot: Long): Intent =

@@ -252,7 +252,7 @@ public class WeatherStore(private val settings: SettingsStore) {
 
 /**
  * Receives weather from weather apps (B22; exported so they can reach it, process `:watch`).
- * Off by default: does nothing unless `weather.enabled` is on. Each forecast is stored
+ * On by default (`weather.enabled`; the user can turn it off in Devices > Weather). Each forecast is stored
  * ([WeatherStore]) and sent to every connected watch; [app.selfwatch.service.SyncService] sends the
  * stored one to a watch when it connects. No weather network calls of our own.
  */

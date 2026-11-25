@@ -30,8 +30,11 @@ object FoodDbFormat {
     /** `PRAGMA application_id` of recipes.db (`0x53575242`, "SWRB"). */
     const val RECIPES_APPLICATION_ID: Int = 1398231618
 
-    /** The schema version this app understands (`PRAGMA user_version` and `meta.schema_version`). */
-    const val SCHEMA_VERSION: Int = 1
+    /** The foods.db schema version this app understands (`PRAGMA user_version` and `meta.schema_version`). */
+    const val SCHEMA_VERSION: Int = 2
+
+    /** The recipes.db schema version this app understands. */
+    const val RECIPES_SCHEMA_VERSION: Int = 1
 
     /** Folder under the app's files dir that holds the data files. */
     const val DIR: String = "fooddata"
@@ -74,7 +77,7 @@ object FoodDbFormat {
 /**
  * Shared, lazily opened read-only connection to `files/fooddata/foods.db`.
  *
- * The file is opened on first [use] and checked (`application_id` 1398228548 and `user_version` 1);
+ * The file is opened on first [use] and checked (`application_id` 1398228548 and `user_version` [FoodDbFormat.SCHEMA_VERSION]);
  * a missing or foreign file makes [use] return null. The connection closes [idleMs] after the last
  * use (3 minutes by default) so it holds no memory while food screens are closed, and [close] closes
  * it at once (the installer does this before swapping the file).

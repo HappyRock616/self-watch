@@ -8,6 +8,7 @@
 package app.selfwatch.activity
 
 import android.content.Context
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import app.selfwatch.R
 import app.selfwatch.model.health.Workout
@@ -43,6 +44,38 @@ object Sports {
         else -> R.string.sport_workout
     }
 
+    /** The icon of [sport]. */
+    @DrawableRes
+    fun icon(sport: Int): Int = when (sport) {
+        RUNNING -> R.drawable.ic_sport_run
+        CYCLING -> R.drawable.ic_sport_bike
+        SWIMMING -> R.drawable.ic_sport_swim
+        WALKING, HIKING -> R.drawable.ic_sport_walk
+        else -> R.drawable.ic_sport_strength
+    }
+
+    /**
+     * The stats line of a workout: duration, distance, pace (or speed), average heart rate and calories,
+     * each only when recorded ("42 min · 5.2 km · 5:12 /km · 142 bpm · 420 kcal").
+     */
+    fun stats(ctx: Context, w: Workout, units: Units): String {
+        val labels = FmtLabels.from(ctx)
+        val loc = Locale.getDefault()
+        val parts = ArrayList<String>()
+        parts += Fmt.duration(w.durationSec.toLong(), loc, labels)
+        w.distanceM?.takeIf { it > 0 }?.let { parts += Fmt.distance(it.toDouble(), units, loc, labels) }
+        if (usesPace(w.sport)) {
+            pace(w.durationSec, w.distanceM, units)?.let { parts += it + " " + paceUnit(ctx, units) }
+        } else {
+            speed(w.durationSec, w.distanceM, units)?.let {
+                parts += it + " " + ctx.getString(if (units == Units.METRIC) R.string.unit_kmh else R.string.unit_mph)
+            }
+        }
+        w.avgHr?.let { parts += it.toString() + " " + ctx.getString(R.string.unit_bpm) }
+        w.kcal?.let { parts += Fmt.energy(it, loc, labels) }
+        return parts.joinToString(" · ")
+    }
+
     /** True for sports where pace (time per distance) reads better than speed. */
     fun usesPace(sport: Int): Boolean = sport == RUNNING || sport == WALKING || sport == HIKING
 
@@ -58,16 +91,24 @@ object Sports {
     }
 
     /**
-     * Pace per kilometre (or mile) as "5:12", from [durationSec] and [distanceM]; null when either is
-     * zero.
+     * Pace per kilometre (or mile, following Me › Settings units) as "5:12", from [durationSec] and
+     * [distanceM]; null when either is zero. Every pace in the app is written this way ([paceText]).
      */
     fun pace(durationSec: Int, distanceM: Int?, units: Units): String? {
         val d = distanceM ?: return null
         if (d <= 0 || durationSec <= 0) return null
-        val perUnit = if (units == Units.METRIC) 1000.0 else METERS_PER_MILE
-        val sec = (durationSec * perUnit / d).toLong()
-        return String.format(Locale.getDefault(), "%d:%02d", sec / 60, sec % 60)
+        return paceText(durationSec * 1000.0 / d, units)
     }
+
+    /** A pace of [secPerKm] seconds a kilometre as "m:ss" per km or, in US units, per mile. */
+    fun paceText(secPerKm: Double, units: Units): String = Fmt.minSec(secPerKm * metersPerUnit(units) / 1000.0)
+
+    /** The pace unit, "/km" or "/mi", for [units]. */
+    fun paceUnit(ctx: Context, units: Units): String =
+        ctx.getString(if (units == Units.METRIC) R.string.unit_per_km else R.string.unit_per_mi)
+
+    /** Metres in the distance unit of [units]: a kilometre, or a mile in US units. */
+    fun metersPerUnit(units: Units): Double = if (units == Units.METRIC) 1000.0 else METERS_PER_MILE
 
     /** Average speed in km/h or mph, one decimal; null without distance. */
     fun speed(durationSec: Int, distanceM: Int?, units: Units): String? {

@@ -99,15 +99,17 @@ public class BleConnection internal constructor(
 
     /**
      * A connection to the watch at [address] (`AA:BB:CC:DD:EE:FF`). [log], when given and enabled,
-     * records every write and notification for replay tests.
+     * records every write and notification for replay tests. [reconnectDelaysSec] replaces the
+     * built-in reconnect delays (an owner that has its own back-off passes its steps, so this link never
+     * retries sooner than the owner would).
      */
-    public constructor(context: Context, address: String, log: BleLog?) : this(
+    public constructor(context: Context, address: String, log: BleLog?, reconnectDelaysSec: IntArray = BACKOFF_SEC) : this(
         address = address,
         log = log,
         connector = AndroidGattConnector(context),
         env = AndroidLinkEnvironment(context, address),
         dispatcher = Dispatchers.IO.limitedParallelism(1),
-        timing = BleTiming(),
+        timing = BleTiming(backoffSec = reconnectDelaysSec),
     )
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -564,6 +566,7 @@ public class BleConnection internal constructor(
                 ),
             )
             if (r is Outcome.Fail) SwLog.i(TAG, "connection priority not changed: ${r.error}")
+            else SwLog.i(TAG, "connection priority ${if (on) "high" else "balanced"}")
         }
     }
 

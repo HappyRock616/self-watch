@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small (half-width) forms of the Food cards: short labels and notes that must fit at 2x font. -->
+<resources>
+    <string name="small_needs_weight">Log your weight to see this</string>
+    <string name="small_needs_body_fat">Add body fat to see this</string>
+    <string name="small_per_kg">for body weight</string>
+    <string name="small_aim_min">aim %1$s or more</string>
+    <string name="small_aim_band">aim %1$s–%2$s</string>
+    <string name="small_carbs_grams">%1$s g carbs</string>
+    <string name="small_protein_grams">%1$s g protein</string>
+    <string name="small_of_g">of %1$s g</string>
+    <string name="small_fiber_logged">fiber logged</string>
+    <string name="small_fuel_label">for fat-free mass</string>
+    <string name="small_fuel_low">May be under-fueling</string>
+    <string name="small_fuel_ok">Enough for training</string>
+    <string name="small_logging_label">days logged this week</string>
+    <string name="small_logging_nice">Nice, keep it going</string>
+    <string name="small_logging_some">Every logged day helps</string>
+    <string name="small_logging_start">Log a meal to start</string>
+    <string name="small_protein_of">of %1$s g protein</string>
+    <string name="small_macros_note">Carbs %1$s g · fat %2$s g</string>
+    <plurals name="small_meals_of">
+        <item quantity="one">of %d meal</item>
+        <item quantity="other">of %d meals</item>
+    </plurals>
+    <string name="small_meal_threshold">%1$s g protein or more</string>
+    <string name="small_limit_mg">limit %1$s mg</string>
+    <string name="small_sodium_over">Above the daily limit</string>
+    <string name="small_mg_left">%1$s mg left</string>
+    <string name="small_sugar_label">total sugar</string>
+    <string name="small_sugar_share">%1$s of calories</string>
+</resources>

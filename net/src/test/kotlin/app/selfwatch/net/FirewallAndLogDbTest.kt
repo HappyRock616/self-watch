@@ -33,14 +33,20 @@ class FirewallAndLogDbTest {
         // Defaults come from NetFeature.defaultOn.
         for (f in NetFeature.entries) assertEquals(f.name, f.defaultOn, firewall.allowed(f))
         assertEquals(NetFeature.entries.associateWith { it.defaultOn }, firewall.observe().first())
+        // The default policy: only what the app needs out of the box is on.
+        val on = NetFeature.entries.filter { it.defaultOn }.toSet()
+        assertEquals(setOf(NetFeature.FOOD_DATA, NetFeature.WATCH_APP_WEB, NetFeature.LOCAL_PHONE_APP, NetFeature.GPS_ASSIST), on)
+        assertFalse(NetFeature.RECIPE_BOOK.listed)
 
-        firewall.set(NetFeature.OPEN_FOOD_FACTS, false)
-        firewall.set(NetFeature.GPS_ASSIST, true)
-        assertFalse(firewall.allowed(NetFeature.OPEN_FOOD_FACTS))
-        assertTrue(firewall.allowed(NetFeature.GPS_ASSIST))
+        // A stored choice wins over the default, in both directions.
+        firewall.set(NetFeature.OPEN_FOOD_FACTS, true)
+        firewall.set(NetFeature.GPS_ASSIST, false)
+        assertTrue(firewall.allowed(NetFeature.OPEN_FOOD_FACTS))
+        assertFalse(firewall.allowed(NetFeature.GPS_ASSIST))
         val now = firewall.observe().first()
-        assertEquals(false, now[NetFeature.OPEN_FOOD_FACTS])
-        assertEquals(true, now[NetFeature.GPS_ASSIST])
+        assertEquals(true, now[NetFeature.OPEN_FOOD_FACTS])
+        assertEquals(false, now[NetFeature.GPS_ASSIST])
+        assertEquals("untouched features keep the default", true, now[NetFeature.WATCH_APP_WEB])
 
         log.record(NetFeature.OPEN_FOOD_FACTS, "https://world.openfoodfacts.org/api/v2/product/123?fields=x", "get", 0, 120, 200)
         log.record(NetFeature.FOOD_DATA, "cdn.example.org", "GET", 0, 0, NetLogEntry.BLOCKED)

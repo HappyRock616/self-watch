@@ -47,16 +47,30 @@ internal fun importedMeasure(tSec: Long, kind: BodyKind, valueX100: Int): BodyMe
 
 /** Cronometer's file layout, shared by the reader and the writer. */
 object CronometerLayout {
-    /** Nutrient columns in the order Cronometer's servings export lists them (the subset Self Watch keeps). */
+    /**
+     * Nutrient columns in the order Cronometer's servings export lists them (the subset Self Watch keeps),
+     * then the food database v2 nutrients with their units. Vitamin D is written in µg (Cronometer
+     * writes IU; both are read).
+     */
     val NUTRIENT_HEADERS: List<Pair<String, String>> = listOf(
         NutrientColumns.KCAL to "Energy (kcal)",
         NutrientColumns.CARB to "Carbs (g)",
         NutrientColumns.FIBRE to "Fiber (g)",
         NutrientColumns.SUGAR to "Sugars (g)",
+        NutrientColumns.ADDSUGAR to "Added Sugars (g)",
         NutrientColumns.FAT to "Fat (g)",
         NutrientColumns.CHOLESTEROL to "Cholesterol (mg)",
+        NutrientColumns.MONOFAT to "Monounsaturated (g)",
+        NutrientColumns.POLYFAT to "Polyunsaturated (g)",
         NutrientColumns.SATFAT to "Saturated (g)",
+        NutrientColumns.TRANSFAT to "Trans-Fats (g)",
         NutrientColumns.SODIUM to "Sodium (mg)",
+        NutrientColumns.POTASSIUM to "Potassium (mg)",
+        NutrientColumns.CALCIUM to "Calcium (mg)",
+        NutrientColumns.IRON to "Iron (mg)",
+        NutrientColumns.VITA to "Vitamin A (µg)",
+        NutrientColumns.VITC to "Vitamin C (mg)",
+        NutrientColumns.VITD to "Vitamin D (µg)",
         NutrientColumns.PROTEIN to "Protein (g)",
     )
 
@@ -329,19 +343,7 @@ class CronometerExporter(private val source: ExportSource) : Exporter {
             zip.entry("notes.csv") { writeNotes(it, notes) }
         }
 
-        private fun nutrientCells(n: Nutrients): List<String> = CronometerLayout.NUTRIENT_HEADERS.map { (f, _) ->
-            when (f) {
-                NutrientColumns.KCAL -> n.kcalX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.CARB -> n.carbX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.FIBRE -> n.fibreX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.SUGAR -> n.sugarX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.FAT -> n.fatX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.CHOLESTEROL -> n.cholesterolMg?.toString()
-                NutrientColumns.SATFAT -> n.satfatX10?.let { Numbers.formatScaled(it, 10) }
-                NutrientColumns.SODIUM -> n.sodiumMg?.toString()
-                else -> n.proteinX10?.let { Numbers.formatScaled(it, 10) }
-            }.orEmpty()
-        }
+        private fun nutrientCells(n: Nutrients): List<String> = CronometerLayout.NUTRIENT_HEADERS.map { (f, _) -> NutrientColumns.cell(n, f) }
 
         /** `servings.csv`: one row per diary line. */
         fun writeServings(out: java.io.OutputStream, diary: List<DiaryRow>) {

@@ -63,18 +63,7 @@ object NutrientMath {
      */
     fun scale(n: Nutrients, num: Long, den: Long): Nutrients {
         require(den != 0L) { "den must not be 0" }
-        fun s(v: Int?): Int? = v?.let { clampInt(mulDivRound(it.toLong(), num, den)) }
-        return Nutrients(
-            kcalX10 = s(n.kcalX10),
-            proteinX10 = s(n.proteinX10),
-            fatX10 = s(n.fatX10),
-            satfatX10 = s(n.satfatX10),
-            carbX10 = s(n.carbX10),
-            sugarX10 = s(n.sugarX10),
-            fibreX10 = s(n.fibreX10),
-            sodiumMg = s(n.sodiumMg),
-            cholesterolMg = s(n.cholesterolMg),
-        )
+        return n.map { v -> v?.let { clampInt(mulDivRound(it.toLong(), num, den)) } }
     }
 
     /** `a × b / den` rounded half away from zero, exact for any inputs (falls back to BigInteger on overflow). */

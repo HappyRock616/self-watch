@@ -111,7 +111,7 @@ public class DiaryDao internal constructor(private val db: SelfWatchDb) {
         db.write(setOf(Table.DIARY)) { d ->
             d.withStatement(
                 "INSERT INTO diary_entry ($COL_NAMES) SELECT ?, ?, ?, food_origin, food_id, name, brand, amount_x100, " +
-                    "serving_label, grams_x10, ${NutrientCols.NAMES}, NULL FROM diary_entry WHERE day = ? AND meal_slot_id = ? ORDER BY t_sec, id",
+                    "serving_label, grams_x10, ${NutrientCols.NAMES}, NULL, category_id FROM diary_entry WHERE day = ? AND meal_slot_id = ? ORDER BY t_sec, id",
             ) { st ->
                 st.bindLong(1, toDay.yyyymmdd.toLong())
                 st.bindLong(2, toSlotId)
@@ -197,12 +197,12 @@ public class DiaryDao internal constructor(private val db: SelfWatchDb) {
     }
 
     internal companion object {
-        private const val COLS = 20
+        private const val COLS = 12 + NutrientCols.COUNT
         private const val COL_NAMES = "day, meal_slot_id, t_sec, food_origin, food_id, name, brand, amount_x100, serving_label, " +
-            "grams_x10, ${NutrientCols.NAMES}, import_id"
+            "grams_x10, ${NutrientCols.NAMES}, import_id, category_id"
         private val SET_COLS = COL_NAMES.split(", ").joinToString(", ") { "$it = ?" }
         private val SELECT_COLS = "e.id, " + COL_NAMES.split(", ").joinToString(", ") { "e.$it" }
-        private const val SELECT_COUNT = 21
+        private const val SELECT_COUNT = COLS + 1
         private val SELECT = "SELECT $SELECT_COLS FROM diary_entry e"
         private val INSERT = "INSERT INTO diary_entry ($COL_NAMES) VALUES (${"?, ".repeat(COLS - 1)}?)"
         private const val GROUP_FOOD =
@@ -225,7 +225,8 @@ public class DiaryDao internal constructor(private val db: SelfWatchDb) {
             st.bindString(9, e.servingLabel)
             st.bindIntOrNull(10, e.gramsX10)
             NutrientCols.bind(st, 11, e.nutrients.copy(kcalX10 = e.nutrients.kcalX10 ?: 0))
-            st.bindLongOrNull(20, e.importId)
+            st.bindLongOrNull(COLS - 1, e.importId)
+            st.bindIntOrNull(COLS, e.categoryId)
         }
 
         internal fun map(c: Cursor): DiaryEntry {
@@ -243,7 +244,8 @@ public class DiaryDao internal constructor(private val db: SelfWatchDb) {
                 servingLabel = c.getString(9),
                 gramsX10 = c.intOrNull(10),
                 nutrients = NutrientCols.read(c, 11),
-                importId = c.longOrNull(20),
+                importId = c.longOrNull(COLS - 1),
+                categoryId = c.intOrNull(COLS),
             )
         }
     }

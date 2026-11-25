@@ -28,7 +28,9 @@ import app.selfwatch.db.strOrNull
 import app.selfwatch.db.withStatement
 import app.selfwatch.db.write
 import app.selfwatch.model.food.Basis
+import app.selfwatch.model.food.DietInfo
 import app.selfwatch.model.food.Food
+import app.selfwatch.model.food.FoodCategory
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.food.Serving
@@ -133,9 +135,11 @@ public class FoodDao internal constructor(private val db: SelfWatchDb) {
 
     internal companion object {
         private val TABLES = setOf(Table.CUSTOM_FOOD, Table.CUSTOM_SERVING, Table.MY_FOOD_FTS)
-        private const val COLS = 19
+        /** Position of `barcode` (1-based bind index; the cursor index in [SELECT] is the same, after `id`). */
+        private const val AFTER = 4 + NutrientCols.COUNT
+        private const val COLS = AFTER + 11
         private const val COL_NAMES = "name, brand, basis, ${NutrientCols.NAMES}, barcode, origin, origin_ref, " +
-            "created_sec, updated_sec, hidden, import_id"
+            "created_sec, updated_sec, hidden, import_id, category_id, diet, diet_known, allergens, allergens_full"
         private val SET_COLS = COL_NAMES.split(", ").joinToString(", ") { "$it = ?" }
         private const val SELECT = "SELECT id, $COL_NAMES FROM custom_food"
 
@@ -144,13 +148,19 @@ public class FoodDao internal constructor(private val db: SelfWatchDb) {
             st.bindStrOrNull(2, f.food.brand)
             st.bindLong(3, f.food.basis.code.toLong())
             NutrientCols.bind(st, 4, f.food.per)
-            st.bindLongOrNull(13, f.food.barcode)
-            st.bindLong(14, f.origin.code.toLong())
-            st.bindStrOrNull(15, f.originRef)
-            st.bindLong(16, f.createdSec)
-            st.bindLong(17, f.updatedSec)
-            st.bindBool(18, f.hidden)
-            st.bindLongOrNull(19, f.importId)
+            st.bindLongOrNull(AFTER, f.food.barcode)
+            st.bindLong(AFTER + 1, f.origin.code.toLong())
+            st.bindStrOrNull(AFTER + 2, f.originRef)
+            st.bindLong(AFTER + 3, f.createdSec)
+            st.bindLong(AFTER + 4, f.updatedSec)
+            st.bindBool(AFTER + 5, f.hidden)
+            st.bindLongOrNull(AFTER + 6, f.importId)
+            st.bindIntOrNull(AFTER + 7, f.food.category?.id)
+            val diet = f.food.dietInfo
+            st.bindLong(AFTER + 8, diet.diet.toLong())
+            st.bindLong(AFTER + 9, diet.dietKnown.toLong())
+            st.bindLong(AFTER + 10, diet.allergens.toLong())
+            st.bindBool(AFTER + 11, diet.allergensFull)
         }
 
         internal fun insertIn(d: SQLiteDatabase, f: CustomFood): Long {
@@ -198,14 +208,17 @@ public class FoodDao internal constructor(private val db: SelfWatchDb) {
                     servings = servingsIn(d, id),
                     dataYear = null,
                     sourceLabel = "",
-                    barcode = c.longOrNull(13),
+                    barcode = c.longOrNull(AFTER),
+                    // Custom foods store only the category id; screens look the name up in foods.db.
+                    category = c.intOrNull(AFTER + 7)?.let { FoodCategory(it, "", "") },
+                    dietInfo = DietInfo(c.getInt(AFTER + 8), c.getInt(AFTER + 9), c.getInt(AFTER + 10), c.bool(AFTER + 11)),
                 ),
-                origin = CustomFoodOrigin.fromCode(c.getInt(14)) ?: CustomFoodOrigin.TYPED,
-                originRef = c.strOrNull(15),
-                createdSec = c.getLong(16),
-                updatedSec = c.getLong(17),
-                hidden = c.bool(18),
-                importId = c.longOrNull(19),
+                origin = CustomFoodOrigin.fromCode(c.getInt(AFTER + 1)) ?: CustomFoodOrigin.TYPED,
+                originRef = c.strOrNull(AFTER + 2),
+                createdSec = c.getLong(AFTER + 3),
+                updatedSec = c.getLong(AFTER + 4),
+                hidden = c.bool(AFTER + 5),
+                importId = c.longOrNull(AFTER + 6),
             )
         }
     }

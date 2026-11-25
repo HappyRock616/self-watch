@@ -113,20 +113,22 @@ class WeatherRelayTest : ServiceDbTest() {
     }
 
     @Test
-    fun receiverIsOffByDefaultAndStoresAndSendsWhenOn() {
+    fun receiverIsOnByDefaultStoresAndSendsAndCanBeTurnedOff() {
         val got = ArrayList<WatchCommand>()
         val b = WatchBroadcaster { got.add(it) }
         RelayHub.attach(b)
         try {
             val intent = Intent(GenericWeather.ACTION).putExtra(GenericWeather.EXTRA_JSON, sample)
-            val start = System.currentTimeMillis()
-            deliver(intent) { System.currentTimeMillis() - start > 500 }
-            assertTrue(got.isEmpty())
-            runBlocking { db.settings.setBool(SettingKeys.WEATHER_ENABLED, true) }
+            // On by default: no setting stored, the forecast is stored and sent.
             deliver(intent) { got.isNotEmpty() }
             assertEquals(1, got.size)
             assertTrue(got[0] is WatchCommand.Weather)
             assertEquals(got[0], runBlocking { WeatherStore(db.settings).fresh(t) })
+            // Turned off by the user: ignored.
+            runBlocking { db.settings.setBool(SettingKeys.WEATHER_ENABLED, false) }
+            val start = System.currentTimeMillis()
+            deliver(intent) { System.currentTimeMillis() - start > 500 }
+            assertEquals(1, got.size)
         } finally {
             RelayHub.detach(b)
         }

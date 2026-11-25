@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds add a "Show raw keys" item in code (DebugTools.addRawKeysItem). -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/menu_settings_read" android:title="@string/menu_settings_read" app:showAsAction="never" />
     <item android:id="@+id/menu_settings_restore" android:title="@string/menu_settings_restore" app:showAsAction="never" />
-    <item
-        android:id="@+id/menu_settings_raw"
-        android:checkable="true"
-        android:title="@string/menu_settings_raw"
-        app:showAsAction="never" />
 </menu>

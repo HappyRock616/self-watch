@@ -10,6 +10,7 @@ package app.selfwatch.watch
 import android.app.Application
 import app.selfwatch.SelfWatchApp
 import app.selfwatch.db.SelfWatchDb
+import app.selfwatch.db.SettingKeys
 import app.selfwatch.garmin.GarminDriver
 import app.selfwatch.model.ble.BlePort
 import app.selfwatch.model.ble.BytePipe
@@ -95,12 +96,53 @@ class WatchWiringTest {
     }
 
     @Test
-    fun bleCaptureDefaultsFollowTheBuildType() {
+    fun debugSettingsFollowTheBuildType() {
         assertTrue(WatchSettings.bleCaptureOn(null, debuggable = true))
         assertFalse(WatchSettings.bleCaptureOn(null, debuggable = false))
         assertFalse(WatchSettings.bleCaptureOn("false", debuggable = true))
-        assertTrue(WatchSettings.bleCaptureOn("true", debuggable = false))
+        assertTrue(WatchSettings.bleCaptureOn("true", debuggable = true))
+        // Release builds never capture, even when a value was stored.
+        assertFalse(WatchSettings.bleCaptureOn("true", debuggable = false))
         assertEquals("garmin.first_connect.AA:BB:CC:DD:EE:01", WatchSettings.firstConnectKey("aa:bb:cc:dd:ee:01"))
+    }
+
+    @Test
+    fun fakeSignInIsPerWatchAndOffByDefault() = runBlocking {
+        val settings = SelfWatchDb.get(ctx).settings
+        val key = WatchSettings.firstConnectKey(WATCH.address)
+        val f = GarminDriverFactory(settings, scope, { null })
+        try {
+            assertFalse(WatchSettings.fakeAuthOn(settings, 41))
+            assertFalse(f.configFor(key, 41).fakeAuth)
+            settings.setBool(SettingKeys.deviceFakeAuth(41), true)
+            assertTrue(f.configFor(key, 41).fakeAuth)
+            assertFalse("only the watch it was turned on for", f.configFor(key, 42).fakeAuth)
+        } finally {
+            settings.setAll(mapOf(SettingKeys.deviceFakeAuth(41) to null, SettingKeys.deviceFakeAuth(42) to null))
+        }
+    }
+
+    @Test
+    fun oldGlobalFakeSignInMovesToTheConnectingWatch() = runBlocking {
+        val settings = SelfWatchDb.get(ctx).settings
+        val f = GarminDriverFactory(settings, scope, { null })
+        try {
+            settings.setBool(SettingKeys.GARMIN_FAKE_AUTH, true)
+            assertTrue(f.configFor(WatchSettings.firstConnectKey(WATCH.address), 43).fakeAuth)
+            assertEquals("true", settings.get(SettingKeys.deviceFakeAuth(43)))
+            assertFalse("the global value is gone", settings.getBool(SettingKeys.GARMIN_FAKE_AUTH))
+            assertFalse("a second watch does not inherit it", WatchSettings.fakeAuthOn(settings, 44))
+
+            // A watch that already has its own "off" keeps it.
+            settings.setBool(SettingKeys.deviceFakeAuth(44), false)
+            settings.setBool(SettingKeys.GARMIN_FAKE_AUTH, true)
+            assertFalse(WatchSettings.fakeAuthOn(settings, 44))
+            assertFalse(settings.getBool(SettingKeys.GARMIN_FAKE_AUTH))
+        } finally {
+            settings.setAll(
+                mapOf(SettingKeys.GARMIN_FAKE_AUTH to null, SettingKeys.deviceFakeAuth(43) to null, SettingKeys.deviceFakeAuth(44) to null),
+            )
+        }
     }
 
     @Test
@@ -109,9 +151,28 @@ class WatchWiringTest {
         val key = WatchSettings.firstConnectKey(WATCH.address)
         val f = GarminDriverFactory(settings, scope, { null })
         settings.set(key, null)
-        assertFalse(f.configFor(key).firstConnect)
+        assertFalse(f.configFor(key, 1).firstConnect)
         settings.setBool(key, true)
-        assertTrue(f.configFor(key).firstConnect)
+        assertTrue(f.configFor(key, 1).firstConnect)
+        settings.set(key, null)
+    }
+
+    @Test
+    fun reconnectSkipsTheSyncWhenTheLastOneIsRecent() = runBlocking {
+        val settings = SelfWatchDb.get(ctx).settings
+        val key = WatchSettings.firstConnectKey(WATCH.address)
+        settings.set(key, null)
+        val now = System.currentTimeMillis() / 1000
+        var last: Long? = null
+        val f = GarminDriverFactory(settings, scope, { null }, lastSyncSec = { last })
+        assertTrue(f.configFor(key, 1).syncOnConnect) // never synced
+        last = now - 60
+        assertFalse(f.configFor(key, 1).syncOnConnect) // synced a minute ago
+        last = now - 31 * 60
+        assertTrue(f.configFor(key, 1).syncOnConnect) // over 30 minutes ago
+        last = now - 60
+        settings.setBool(key, true)
+        assertTrue(f.configFor(key, 1).syncOnConnect) // first connection after pairing always syncs
         settings.set(key, null)
     }
 

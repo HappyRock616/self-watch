@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: today hour by hour, step bars with the heart-rate line (TodayTimelineCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/today_timeline_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_today_timeline">
+
+    <TextView
+        android:id="@+id/tt_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.charts.OverlayChartView
+        android:id="@+id/tt_chart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1" />
+
+    <app.selfwatch.ui.components.ToggleChipGroup
+        android:id="@+id/tt_chips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1" />
+
+    <TextView
+        android:id="@+id/tt_readout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/tt_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/tt_empty" />
+</app.selfwatch.ui.components.SwCard>

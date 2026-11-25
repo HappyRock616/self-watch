@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Devices: watch card (pair button or the paired watch), data so far, debug tools, then the watch
-     feature list (wireframe "Devices", task C06). -->
+<!-- Devices: one card per paired device (or the pair button), data so far (debug builds add a Debug card), then the
+     feature list of the watch in use (wireframe "Devices", task C06; restart plan workstream C). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -19,12 +19,14 @@
         android:layout_weight="1">
 
         <app.selfwatch.shell.MaxWidthLinearLayout style="@style/Widget.SelfWatch.TabColumn">
-
+            <!-- Nothing paired yet: the pair button. -->
             <app.selfwatch.ui.components.SwCard
                 android:id="@+id/watch_card"
                 style="@style/Widget.SelfWatch.TabCard"
                 android:layout_marginTop="0dp"
-                app:swTitle="@string/devices_my_watch">
+                android:visibility="gone"
+                app:swTitle="@string/devices_my_devices"
+                tools:visibility="visible">
 
                 <app.selfwatch.ui.components.EmptyState
                     android:id="@+id/watch_empty"
@@ -32,73 +34,12 @@
                     android:layout_height="wrap_content"
                     app:swButtonText="@string/devices_pair"
                     app:swIcon="@drawable/ic_tab_devices"
-                    app:swMessage="@string/devices_watch_empty" />
-
-                <LinearLayout
-                    android:id="@+id/watch_paired"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    tools:visibility="visible">
-
-                    <TextView
-                        android:id="@+id/watch_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.SelfWatch.Title"
-                        tools:text="vívoactive 5" />
-
-                    <TextView
-                        android:id="@+id/watch_status"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/sw_space_half"
-                        android:accessibilityLiveRegion="polite"
-                        android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge"
-                        tools:text="Connected" />
-
-                    <TextView
-                        android:id="@+id/watch_detail"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/sw_space_half"
-                        android:textAppearance="@style/TextAppearance.SelfWatch.Caption"
-                        tools:text="Last sync 08:12 · Battery 81%" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/sw_space_2"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/watch_sync"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:text="@string/devices_sync_now" />
-
-                        <Space
-                            android:layout_width="0dp"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/watch_remove"
-                            style="@style/Widget.SelfWatch.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:text="@string/devices_remove" />
-                    </LinearLayout>
-                </LinearLayout>
+                    app:swMessage="@string/devices_empty" />
             </app.selfwatch.ui.components.SwCard>
 
-            <!-- More watches, scales, straps and cuffs: one compact card each (OtherDeviceCards). -->
+            <!-- One card per paired device, in the user's order (DeviceCardsView). -->
             <LinearLayout
-                android:id="@+id/other_devices"
+                android:id="@+id/device_cards"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
@@ -157,44 +98,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:swTitle="@string/devices_data_last" />
-                </LinearLayout>
-            </app.selfwatch.ui.components.SwCard>
-
-            <app.selfwatch.ui.components.SwCard
-                android:id="@+id/debug_card"
-                style="@style/Widget.SelfWatch.TabCard"
-                android:visibility="gone"
-                app:swTitle="@string/devices_debug"
-                tools:visibility="visible">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/debug_capture"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:text="@string/devices_ble_capture"
-                        android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/debug_share_capture"
-                        style="@style/Widget.SelfWatch.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:text="@string/devices_share_capture" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/debug_share_logs"
-                        style="@style/Widget.SelfWatch.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:minHeight="48dp"
-                        android:text="@string/devices_share_logs" />
                 </LinearLayout>
             </app.selfwatch.ui.components.SwCard>
 

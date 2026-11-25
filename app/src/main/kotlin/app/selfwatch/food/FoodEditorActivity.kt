@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.selfwatch.R
 import app.selfwatch.graph
+import app.selfwatch.model.food.Allergen
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
 import app.selfwatch.shell.MaxWidthLinearLayout
@@ -55,6 +56,16 @@ class FoodEditorActivity : SwActivity() {
     private lateinit var per100: RadioButton
     private lateinit var toolbar: MaterialToolbar
     private var filled = false
+    private var moreNutrients: LinearLayout? = null
+    private var moreToggle: com.google.android.material.button.MaterialButton? = null
+    private lateinit var veganBox: com.google.android.material.checkbox.MaterialCheckBox
+    private lateinit var vegetarianBox: com.google.android.material.checkbox.MaterialCheckBox
+    private lateinit var glutenFreeBox: com.google.android.material.checkbox.MaterialCheckBox
+    private val allergenChips = LinkedHashMap<Allergen, com.google.android.material.chip.Chip>()
+    private lateinit var extraBox: LinearLayout
+    private val extraRows = ArrayList<Pair<TextInputEditText, TextInputEditText>>()
+    private lateinit var categoryButton: com.google.android.material.button.MaterialButton
+    private var categoryId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,16 +104,57 @@ class FoodEditorActivity : SwActivity() {
         add(serving, "serving", R.string.editor_serving_label, text, FoodViews.weight(2f))
         add(serving, "grams", R.string.editor_serving_grams, DECIMAL, FoodViews.weight(1f).apply { marginStart = pad / 2 })
         form.addView(serving, gapParams())
+        // "+ Serving size": more named servings with their grams.
+        extraBox = FoodViews.column(ctx).apply { tag = "extra_servings" }
+        form.addView(extraBox, FoodViews.matchWrap())
+        form.addView(FoodViews.textButton(ctx, getString(R.string.editor_add_serving)) { addExtraRow(ServingForm()) }.apply { tag = "add_serving" }, FoodViews.matchWrap())
         add(form, "kcal", R.string.food_calories, DECIMAL)
         pairRow(form, "protein" to R.string.food_protein_g, "carbs" to R.string.food_carbs_g)
         pairRow(form, "fat" to R.string.food_fat_g, "satfat" to R.string.editor_satfat_g)
         pairRow(form, "sugar" to R.string.editor_sugar_g, "fibre" to R.string.editor_fibre_g)
         pairRow(form, "sodium" to R.string.editor_sodium_mg, "cholesterol" to R.string.editor_cholesterol_mg)
+
+        // "More nutrients": the food database v2 fields, folded.
+        val more = FoodViews.column(ctx).apply { visibility = android.view.View.GONE; tag = "more_nutrients" }
+        pairRow(more, "transfat" to R.string.editor_transfat_g, "addsugar" to R.string.editor_addsugar_g)
+        pairRow(more, "monofat" to R.string.editor_monofat_g, "polyfat" to R.string.editor_polyfat_g)
+        pairRow(more, "potassium" to R.string.editor_potassium_mg, "calcium" to R.string.editor_calcium_mg)
+        pairRow(more, "iron" to R.string.editor_iron_mg, "vita" to R.string.editor_vita_ug)
+        pairRow(more, "vitc" to R.string.editor_vitc_mg, "vitd" to R.string.editor_vitd_ug)
+        moreNutrients = more
+        moreToggle = FoodViews.textButton(ctx, getString(R.string.editor_more_nutrients)) { setMoreOpen(more.visibility != android.view.View.VISIBLE) }
+            .apply { tag = "more_toggle" }
+        form.addView(moreToggle, gapParams())
+        form.addView(more, FoodViews.matchWrap())
+
+        // Diet claims and allergens from the label.
+        form.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, getString(R.string.editor_diet)), gapParams())
+        form.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, getString(R.string.editor_diet_help)), FoodViews.matchWrap())
+        veganBox = check(form, getString(R.string.diet_badge_vegan), "vegan")
+        vegetarianBox = check(form, getString(R.string.diet_badge_vegetarian), "vegetarian")
+        glutenFreeBox = check(form, getString(R.string.diet_badge_gluten_free), "gluten_free")
+        form.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, getString(R.string.editor_contains)), gapParams())
+        val allergenGrid = com.google.android.material.chip.ChipGroup(ctx)
+        for (a in Allergen.entries) {
+            val chip = com.google.android.material.chip.Chip(ctx, null, com.google.android.material.R.attr.chipStyle).apply {
+                id = android.view.View.generateViewId()
+                this.text = getString(NutrientUi.allergenName(a))
+                isCheckable = true
+                tag = "allergen_" + a.name.lowercase()
+            }
+            allergenChips[a] = chip
+            allergenGrid.addView(chip)
+        }
+        form.addView(allergenGrid, FoodViews.matchWrap())
+        categoryButton = FoodViews.outlinedButton(ctx, getString(R.string.editor_category_value, getString(R.string.editor_category_none))) { pickCategory() }
+            .apply { tag = "category" }
+        form.addView(categoryButton, gapParams())
         add(form, "barcode", R.string.editor_barcode, InputType.TYPE_CLASS_NUMBER)
         form.addView(FoodViews.filledButton(ctx, getString(R.string.food_save)) { vm.save(readForm()) }.apply { tag = "save" }, gapParams())
         scroll.addView(form, android.widget.FrameLayout.LayoutParams(android.widget.FrameLayout.LayoutParams.MATCH_PARENT, android.widget.FrameLayout.LayoutParams.WRAP_CONTENT, android.view.Gravity.CENTER_HORIZONTAL))
         root.addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         setRootContent(root)
+        savedInstanceState?.let { restoreExtras(it) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -112,6 +164,7 @@ class FoodEditorActivity : SwActivity() {
                             filled = true
                             fill(s.form)
                         }
+                        if (!s.loading) showCategory()
                         toolbar.title = getString(if (s.id != 0L) R.string.editor_title_edit else R.string.editor_title_new)
                         toolbar.menu.findItem(MENU_DELETE)?.isVisible = s.id != 0L
                     }
@@ -134,6 +187,76 @@ class FoodEditorActivity : SwActivity() {
     }
 
     private fun touch(): Int = resources.getDimensionPixelSize(UiR.dimen.sw_touch_target)
+
+    private fun check(parent: LinearLayout, label: String, key: String): com.google.android.material.checkbox.MaterialCheckBox =
+        com.google.android.material.checkbox.MaterialCheckBox(this).apply {
+            text = label
+            tag = key
+            minHeight = touch()
+            parent.addView(this, FoodViews.matchWrap())
+        }
+
+    /** One extra serving row: name, grams and a remove button. */
+    private fun addExtraRow(s: ServingForm) {
+        val ctx: Context = this
+        val row = FoodViews.row(ctx).apply { tag = "extra_serving_${extraRows.size}" }
+        val (labelLayout, labelEdit) = FoodViews.field(ctx, R.string.editor_extra_serving_label, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
+        val (gramsLayout, gramsEdit) = FoodViews.field(ctx, R.string.editor_serving_grams, DECIMAL)
+        labelEdit.setText(s.label)
+        gramsEdit.setText(s.grams)
+        labelEdit.tag = "extra_label"
+        gramsEdit.tag = "extra_grams"
+        row.addView(labelLayout, FoodViews.weight(2f))
+        row.addView(gramsLayout, FoodViews.weight(1f).apply { marginStart = resources.getDimensionPixelSize(UiR.dimen.sw_space_1) })
+        val pair = labelEdit to gramsEdit
+        val remove = FoodViews.iconButton(ctx, UiR.drawable.sw_ic_close, getString(R.string.editor_remove_serving, s.label.ifBlank { (extraRows.size + 2).toString() })) {
+            extraRows.remove(pair)
+            extraBox.removeView(row)
+        }
+        row.addView(remove)
+        extraRows.add(pair)
+        extraBox.addView(row, gapParams())
+    }
+
+    /** The category list (from foods.db, else the built-in 42), with "None" first. */
+    private fun pickCategory() {
+        val cats = vm.state.value.categories
+        val labels = listOf(getString(R.string.editor_category_none)) + cats.map { it.name }
+        val checked = categoryId?.let { id -> cats.indexOfFirst { it.id == id }.takeIf { it >= 0 }?.plus(1) } ?: 0
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.editor_category)
+            .setSingleChoiceItems(labels.toTypedArray(), checked) { d, which ->
+                categoryId = if (which == 0) null else cats[which - 1].id
+                showCategory()
+                d.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showCategory() {
+        val name = categoryId?.let { id -> vm.state.value.categories.firstOrNull { it.id == id }?.name?.takeIf { it.isNotBlank() } }
+        categoryButton.text = getString(R.string.editor_category_value, name ?: getString(R.string.editor_category_none))
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_CATEGORY, categoryId ?: 0)
+        outState.putStringArrayList(KEY_EXTRA_LABELS, ArrayList(extraRows.map { it.first.text?.toString().orEmpty() }))
+        outState.putStringArrayList(KEY_EXTRA_GRAMS, ArrayList(extraRows.map { it.second.text?.toString().orEmpty() }))
+    }
+
+    private fun restoreExtras(state: Bundle) {
+        categoryId = state.getInt(KEY_CATEGORY, 0).takeIf { it != 0 }
+        val labels = state.getStringArrayList(KEY_EXTRA_LABELS).orEmpty()
+        val grams = state.getStringArrayList(KEY_EXTRA_GRAMS).orEmpty()
+        labels.forEachIndexed { i, l -> addExtraRow(ServingForm(l, grams.getOrNull(i).orEmpty())) }
+    }
+
+    private fun setMoreOpen(open: Boolean) {
+        moreNutrients?.visibility = if (open) android.view.View.VISIBLE else android.view.View.GONE
+        moreToggle?.text = getString(if (open) R.string.editor_fewer_nutrients else R.string.editor_more_nutrients)
+    }
 
     private fun gapParams(): LinearLayout.LayoutParams = FoodViews.matchWrap().apply {
         topMargin = resources.getDimensionPixelSize(UiR.dimen.sw_space_1)
@@ -174,6 +297,27 @@ class FoodEditorActivity : SwActivity() {
         set("sodium", f.sodiumMg)
         set("cholesterol", f.cholesterolMg)
         set("barcode", f.barcode)
+        set("transfat", f.transfat)
+        set("monofat", f.monofat)
+        set("polyfat", f.polyfat)
+        set("addsugar", f.addsugar)
+        set("potassium", f.potassiumMg)
+        set("calcium", f.calciumMg)
+        set("iron", f.ironMg)
+        set("vita", f.vitaUg)
+        set("vitc", f.vitcMg)
+        set("vitd", f.vitdUg)
+        veganBox.isChecked = f.vegan
+        vegetarianBox.isChecked = f.vegetarian
+        glutenFreeBox.isChecked = f.glutenFree
+        for ((a, chip) in allergenChips) chip.isChecked = a in f.allergens
+        categoryId = f.categoryId
+        showCategory()
+        for (s in f.extraServings) addExtraRow(s)
+        // Open the fold when the food already has any of its numbers.
+        if (listOf(f.transfat, f.monofat, f.polyfat, f.addsugar, f.potassiumMg, f.calciumMg, f.ironMg, f.vitaUg, f.vitcMg, f.vitdUg).any { it.isNotBlank() }) {
+            setMoreOpen(true)
+        }
         if (f.perServing) perServing.isChecked = true else per100.isChecked = true
     }
 
@@ -193,6 +337,22 @@ class FoodEditorActivity : SwActivity() {
         sodiumMg = value("sodium"),
         cholesterolMg = value("cholesterol"),
         barcode = value("barcode"),
+        transfat = value("transfat"),
+        monofat = value("monofat"),
+        polyfat = value("polyfat"),
+        addsugar = value("addsugar"),
+        potassiumMg = value("potassium"),
+        calciumMg = value("calcium"),
+        ironMg = value("iron"),
+        vitaUg = value("vita"),
+        vitcMg = value("vitc"),
+        vitdUg = value("vitd"),
+        vegan = veganBox.isChecked,
+        vegetarian = vegetarianBox.isChecked,
+        glutenFree = glutenFreeBox.isChecked,
+        allergens = allergenChips.filterValues { it.isChecked }.keys,
+        categoryId = categoryId,
+        extraServings = extraRows.map { (l, g) -> ServingForm(l.text?.toString().orEmpty(), g.text?.toString().orEmpty()) },
     )
 
     private fun showErrors(errors: Set<FoodFormError>) {
@@ -200,6 +360,11 @@ class FoodEditorActivity : SwActivity() {
         fields["kcal"]?.first?.error = if (FoodFormError.KCAL in errors) getString(R.string.food_calories_needed) else null
         fields["grams"]?.first?.error = if (FoodFormError.SERVING_GRAMS in errors) getString(R.string.editor_bad_number) else null
         fields["barcode"]?.first?.error = if (FoodFormError.BARCODE in errors) getString(R.string.scan_bad_code) else null
+        for ((l, g) in extraRows) {
+            val bad = FoodFormError.EXTRA_SERVING in errors && !(l.text.isNullOrBlank() && g.text.isNullOrBlank()) &&
+                (l.text.isNullOrBlank() || g.text.isNullOrBlank())
+            (g.parent?.parent as? TextInputLayout)?.error = if (bad) getString(R.string.editor_serving_needs_both) else null
+        }
     }
 
     private fun confirmDelete() {
@@ -218,6 +383,9 @@ class FoodEditorActivity : SwActivity() {
         private const val EXTRA_ID = "id"
         private const val EXTRA_BARCODE = "barcode"
         private const val MENU_DELETE = 1
+        private const val KEY_CATEGORY = "category"
+        private const val KEY_EXTRA_LABELS = "extra_labels"
+        private const val KEY_EXTRA_GRAMS = "extra_grams"
         private const val DECIMAL = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
 
         /** A new custom food, with [barcode] filled in when known. */

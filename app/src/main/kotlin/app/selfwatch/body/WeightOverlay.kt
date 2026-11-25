@@ -7,6 +7,9 @@
  */
 package app.selfwatch.body
 
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
+import app.selfwatch.cards.MainGoal
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.model.health.DaySummary
 import app.selfwatch.model.time.Day
@@ -151,7 +154,7 @@ class WeightOverlay(
 
 /**
  * The Weight chart's layers and the user's choice of which are shown, kept in settings under [KEY] as
- * the comma list of hidden layer ids. No stored value means the defaults ([DEFAULT_HIDDEN]).
+ * the comma list of hidden layer ids. No stored value means the main goal's defaults ([ChartDefaults]).
  */
 object WeightLayers {
     /** Settings key. */
@@ -178,23 +181,18 @@ object WeightLayers {
     /** Layers that can be switched, in chip order. */
     val TOGGLEABLE: List<String> = listOf(NET, ACTIVE_MIN, KCAL_IN, KCAL_OUT, STEPS)
 
-    /** Hidden until the user turns them on: the daily in and out lines are noisy, steps repeat active minutes. */
-    val DEFAULT_HIDDEN: Set<String> = setOf(KCAL_IN, KCAL_OUT, STEPS)
+    /** The stored choice; with none, the main goal's defaults ([ChartDefaults]). */
+    val CHOICE: ChartChoice by lazy { ChartChoice(ChartId.WEIGHT) }
 
-    /** The hidden ids stored as [stored] (null: never chosen). Unknown ids and [WEIGHT] are dropped. */
-    fun decode(stored: String?): Set<String> {
-        if (stored == null) return DEFAULT_HIDDEN
-        return stored.split(',').map { it.trim() }.filter { it in TOGGLEABLE }.toSet()
-    }
+    /** The hidden ids stored as [stored] (null: never chosen, [goal]'s defaults). Unknown ids and [WEIGHT] are dropped. */
+    fun decode(stored: String?, goal: MainGoal): Set<String> = CHOICE.decode(stored, goal)
 
     /** [hidden] as stored (in chip order, so equal sets store equal text). */
-    fun encode(hidden: Set<String>): String = TOGGLEABLE.filter { it in hidden }.joinToString(",")
+    fun encode(hidden: Set<String>): String = CHOICE.encode(hidden)
 
     /** The hidden layer ids. */
-    suspend fun load(db: SelfWatchDb): Set<String> = decode(db.settings.get(KEY))
+    suspend fun load(db: SelfWatchDb): Set<String> = CHOICE.load(db)
 
     /** Saves the hidden layer ids. */
-    suspend fun save(db: SelfWatchDb, hidden: Set<String>) {
-        db.settings.set(KEY, encode(hidden))
-    }
+    suspend fun save(db: SelfWatchDb, hidden: Set<String>): Unit = CHOICE.save(db, hidden)
 }

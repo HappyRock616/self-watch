@@ -17,4 +17,27 @@
     </plurals>
     <string name="weight_scrub_line">%1$s · %2$s</string>
     <string name="unit_kcal">kcal</string>
+
+    <!-- Weight loss goal flow (Goals screen and onboarding) -->
+    <string name="wl_plan_title">Your weight loss plan</string>
+    <string name="wl_plan_help">1. Set your goal weight. 2. Pick the date you want to reach it. 3. Self Watch works out a safe daily calorie goal. You can still change it.</string>
+    <string name="wl_current_weight">Current weight</string>
+    <string name="wl_current_weight_kg">Current weight (kg)</string>
+    <string name="wl_current_weight_lb">Current weight (lb)</string>
+    <string name="wl_step_weight">Next: set your goal weight</string>
+    <string name="wl_step_current">Next: enter your current weight</string>
+    <string name="wl_step_date">Next: pick your goal date</string>
+    <string name="wl_pick_date">Pick goal date</string>
+    <string name="wl_date_chosen">Goal date: %1$s</string>
+    <string name="wl_burn_measured">measured by your devices</string>
+    <string name="wl_burn_estimated">estimated from your profile</string>
+    <string name="wl_explain_lose">You burn about %1$s kcal a day (%2$s). Eating %3$s kcal less loses about %4$s a week: %5$s kcal a day.</string>
+    <string name="wl_explain_gain">You burn about %1$s kcal a day (%2$s). Eating %3$s kcal more gains about %4$s a week: %5$s kcal a day.</string>
+    <string name="wl_explain_steady">You\'re at your goal weight. Eating what you burn (about %1$s kcal a day, %2$s) keeps it steady.</string>
+    <string name="wl_explain_stalled">%1$s kcal a day is the safe minimum, and you burn about %2$s (%3$s), so food alone won\'t lower your weight. More activity will.</string>
+    <string name="wl_explain_floor">Raised to the safe minimum of %1$s kcal.</string>
+    <string name="wl_too_soon">That date is too soon for a safe pace (at most 1%% of your weight a week to lose, 0.5%% to gain). The earliest safe date is %1$s.</string>
+    <string name="wl_use_date">Use %1$s</string>
+    <string name="wl_kg">%1$s kg</string>
+    <string name="wl_lb">%1$s lb</string>
 </resources>

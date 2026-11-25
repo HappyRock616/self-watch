@@ -8,6 +8,8 @@
 package app.selfwatch.body
 
 import app.selfwatch.activity.Sports
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.model.health.BodyKind
 import app.selfwatch.model.health.BodyMeasure
@@ -18,36 +20,6 @@ import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.TimeRange
 import java.time.ZoneId
 import kotlin.math.roundToInt
-
-/**
- * Which layers of one overlay chart the user switched off, kept in settings under [key] as a comma list
- * of hidden layer ids. No stored value means [defaultHidden] (every layer on unless a chart says otherwise).
- */
-class LayerChoice(
-    /** Settings key. */
-    val key: String,
-    /** Layers that can be switched, in chip order. */
-    val toggleable: List<String>,
-    /** Hidden until the user turns them on. */
-    val defaultHidden: Set<String> = emptySet(),
-) {
-    /** The hidden ids stored as [stored] (null: never chosen). Unknown ids are dropped. */
-    fun decode(stored: String?): Set<String> {
-        if (stored == null) return defaultHidden
-        return stored.split(',').map { it.trim() }.filter { it in toggleable }.toSet()
-    }
-
-    /** [hidden] as stored (in chip order, so equal sets store equal text). */
-    fun encode(hidden: Set<String>): String = toggleable.filter { it in hidden }.joinToString(",")
-
-    /** The hidden layer ids. */
-    suspend fun load(db: SelfWatchDb): Set<String> = decode(db.settings.get(key))
-
-    /** Saves the hidden layer ids. */
-    suspend fun save(db: SelfWatchDb, hidden: Set<String>) {
-        db.settings.set(key, encode(hidden))
-    }
-}
 
 /**
  * O3: weekly protein per kg of body weight (with a 1.6 g/kg reference line) and strength sessions per
@@ -82,7 +54,7 @@ class ProteinOverlay(val firstDay: Day, val proteinPerKgX10: IntArray, val stren
         const val MIN_DAYS: Int = 3
 
         /** Settings for the chart's chips. */
-        val LAYERS: LayerChoice = LayerChoice("chart.body_comp.layers", listOf(BodyCompLayers.PROTEIN, BodyCompLayers.STRENGTH))
+        val LAYERS: ChartChoice = ChartChoice(ChartId.BODY_COMP)
 
         /**
          * Builds [weeks] weeks from [first]: [proteinX10ByDay] protein logged per day (tenths of a gram),
@@ -174,7 +146,7 @@ class HeartTrendOverlay(val firstDay: Day, val intensityMin: IntArray, val restD
         const val RESTING: String = "resting_hr"
 
         /** Settings for the chart's chips. */
-        val LAYERS: LayerChoice = LayerChoice("chart.heart_trend.layers", listOf(INTENSITY, RESTING))
+        val LAYERS: ChartChoice = ChartChoice(ChartId.HEART_TREND)
 
         /** Intensity of a moderate minute and of a vigorous one ([app.selfwatch.model.health.ActivityMinute.intensity]). */
         private const val MODERATE = 2
@@ -242,15 +214,20 @@ class SignalsOverlay(val days: List<Day>, val z: Map<SignalKind, IntArray>, val 
         /** The usual band (±1 standard deviation). */
         const val BAND: String = "band"
 
+        /** Layer ids of the three signals. */
+        const val SKIN_TEMP: String = "skin_temp"
+        const val RESTING_HR: String = "resting_hr"
+        const val RESPIRATION: String = "respiration"
+
         /** Layer id of each signal. */
         fun layerId(kind: SignalKind): String = when (kind) {
-            SignalKind.SKIN_TEMP -> "skin_temp"
-            SignalKind.RESTING_HR -> "resting_hr"
-            SignalKind.RESPIRATION -> "respiration"
+            SignalKind.SKIN_TEMP -> SKIN_TEMP
+            SignalKind.RESTING_HR -> RESTING_HR
+            SignalKind.RESPIRATION -> RESPIRATION
         }
 
         /** Settings for the chart's chips. */
-        val LAYERS: LayerChoice = LayerChoice("chart.body_signals.layers", SignalKind.entries.map { layerId(it) } + BAND)
+        val LAYERS: ChartChoice = ChartChoice(ChartId.BODY_SIGNALS)
 
         /** Builds the overlay for [days] from [values] covering [allDays] (which reach a baseline further back). */
         fun build(days: List<Day>, allDays: List<Day>, values: Map<SignalKind, Map<Day, Int>>): SignalsOverlay {

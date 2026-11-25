@@ -235,4 +235,33 @@ class DbImportSinkTest {
         assertEquals(2, src.water(range).size)
         assertEquals(1, src.workouts(null, listOf(run.id), TestSupport.ZONE).size)
     }
+
+    @Test
+    fun trimmedWorkoutExportsOnlyItsWindowAndStaysADuplicate() = runBlocking {
+        val data = sample()
+        sink.write("test", "sample.zip", data, true)
+        val src = DbExportSource(DbTestSupport.db, files, TestSupport.ZONE)
+        val run = src.workouts(null, emptyList(), TestSupport.ZONE).first { it.fitPath != null }
+        val all = src.track(run)
+        val start = all[all.size / 4].tSec
+        val end = all[all.size / 2].tSec
+        val cut = run.copy(startSec = start, endSec = end, durationSec = (end - start).toInt(), distanceM = 1_000)
+        assertTrue(DbTestSupport.db.workouts.saveTrim(cut, start, end))
+        val trimmed = DbTestSupport.db.workouts.get(run.id)!!
+        // Track (GPX, TCX) inside the window only; the whole recording is still there.
+        val kept = src.track(trimmed)
+        assertTrue(kept.isNotEmpty() && kept.all { it.tSec in start..end })
+        assertEquals(all.size, src.fullTrack(trimmed).size)
+        // FIT: written from the trimmed track and summary; the original file is unchanged.
+        val fit = requireNotNull(src.fitFile(trimmed)).use { it.readBytes() }
+        val back = (app.selfwatch.fit.decode.WorkoutDecoder.summary(fit.inputStream(), null) as Outcome.Ok).value
+        assertEquals(start to end, back.startSec to back.endSec)
+        assertEquals(1_000, back.distanceM)
+        assertTrue(requireNotNull(src.openFit(trimmed)).use { it.readBytes() }.size > fit.size)
+        // Importing the same file again: still a duplicate (its original start), so nothing is added.
+        assertEquals(1, sink.countDuplicates("test", data.copy(diary = emptyList(), body = emptyList(), exercises = emptyList(), recipes = emptyList(), foods = emptyList(), water = emptyList(), devices = emptyList(), notes = emptyList())))
+        // Undo: everything comes back.
+        assertTrue(DbTestSupport.db.workouts.undoTrim(run.id))
+        assertEquals(all.size, src.track(DbTestSupport.db.workouts.get(run.id)!!).size)
+    }
 }

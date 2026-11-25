@@ -25,6 +25,7 @@ import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.result.Outcome
 import app.selfwatch.model.time.Day
 import app.selfwatch.shell.DetailFragment
+import app.selfwatch.shell.Nav
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.charts.Axis
 import app.selfwatch.ui.charts.ChartLayer
@@ -43,7 +44,7 @@ import app.selfwatch.ui.R as UiR
 /**
  * Workout detail (C12): summary tiles, the GPS route on a plain canvas with distance markers, heart
  * rate, speed and elevation charts, export as GPX (default), FIT or TCX through the Storage Access
- * Framework, and delete.
+ * Framework, trim (cut time off the start or end; undo keeps the original) and delete.
  */
 class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
 
@@ -68,6 +69,11 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
     override fun onContent(column: LinearLayout, savedInstanceState: Bundle?) {
         val ctx = requireContext()
         val top = ChartScreens.tiles(column, listOf(getString(R.string.workout_distance), getString(R.string.workout_time), getString(R.string.workout_pace)), first = true)
+        val trimNote = Views.caption(ctx).apply {
+            id = R.id.workout_trim_note
+            visibility = View.GONE
+        }
+        column.addView(trimNote, Views.matchWrap(ctx, 8))
         val bottom = ChartScreens.tiles(column, listOf(getString(R.string.workout_avg_hr), getString(R.string.workout_max_hr), getString(R.string.workout_ascent), getString(R.string.workout_kcal)))
         val routeCard = Views.card(column, getString(R.string.workout_route))
         val route = RouteView(ctx)
@@ -90,11 +96,19 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
                 Fmt.day(ctx, Day.of(w.startSec, ZoneId.systemDefault()).yyyymmdd),
                 Fmt.time(ctx, w.startSec),
             )
+            val trim = s.trim
+            trimNote.visibility = if (trim == null) View.GONE else View.VISIBLE
+            if (trim != null) {
+                val cutSec = (trim.original.endSec - trim.original.startSec) - (w.endSec - w.startSec)
+                trimNote.text = getString(R.string.workout_trimmed_note, Fmt.duration(cutSec.coerceAtLeast(0), loc, labels))
+            }
+            toolbar.menu.findItem(R.id.menu_undo_trim)?.isVisible = trim != null
+            toolbar.menu.findItem(R.id.menu_export_fit)?.setTitle(if (trim != null) R.string.workout_export_fit_trimmed else R.string.workout_export_fit)
             ChartScreens.set(top[0], w.distanceM?.takeIf { it > 0 }?.let { Fmt.distance(it.toDouble(), s.units, loc, labels) })
             ChartScreens.set(top[1], Fmt.duration(w.durationSec.toLong(), loc, labels))
             val pace = Sports.usesPace(w.sport)
             if (pace) {
-                ChartScreens.set(top[2], Sports.pace(w.durationSec, w.distanceM, s.units), getString(if (s.units == Units.METRIC) R.string.unit_per_km else R.string.unit_per_mi))
+                ChartScreens.set(top[2], Sports.pace(w.durationSec, w.distanceM, s.units), Sports.paceUnit(ctx, s.units))
                 top[2].label = getString(R.string.workout_pace)
             } else {
                 ChartScreens.set(top[2], Sports.speed(w.durationSec, w.distanceM, s.units), getString(if (s.units == Units.METRIC) R.string.unit_kmh else R.string.unit_mph))
@@ -146,6 +160,17 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
     }
 
     override fun onMenuItem(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.menu_trim_workout -> {
+            Nav.open(this, WorkoutTrimFragment.newInstance(workoutId))
+            true
+        }
+        R.id.menu_undo_trim -> {
+            val app = requireContext().applicationContext
+            lifecycleScope.launch {
+                if (vm.undoTrim()) Toast.makeText(app, R.string.workout_trim_undone, Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
         R.id.menu_export_gpx -> export("gpx")
         R.id.menu_export_fit -> export("fit")
         R.id.menu_export_tcx -> export("tcx")
@@ -216,29 +241,6 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
         /** The detail of workout [id]. */
         fun newInstance(id: Long): WorkoutDetailFragment = WorkoutDetailFragment().apply {
             arguments = Bundle().apply { putLong(ARG_ID, id) }
-        }
-    }
-}
-
-/** Every workout, newest first (from Activity → All). */
-class WorkoutListFragment : DetailFragment() {
-
-    private val vm: WorkoutListViewModel by viewModels { WorkoutListViewModel.factory(requireContext().graph) }
-
-    override fun title(): CharSequence = getString(R.string.workout_list_title)
-
-    override fun onContent(column: LinearLayout, savedInstanceState: Bundle?) {
-        val ctx = requireContext()
-        val card = Views.card(column, null, first = true)
-        val list = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        card.addView(list, Views.matchWrap(ctx))
-        val empty = app.selfwatch.ui.components.EmptyState(ctx).apply { message = getString(R.string.activity_recent_empty) }
-        column.addView(empty, Views.matchWrap(ctx, 16))
-        collectWhileStarted(vm.state) { s ->
-            list.removeAllViews()
-            for (w in s.workouts) list.addView(WorkoutRows.row(this, w, s.units), Views.matchWrap(ctx))
-            card.visibility = if (s.workouts.isEmpty()) View.GONE else View.VISIBLE
-            empty.visibility = if (s.workouts.isEmpty() && !s.loading) View.VISIBLE else View.GONE
         }
     }
 }

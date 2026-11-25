@@ -24,6 +24,9 @@ import app.selfwatch.food.source.FoodsDbHandle
 import app.selfwatch.food.source.FoodsDbSource
 import app.selfwatch.food.source.MyFoodsSource
 import app.selfwatch.food.source.OffSource
+import app.selfwatch.me.AndroidWifiWaiter
+import app.selfwatch.me.FoodDataOps
+import app.selfwatch.me.FoodDbAutoInstall
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.net.Http
 import app.selfwatch.model.net.NetFeature
@@ -34,6 +37,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.sync.Mutex
 import java.io.File
 
 /**
@@ -73,6 +77,14 @@ class FoodGraph internal constructor(
         FoodDbInstaller(http, db.settings, foodDataDir, FOODS_MANIFEST_URL, AppInfo.versionCode(ctx), foodsDbHandle)
     }
 
+    /** Taken by every install or removal of foods.db (Me › Food data and the automatic download). */
+    val installLock: Mutex = Mutex()
+
+    /** The automatic foods.db download started the first time food entry opens. */
+    val autoInstall: FoodDbAutoInstall by lazy {
+        FoodDbAutoInstall(FoodDataOps.of(installer, installLock), { firewall.allowed(NetFeature.FOOD_DATA) }, AndroidWifiWaiter(ctx), scope)
+    }
+
     /** The user's foods, recipes and history; recipes resolve with their computed nutrition. */
     val myFoods: MyFoodsSource by lazy {
         MyFoodsSource(db) { r -> RecipeNutritionCalculator(search).perServing(r).perServing }
@@ -107,9 +119,12 @@ class FoodGraph internal constructor(
         private const val TAG = "FoodGraph"
 
         /**
-         * Where the foods.db manifest is published (FOODDB_SPEC §9). The release location is decided
-         * with task D12; until then the check fails cleanly and "Load from file" works.
+         * Where the foods.db manifest is published (FOODDB_SPEC §9): the "fooddata" release of the
+         * public repo, whose assets are replaced on each data build. The manifest is named per schema
+         * (`foods-manifest-v2.json` for schema 2) so older apps keep reading the schema they know.
+         * "Load from file" installs any other database the user chooses.
          */
-        const val FOODS_MANIFEST_URL: String = "https://fooddata.selfwatch.invalid/foods-manifest.json"
+        const val FOODS_MANIFEST_URL: String =
+            "https://github.com/HappyRock616/self-watch/releases/download/fooddata/foods-manifest-v2.json"
     }
 }

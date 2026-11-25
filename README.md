@@ -22,7 +22,7 @@ Self Watch puts both halves in one place and keeps them there. The watch talks t
 
 - 💸 **Free.** No ads, no subscriptions, no in-app purchases.
 - 🔒 **Private.** No account, no analytics, no crash reports. No Google Play Services. Runs on GrapheneOS and LineageOS.
-- 📴 **Offline first.** Every internet feature has its own switch, most start off, and every request is listed in the app.
+- 📴 **Offline first.** Every internet feature has its own switch, nothing goes out unless its switch is on, and every request is listed in the app.
 - 🧾 **Open.** Licensed under the AGPL-3.0, so it stays free.
 
 *Know thyself. Tell no one.*

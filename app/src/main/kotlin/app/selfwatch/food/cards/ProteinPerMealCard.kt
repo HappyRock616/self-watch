@@ -7,13 +7,16 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 
@@ -30,6 +33,18 @@ object ProteinPerMealCard : Card<ProteinMeals>(
     override val tables: Set<Table> = setOf(Table.DIARY, Table.MEAL_SLOT, Table.BODY)
 
     override suspend fun load(env: CardEnv): ProteinMeals = FoodCardLoader(env.db, env.clock).proteinMeals(env.day)
+
+    override fun small(ctx: Context, data: ProteinMeals): SmallFace? {
+        if (data.eaten == 0 || data.meals.isEmpty()) return null
+        val n = data.meals.size
+        return SmallFace(
+            value = data.reached.toString(),
+            label = ctx.resources.getQuantityString(R.plurals.small_meals_of, n, n),
+            status = CardStatusColors.ofProgress(data.reached.toDouble(), n.toDouble()),
+            note = ctx.getString(R.string.small_meal_threshold, Fmt.number(data.thresholdG.toLong())),
+            progress = data.reached.toFloat() / n,
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<ProteinMeals> = Holder(parent)
 

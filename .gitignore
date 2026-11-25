@@ -37,3 +37,6 @@ captures/
 /tools/fooddb/*.sha256
 /tools/fooddb/foods-manifest.json
 __pycache__/
+# food database build tools stay private (only check_foods.py is public)
+/tools/fooddb/*
+!/tools/fooddb/check_foods.py

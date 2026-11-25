@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Devices card: remove (a trash can). Drawn for Self Watch. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9,3h6l1,1.5h4V7H4V4.5h4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M5.5,8.5h13l-1,12.5H6.5z M9,11v7.5h1.5V11z M13.5,11v7.5H15V11z" />
+</vector>

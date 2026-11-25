@@ -9,8 +9,12 @@ package app.selfwatch.food
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.selfwatch.food.nutrition.DietFilter
+import app.selfwatch.food.nutrition.DietPrefs
+import app.selfwatch.food.nutrition.FilterFit
 import app.selfwatch.food.source.FoodHit
 import app.selfwatch.model.food.DiaryEntry
+import app.selfwatch.model.food.FoodRef
 import app.selfwatch.model.food.MealSlot
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.time.Day
@@ -48,9 +52,29 @@ data class AddFoodState(
     val tab: AddFoodTab = AddFoodTab.RECENT,
     val tabRows: List<FoodHit> = emptyList(),
     val tabLoading: Boolean = true,
+    /** The user's diets and allergens (rows that clash get a red badge). */
+    val prefs: DietPrefs = DietPrefs.NONE,
+    /** The filter chips on offer (only with a diet or allergen set). */
+    val filters: List<DietFilter> = emptyList(),
+    /** The chips switched on (all of them to start with). */
+    val activeFilters: Set<DietFilter> = emptySet(),
 ) {
-    /** The rows on screen: results when searching, else the tab. */
-    val rows: List<FoodHit> get() = results ?: tabRows
+    /** Results when searching, else the tab, before the diet filters. */
+    val unfiltered: List<FoodHit> get() = results ?: tabRows
+
+    /** The rows on screen: [unfiltered] without the foods known to clash with an active filter. */
+    val rows: List<FoodHit>
+        get() = if (activeFilters.isEmpty()) unfiltered else unfiltered.filter { DietFilter.fitAll(it.dietInfo, activeFilters) != FilterFit.CONFLICTS }
+
+    /** Rows whose diet data is not known for an active filter (marked "?"). */
+    val unsure: Set<FoodRef>
+        get() = if (activeFilters.isEmpty()) emptySet() else rows.filter { DietFilter.fitAll(it.dietInfo, activeFilters) == FilterFit.UNKNOWN }.mapTo(HashSet()) { it.ref }
+
+    /** How many rows the active filters hide. */
+    val hiddenCount: Int get() = unfiltered.size - rows.size
+
+    /** The chain whose menu the search shows (brand mode, "McDonald's menu"), or null. */
+    val chain: String? get() = results?.firstOrNull { it.chain != null }?.chain
 }
 
 /** One-shot Add food events. */
@@ -93,6 +117,16 @@ class AddFoodViewModel(
             val hour = java.time.Instant.ofEpochSecond(backend.clock.nowSec()).atZone(backend.clock.zone()).hour
             val slot = slots.firstOrNull { it.id == slotId } ?: FoodRows.slotForHour(hour, slots) ?: slots.firstOrNull()
             mutable.update { it.copy(day = day ?: backend.clock.today(), slot = slot) }
+            val prefs = try {
+                backend.dietPrefs()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SwLog.w(TAG, "diet failed", e)
+                DietPrefs.NONE
+            }
+            val filters = DietFilter.forPrefs(prefs)
+            mutable.update { it.copy(prefs = prefs, filters = filters, activeFilters = filters.toSet()) }
         }
         viewModelScope.launch {
             queries
@@ -119,6 +153,11 @@ class AddFoodViewModel(
     fun setQuery(q: String) {
         mutable.update { it.copy(query = q, results = if (q.isBlank()) null else it.results) }
         queries.value = q
+    }
+
+    /** Switches filter chip [filter] on or off. */
+    fun setFilter(filter: DietFilter, on: Boolean) = mutable.update { s ->
+        if (filter !in s.filters) s else s.copy(activeFilters = if (on) s.activeFilters + filter else s.activeFilters - filter)
     }
 
     /** Switches tab. */

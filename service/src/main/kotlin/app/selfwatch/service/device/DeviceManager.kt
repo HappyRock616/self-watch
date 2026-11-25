@@ -86,6 +86,13 @@ public class DeviceManager(
     private val lock = Mutex()
     private val managed = LinkedHashMap<Long, ManagedDevice>()
 
+    /** One link opening at a time, across all devices (see [connectOnce]). */
+    private val connectGate = Mutex()
+
+    /** The one watch that connects (null: no watch); every sensor connects alongside it. */
+    @Volatile
+    private var activeWatchId: Long? = null
+
     @Volatile
     private var order: List<ManagedDevice> = emptyList()
 
@@ -93,6 +100,14 @@ public class DeviceManager(
 
     /** Every managed device and its state, highest priority first. */
     public val devices: StateFlow<List<DeviceStatus>> = mutableDevices.asStateFlow()
+
+    private val mutableLive = kotlinx.coroutines.flow.MutableSharedFlow<Pair<Long, WatchEvent>>(
+        extraBufferCapacity = 64,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Live readings ([WatchEvent.LiveHeartRate], [WatchEvent.LiveSteps]) with the id of the watch that sent them. */
+    public val live: kotlinx.coroutines.flow.SharedFlow<Pair<Long, WatchEvent>> = mutableLive
 
     /** The mode read by the last [start]. */
     @Volatile
@@ -115,9 +130,13 @@ public class DeviceManager(
             managed.remove(gone.info.id)
         }
         for (info in active) {
-            if (managed[info.id] == null) managed[info.id] = newManaged(info, db.devices.lastSync(info.id))
+            val md = managed[info.id] ?: newManaged(info, db.devices.lastSync(info.id)).also { managed[info.id] = it }
+            // Devices page: a card tapped off stays off; a watch's Exclusive switch.
+            md.userOff = db.settings.getBool(SettingKeys.deviceOff(info.id))
+            md.exclusive = db.settings.getBool(SettingKeys.deviceExclusive(info.id))
         }
         order = active.mapNotNull { managed[it.id] }
+        activeWatchId = pickActiveWatch(order, db.settings.get(ACTIVE_WATCH_KEY)?.toLongOrNull())
         publish()
         if (active.isEmpty()) {
             scheduler.cancel()
@@ -127,6 +146,13 @@ public class DeviceManager(
             ConnectionMode.ALWAYS -> {
                 scheduler.cancel()
                 for (md in order) {
+                    if (!connectable(md)) {
+                        // Only one watch at a time (the others stay paired but off), and none the user turned off.
+                        md.supervisor?.cancelAndJoin()
+                        md.supervisor = null
+                        md.retry = null
+                        continue
+                    }
                     if (md.supervisor?.isActive != true) md.supervisor = scope.launch { supervise(md) }
                 }
                 StartResult.ALWAYS
@@ -158,6 +184,14 @@ public class DeviceManager(
      */
     public suspend fun syncNow(deviceId: Long, reason: SyncReason = SyncReason.USER): Outcome<SyncReport> {
         val md = order.firstOrNull { it.info.id == deviceId } ?: return Outcome.Fail(SwError.NotConnected(deviceId))
+        if (mode == ConnectionMode.ALWAYS && md.contest.contested && reason == SyncReason.USER) {
+            // The user asked for this phone: forget the contest and reconnect now.
+            SwLog.i(TAG, "device ${md.info.id}: the user chose this phone; reconnecting")
+            md.contest.reset()
+            md.attempt = 0
+            md.wake.trySend(Unit)
+            return Outcome.Fail(SwError.NotConnected(deviceId))
+        }
         return if (mode == ConnectionMode.ALWAYS) syncConnected(md, reason) else cycleOne(md, reason)
     }
 
@@ -175,7 +209,7 @@ public class DeviceManager(
      */
     public suspend fun syncCycle(reason: SyncReason): Map<Long, Outcome<SyncReport>> {
         val out = LinkedHashMap<Long, Outcome<SyncReport>>()
-        for (md in order) out[md.info.id] = cycleOne(md, reason)
+        for (md in order) if (connectable(md)) out[md.info.id] = cycleOne(md, reason)
         return out
     }
 
@@ -223,27 +257,69 @@ public class DeviceManager(
             currentCoroutineContext().ensureActive()
             md.retry = null
             md.reachedReady = false
+            md.readyAtSec = null
+            val startedSec = clock.nowSec()
             connectOnce(md, autoReconnect = true)
-            if (md.reachedReady) md.attempt = 0
-            val waitSec = Backoff.delaySec(md.attempt)
-            md.attempt++
-            // Keep the driver's own reason (handshake timeout, secure pairing...) for the screens.
-            val why = (md.driverState as? ConnectionState.Failed)?.error ?: SwError.NotConnected(md.info.id)
+            val endSec = clock.nowSec()
+            // Only a link that stayed up resets the delays; a link that drops within minutes keeps backing off.
+            if (md.reachedReady && (endSec - startedSec) * 1000 >= Backoff.STABLE_MS) {
+                md.attempt = 0
+                md.contest.reset()
+            }
+            // Exclusive (Devices page): never step back for another phone or app; keep the normal back-off,
+            // which still ends at one try every 5 minutes, so the watch radio is not hammered.
+            if (md.exclusive) md.contest.reset()
+            val contested = md.contest.onLinkEnded(md.readyAtSec, endSec) && !md.exclusive
+            val waitSec: Int
+            val why: SwError
+            if (contested) {
+                // Another phone or app keeps taking the watch: stop fighting over it (each try costs the
+                // watch battery). Check once an hour; "Sync now" takes it back at once.
+                waitSec = ContestDetector.CHECK_EVERY_SEC
+                val otherApp = try { portFactory.heldElsewhere(md.info.address) } catch (e: Exception) { false }
+                why = SwError.Io(if (otherApp) ContestDetector.REASON_OTHER_APP else ContestDetector.REASON_OTHER_PHONE)
+                SwLog.w(TAG, "device ${md.info.id} keeps dropping soon after connecting; ${if (otherApp) "another app on this phone" else "another phone"} seems to have it")
+            } else {
+                waitSec = Backoff.delaySec(md.attempt)
+                md.attempt++
+                // Keep the driver's own reason (handshake timeout, secure pairing...) for the screens.
+                why = (md.driverState as? ConnectionState.Failed)?.error ?: SwError.NotConnected(md.info.id)
+            }
             md.retry = ConnectionState.Failed(why, waitSec)
             publish()
             SwLog.i(TAG, "device ${md.info.id} disconnected; retry in $waitSec s")
-            delay(waitSec * 1000L)
+            // Drop a wake-up left over from before this connection, so only a "Sync now" made during the
+            // wait cuts it short (a stale one would skip the back-off and wake the watch radio again).
+            md.wake.tryReceive()
+            withTimeoutOrNull(waitSec * 1000L) { md.wake.receive() }
         }
     }
 
-    /** Opens a link and runs the driver on it until it returns; the link is always released. */
+    /** True for sensors, and for the one active watch ([activeWatchId]). */
+    private fun connectable(md: ManagedDevice): Boolean =
+        !md.userOff && (!DeviceKinds.isWatch(md.info.kind) || md.info.id == activeWatchId)
+
+    /**
+     * Opens a link and runs the driver on it until it returns; the link is always released. Links open
+     * one at a time across all devices ([connectGate]): Android's Bluetooth stack handles parallel GATT
+     * connects badly (status 133), so a device waits until the previous one is past connecting.
+     */
     private suspend fun connectOnce(md: ManagedDevice, autoReconnect: Boolean) {
+        connectGate.lock()
+        val opened = kotlinx.coroutines.CompletableDeferred<Unit>()
+        md.linkOpened = opened
+        scope.launch {
+            withTimeoutOrNull(CONNECT_GATE_MS) { opened.await() }
+            connectGate.unlock()
+        }
         val port = try {
             portFactory.create(md.info.address, autoReconnect)
         } catch (e: CancellationException) {
+            opened.complete(Unit)
             throw e
         } catch (e: Exception) {
             SwLog.w(TAG, "could not open a link to device ${md.info.id}", e)
+            opened.complete(Unit)
             return
         }
         md.port = port
@@ -254,6 +330,7 @@ public class DeviceManager(
         } catch (e: Exception) {
             SwLog.w(TAG, "driver for device ${md.info.id} stopped with an error", e)
         } finally {
+            opened.complete(Unit)
             md.port = null
             withContext(NonCancellable) {
                 try {
@@ -314,18 +391,47 @@ public class DeviceManager(
     }
 
     private suspend fun onEvent(md: ManagedDevice, event: WatchEvent) {
+        if (event is WatchEvent.LiveHeartRate || event is WatchEvent.LiveSteps) {
+            mutableLive.tryEmit(md.info.id to event)
+            return
+        }
         if (event is WatchEvent.Battery) {
             md.info = md.info.copy(batteryPct = event.pct.coerceIn(0, 100))
             publish()
             return
         }
+        if (event is WatchEvent.GarminSignInRequested) {
+            noteSignInRequest(md.info.id, event.answered)
+            return
+        }
         router.route(md, event)
+    }
+
+    /**
+     * Keeps [SettingKeys.deviceSignInAsked] for Watch settings: set when the watch asked to sign in to
+     * Garmin and nobody answered (weather and GPS help stop until it gets one), cleared once answered.
+     */
+    private suspend fun noteSignInRequest(deviceId: Long, answered: Boolean) {
+        try {
+            val key = SettingKeys.deviceSignInAsked(deviceId)
+            if (answered) {
+                if (db.settings.get(key) != null) db.settings.set(key, null)
+            } else {
+                db.settings.set(key, clock.nowSec().toString())
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SwLog.e(TAG, "could not store the sign-in request", e)
+        }
     }
 
     private suspend fun onState(md: ManagedDevice, state: ConnectionState) {
         val previous = md.driverState
         md.driverState = state
+        if (state !is ConnectionState.Connecting && state !is ConnectionState.Disconnected) md.linkOpened?.complete(Unit)
         if (state is ConnectionState.Ready || state is ConnectionState.Syncing) {
+            if (md.readyAtSec == null) md.readyAtSec = clock.nowSec()
             md.reachedReady = true
             md.retry = null
         }
@@ -355,6 +461,9 @@ public class DeviceManager(
         }
     }
 
+    private fun pickActiveWatch(list: List<ManagedDevice>, chosen: Long?): Long? =
+        pickActiveWatchId(list.filter { DeviceKinds.isWatch(it.info.kind) }.map { it.info.id }, chosen)
+
     private fun publish() {
         mutableDevices.value = order.map { DeviceStatus(it.info, it.effectiveState(), it.lastSyncSec) }
     }
@@ -377,7 +486,25 @@ public class DeviceManager(
 
         @Volatile var reachedReady: Boolean = false
 
+        /** When the current link reached READY (null until it does). */
+        @Volatile var readyAtSec: Long? = null
+
+        /** Completed once the current link is past connecting (frees [connectGate]). */
+        @Volatile var linkOpened: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+        /** Spots another phone or app taking the watch away. */
+        val contest = ContestDetector()
+
+        /** Ends the wait before the next connection early ("Sync now" while contested). */
+        val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
+
         @Volatile var attempt: Int = 0
+
+        /** The user tapped this device off on the Devices page: it stays disconnected. */
+        @Volatile var userOff: Boolean = false
+
+        /** The watch's Exclusive switch: no stepping back when another phone or app takes it. */
+        @Volatile var exclusive: Boolean = false
 
         override val deviceId: Long get() = info.id
 
@@ -408,6 +535,16 @@ public class DeviceManager(
         /** Upper bound for `connection.sync_only_hours`. */
         public const val MAX_SYNC_HOURS: Int = 24
 
+        /** Setting: id of the watch that connects. Missing or not a paired watch → the first watch in order. */
+        public const val ACTIVE_WATCH_KEY: String = "devices.active_watch"
+
+        /** Longest time one device may hold the connect gate (ms). */
+        public const val CONNECT_GATE_MS: Long = 30_000
+
         private const val TAG = "DeviceManager"
+
+        /** The watch that connects: [chosen] if it is one of the watches in [order], else the first watch. */
+        internal fun pickActiveWatchId(watchIdsInOrder: List<Long>, chosen: Long?): Long? =
+            chosen?.takeIf { it in watchIdsInOrder } ?: watchIdsInOrder.firstOrNull()
     }
 }

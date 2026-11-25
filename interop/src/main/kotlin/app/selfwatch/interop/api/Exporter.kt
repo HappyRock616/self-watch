@@ -67,6 +67,12 @@ interface ExportSource {
     /** The original FIT file of [workout], or null if it has none. The caller closes the stream. */
     fun openFit(workout: Workout): InputStream? = null
 
+    /**
+     * The FIT file to export for [workout], or null if it has none: the original, or for a trimmed
+     * workout one written from its trimmed track. The caller closes the stream.
+     */
+    suspend fun fitFile(workout: Workout): InputStream? = openFit(workout)
+
     /** Diary lines in [days]. */
     suspend fun diary(days: DayRange?): List<DiaryRow> = emptyList()
 

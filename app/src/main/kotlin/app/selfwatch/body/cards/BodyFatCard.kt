@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -20,6 +21,8 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.health.BodyKind
 import app.selfwatch.model.time.Day
@@ -44,6 +47,28 @@ object BodyFatCard : Card<BodyFatCard.Data>("body_fat", CardTab.BODY, R.string.c
     override val tables: Set<Table> = setOf(Table.BODY)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyTrendLoader(env.db, env.clock).bodyFat(), env.units)
+
+    override val needs: Set<DataKind> = setOf(DataKind.BODY_FAT)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val f = data.fat ?: return null
+        val percent = ctx.getString(R.string.unit_percent)
+        val note = f.change90X100?.let {
+            val sign = if (it < 0) "−" else if (it > 0) "+" else ""
+            ctx.getString(R.string.small_change_90, sign + Fmt.number(abs(it) / 100.0, 1) + " " + percent)
+        }
+        return SmallFace(
+            value = Fmt.number(f.trendX100 / 100.0, 1),
+            label = ctx.getString(R.string.small_trend),
+            unit = percent,
+            note = note,
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(MeasureDetailFragment.newInstance(BodyKind.BODY_FAT, null))
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

@@ -33,7 +33,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Today's rings: value and goal for steps, active minutes and active kcal. */
+/**
+ * The rings: today's steps and active kcal against their daily goals, and this week's active minutes
+ * (Monday to today) against the weekly active-minutes goal.
+ */
 data class Rings(
     val steps: Int = 0,
     val stepGoal: Int = ActivityRules.DEFAULT_STEPS,
@@ -76,7 +79,8 @@ enum class TrendMetric(val id: String) { DISTANCE("distance"), ACTIVE_MIN("activ
  * @property daily true for one bar per day; false for one bar per month showing the daily average.
  * @property starts the first day of each bar.
  * @property values per metric, one raw value per bar (distance in metres); -1 for no data.
- * @property goals per metric, the daily goal line (null for none).
+ * @property goals per metric, the goal line per bar (null for none). Every bar is a day or a daily average,
+ *   so the active-minutes line is a seventh of the weekly goal.
  */
 data class Trend(
     val range: TrendRange,
@@ -99,11 +103,11 @@ data class ActivityUiState(
 
 /** Pure activity rules: goals over time, the streak and the trend bars. */
 object ActivityRules {
-    /** Step goal before one is set. */
-    const val DEFAULT_STEPS: Int = 10_000
+    /** Step goal per day before one is set. */
+    const val DEFAULT_STEPS: Int = ActivityGoals.DEFAULT_STEPS
 
-    /** Active minutes goal before one is set. */
-    const val DEFAULT_ACTIVE_MIN: Int = 30
+    /** Active minutes goal per week before one is set. */
+    const val DEFAULT_ACTIVE_MIN: Int = ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK
 
     /** Active kcal goal before one is set. */
     const val DEFAULT_ACTIVE_KCAL: Int = 400
@@ -180,12 +184,14 @@ object ActivityRules {
 /** Reads the Activity cards and the streak from the database. */
 class ActivityLoader(private val db: SelfWatchDb, private val clock: Clock) {
 
-    /** Today's rings against the goals in force today. */
+    /** Today's rings against the goals in force today; active minutes are this week's (Monday to today). */
     suspend fun rings(): Rings {
         val today = clock.today()
         val g = goals(today)
-        val s = db.summaries.days(DayRange(today, today)).firstOrNull()
-        return Rings(s?.steps ?: 0, g.steps, s?.activeMin ?: 0, g.activeMin, s?.activeKcal ?: 0, g.activeKcal)
+        val week = db.summaries.days(DayRange(ActivityWeek.start(today), today))
+        val s = week.firstOrNull { it.day == today }
+        val weekActive = week.sumOf { it.activeMin ?: 0 }
+        return Rings(s?.steps ?: 0, g.steps, weekActive, g.activeMinWeek, s?.activeKcal ?: 0, g.activeKcal)
     }
 
     /** Consecutive days meeting the step goal (see [ActivityRules.streak]). */
@@ -203,7 +209,7 @@ class ActivityLoader(private val db: SelfWatchDb, private val clock: Clock) {
         val g = goals(today)
         val goals = mapOf(
             TrendMetric.DISTANCE to null,
-            TrendMetric.ACTIVE_MIN to g.activeMin,
+            TrendMetric.ACTIVE_MIN to ActivityGoals.dailyShare(g.activeMinWeek),
             TrendMetric.STEPS to g.steps,
             TrendMetric.ACTIVE_KCAL to g.activeKcal,
         )
@@ -232,11 +238,11 @@ class ActivityLoader(private val db: SelfWatchDb, private val clock: Clock) {
 
     private suspend fun goals(today: Day): DayGoals = DayGoals(
         steps = ActivityRules.goalOn(db.goals.history(GoalKind.STEPS), today, ActivityRules.DEFAULT_STEPS),
-        activeMin = db.goals.goalOn(GoalKind.ACTIVE_MIN, today)?.value ?: ActivityRules.DEFAULT_ACTIVE_MIN,
+        activeMinWeek = ActivityGoals.activeMinWeek(db, today),
         activeKcal = db.settings.getInt(GoalField.ACTIVE_KCAL_KEY) ?: ActivityRules.DEFAULT_ACTIVE_KCAL,
     )
 
-    private class DayGoals(val steps: Int, val activeMin: Int, val activeKcal: Int)
+    private class DayGoals(val steps: Int, val activeMinWeek: Int, val activeKcal: Int)
 
     private companion object {
         val EPOCH = Day(19700101)

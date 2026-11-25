@@ -153,6 +153,9 @@ object SchemaOrgRecipe {
                 "proteinContent" to it.proteinX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
                 "fatContent" to it.fatX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
                 "saturatedFatContent" to it.satfatX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
+                "transFatContent" to it.transfatX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
+                // schema.org has one unsaturated field: mono + poly, only when both are known.
+                "unsaturatedFatContent" to it.monofatX10?.let { m -> it.polyfatX10?.let { p -> Numbers.formatScaled(m + p, 10) + " g" } },
                 "carbohydrateContent" to it.carbX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
                 "sugarContent" to it.sugarX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },
                 "fiberContent" to it.fibreX10?.let { v -> Numbers.formatScaled(v, 10) + " g" },

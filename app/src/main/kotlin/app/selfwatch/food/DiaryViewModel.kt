@@ -18,9 +18,12 @@ import app.selfwatch.food.budget.Budget
 import app.selfwatch.food.diary.DiaryDay
 import app.selfwatch.food.diary.FastStatus
 import app.selfwatch.food.diary.WaterDay
+import app.selfwatch.food.nutrition.Diet
+import app.selfwatch.food.nutrition.VegetarianHint
 import app.selfwatch.interop.api.OutputSink
 import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.model.food.MealSlot
+import app.selfwatch.model.food.Nutrients
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.time.Day
 import kotlinx.coroutines.CancellationException
@@ -48,8 +51,16 @@ import java.time.ZoneId
 /** "Add yesterday's dinner": yesterday's [count] entries in this meal, [kcal] in total. */
 data class YesterdayOffer(val count: Int, val kcal: Int)
 
-/** One meal section of the diary. [yesterday] is non-null when the copy-yesterday line should show. */
-data class MealUi(val slot: MealSlot, val entries: List<DiaryEntry>, val kcal: Int, val yesterday: YesterdayOffer?)
+/** One meal section of the diary. [yesterday] is non-null when the copy-yesterday line should show; [totals] are the meal's nutrients. */
+data class MealUi(
+    val slot: MealSlot,
+    val entries: List<DiaryEntry>,
+    val kcal: Int,
+    val yesterday: YesterdayOffer?,
+    val totals: Nutrients = Nutrients.UNKNOWN,
+    /** "Recent for <meal>": foods often logged in this meal and not in it yet, each as its last diary line. */
+    val recents: List<DiaryEntry> = emptyList(),
+)
 
 /** Food diary state. */
 data class DiaryUiState(
@@ -78,6 +89,9 @@ data class DiaryUiState(
 sealed interface DiaryEvent {
     /** An entry was deleted; offer Undo. */
     data class Deleted(val entry: DiaryEntry) : DiaryEvent
+
+    /** A recent food ([name]) was logged into meal [slot] as entry [id]; offer Undo. */
+    data class Logged(val name: String, val slot: Long, val id: Long) : DiaryEvent
 
     /** [count] entries were copied from yesterday. */
     data class Copied(val count: Int) : DiaryEvent
@@ -143,11 +157,19 @@ class DiaryViewModel(
                 SwLog.w(TAG, "budget failed", e)
                 null
             }
+            val history = try {
+                backend.entriesBetween(day.plusDays(-(MealMath.RECENT_DAYS - 1)), day)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SwLog.w(TAG, "meal history failed", e)
+                emptyList()
+            }
             DiaryUiState(
                 enabled = true,
                 day = day,
                 today = today,
-                meals = meals(d, y),
+                meals = meals(d, y).map { m -> m.copy(recents = MealMath.recents(history, m.slot.id, m.entries)) },
                 eatenKcal = FoodRows.kcal(d.totals),
                 water = water,
                 fast = fast,
@@ -227,6 +249,16 @@ class DiaryViewModel(
     /** Puts a deleted entry back. */
     fun undoDelete(entry: DiaryEntry) = act { backend.restore(entry) }
 
+    /** "Recent for <meal>" +: logs [last]'s food into [slot] on the day shown, with its last serving, and offers Undo. */
+    fun logRecent(slot: Long, last: DiaryEntry) = act {
+        val day = state.value.day ?: backend.clock.today()
+        val id = QuickLog.relog(backend, last, day, slot)
+        eventChannel.send(DiaryEvent.Logged(last.name, slot, id))
+    }
+
+    /** Undoes a [logRecent]. */
+    fun undoLog(id: Long) = act { backend.deleteEntries(listOf(id)) }
+
     /** Adds one glass of water to the day shown. */
     fun addWater() = act { backend.addWater(GLASS_ML, state.value.day ?: backend.clock.today()) }
 
@@ -242,6 +274,48 @@ class DiaryViewModel(
     /** Starts a fast, or ends the running one. */
     fun toggleFast() = act {
         if (state.value.fast != null) backend.endFast() else backend.startFast(DEFAULT_FAST_MIN)
+    }
+
+    private val vegHintFlow = MutableStateFlow(false)
+    private var vegHintChecked = false
+
+    /** True while the one-time "Set vegetarian?" card should show (FOOD_UI_PLAN §4.5). */
+    val vegHint: StateFlow<Boolean> = vegHintFlow
+
+    /**
+     * Works out once per screen whether to offer "Set vegetarian?": [VegetarianHint.DAYS] logged days in
+     * the last [VegetarianHint.LOOKBACK_DAYS] with no meat, no vegetarian or vegan diet set, never
+     * answered before.
+     */
+    fun checkVegHint() {
+        if (vegHintChecked) return
+        vegHintChecked = true
+        viewModelScope.launch {
+            try {
+                if (backend.vegHintDone()) return@launch
+                val prefs = backend.dietPrefs()
+                if (Diet.VEGETARIAN in prefs.diets || Diet.VEGAN in prefs.diets) return@launch
+                val today = backend.clock.today()
+                val days = withContext(io) { backend.loggedCategories(today.plusDays(-(VegetarianHint.LOOKBACK_DAYS - 1)), today) }
+                vegHintFlow.value = VegetarianHint.shouldOffer(days, prefs, dismissed = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SwLog.w(TAG, "vegetarian hint check failed", e)
+            }
+        }
+    }
+
+    /** Answers the vegetarian offer: [accept] adds the vegetarian diet. Either way it never shows again. */
+    fun answerVegHint(accept: Boolean) {
+        vegHintFlow.value = false
+        act {
+            if (accept) {
+                val prefs = backend.dietPrefs()
+                backend.setDietPrefs(prefs.copy(diets = prefs.diets + Diet.VEGETARIAN))
+            }
+            backend.setVegHintDone()
+        }
     }
 
     private fun act(block: suspend () -> Unit) {
@@ -262,11 +336,11 @@ class DiaryViewModel(
         private const val TAG = "DiaryViewModel"
         private const val STOP_TIMEOUT_MS = 5_000L
 
-        /** One water square. */
-        const val GLASS_ML: Int = 250
+        /** One water square here (a metric glass; the cards use [WaterGlass.ml] for the user's units). */
+        const val GLASS_ML: Int = WaterGlass.METRIC_ML
 
-        /** Squares shown when no water goal is set (2 litres). */
-        const val DEFAULT_GLASSES: Int = 8
+        /** Squares shown when no water goal is set. */
+        const val DEFAULT_GLASSES: Int = WaterGlass.DEFAULT_GLASSES
 
         /** Default fast: 16 hours. */
         const val DEFAULT_FAST_MIN: Int = 16 * 60
@@ -284,7 +358,7 @@ class DiaryViewModel(
                 } else {
                     null
                 }
-                MealUi(m.slot, m.entries, FoodRows.kcal(m.totals), offer)
+                MealUi(m.slot, m.entries, FoodRows.kcal(m.totals), offer, m.totals)
             }
         }
 

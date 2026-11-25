@@ -10,20 +10,19 @@ package app.selfwatch.me
 import android.os.Bundle
 import androidx.activity.viewModels
 import app.selfwatch.R
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.graph
 import app.selfwatch.ui.SwTheme
 import app.selfwatch.ui.components.ThemeSwatch
-import app.selfwatch.watch.WatchSettings
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
- * Settings (C20): connection mode and sync hours, food tracking, units, light/dark and color theme, then the
- * advanced options: Bluetooth capture (debug builds) and the fake Garmin sign-in (off by default;
- * turning it on shows the plain COMPATIBILITY R1 warning first).
+ * Settings (C20): connection mode and sync hours, food tracking, units, light/dark and color theme. Debug
+ * builds add an Advanced card ([DebugTools.addSettingsAdvanced]): Bluetooth capture and the fake Garmin
+ * sign-in (off by default; turning it on shows the plain COMPATIBILITY R1 warning first).
  */
 class SettingsActivity : MeScreenActivity() {
 
-    private val vm: SettingsViewModel by viewModels { SettingsViewModel.factory(graph, WatchSettings.isDebuggable(applicationContext)) }
+    private val vm: SettingsViewModel by viewModels { SettingsViewModel.factory(graph, DebugTools.ENABLED) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,20 +71,8 @@ class SettingsActivity : MeScreenActivity() {
             }
         }
 
-        val adv = MeViews.card(column, getString(R.string.settings_advanced))
-        val capture = SwitchRow(this, getString(R.string.settings_ble_capture), getString(R.string.settings_ble_capture_help))
-        capture.onChange = { vm.setBleCapture(it) }
-        MeViews.add(adv.content, capture, gap = false)
-        val fake = SwitchRow(this, getString(R.string.settings_fake_auth), getString(R.string.settings_fake_auth_help))
-        fake.onChange = { on ->
-            if (on) {
-                fake.checked = false
-                confirmFakeAuth()
-            } else {
-                vm.setFakeAuth(false)
-            }
-        }
-        MeViews.add(adv.content, fake)
+        // Debug builds only: the Advanced card (Bluetooth capture).
+        val advanced = if (DebugTools.ENABLED) DebugTools.addSettingsAdvanced(this, column) { vm.setBleCapture(it) } else null
 
         collect(vm.state) { s ->
             mode.trailing = getString(if (s.alwaysConnected) R.string.settings_always else R.string.settings_sync_only)
@@ -96,19 +83,8 @@ class SettingsActivity : MeScreenActivity() {
             unitsRow.trailing = unitsLabel(s.units)
             theme.trailing = getString(MeFragment.nightLabel(s.appearance.night))
             colorRow.trailing = getString(MeFragment.themeLabel(s.appearance.theme))
-            capture.visibility = if (s.debuggable) android.view.View.VISIBLE else android.view.View.GONE
-            capture.checked = s.bleCapture
-            fake.checked = s.fakeAuth
+            advanced?.invoke(s.bleCapture)
         }
-    }
-
-    private fun confirmFakeAuth() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.settings_fake_auth)
-            .setMessage(R.string.settings_fake_auth_warning)
-            .setPositiveButton(R.string.settings_fake_auth_accept) { _, _ -> vm.setFakeAuth(true) }
-            .setNegativeButton(R.string.settings_fake_auth_keep_off, null)
-            .show()
     }
 
     private fun unitsLabel(value: String): String = getString(

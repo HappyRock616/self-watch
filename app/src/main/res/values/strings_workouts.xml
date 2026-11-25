@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Workouts: trim (workout screen) and the per-sport trend dashboard (All activities). -->
+<resources>
+    <item name="trim_slider" type="id" />
+    <item name="trim_chart" type="id" />
+    <item name="trim_reset" type="id" />
+    <item name="trim_save" type="id" />
+    <item name="sport_dashboard_chart" type="id" />
+    <item name="sport_dashboard_card" type="id" />
+    <item name="workout_trim_note" type="id" />
+
+    <!-- Trim -->
+    <string name="workout_trim">Trim</string>
+    <string name="workout_undo_trim">Undo trim</string>
+    <string name="workout_export_fit_trimmed">Export FIT (trimmed)</string>
+    <string name="workout_trimmed_note">Trimmed: %1$s cut. The original recording is kept.</string>
+    <string name="workout_trim_undone">Trim undone</string>
+    <string name="trim_title">Trim workout</string>
+    <string name="trim_intro">Drag the ends to cut time off the start or the end, for example if the watch kept recording on the way home. The original recording is kept, so you can undo it.</string>
+    <string name="trim_slider_description">Part of the workout to keep</string>
+    <string name="trim_ends">Starts %1$s · ends %2$s</string>
+    <string name="trim_cut">%1$s cut</string>
+    <string name="trim_nothing_cut">Nothing cut yet</string>
+    <string name="trim_route_description">Route of the part kept</string>
+    <string name="trim_reset">Reset</string>
+    <string name="trim_save">Save trim</string>
+    <string name="trim_save_undo">Keep everything</string>
+    <string name="trim_saved">Workout updated</string>
+    <string name="trim_failed">Could not save the trim</string>
+
+    <!-- Per-sport dashboard -->
+    <string name="sport_dashboard_title">%1$s trends</string>
+    <string name="sport_dashboard_caption">Your last %1$s workouts. Tap a metric to show or hide it; tap a workout below to open it.</string>
+    <string name="sport_dashboard_empty">Trends show once you have two or more workouts of this sport.</string>
+    <string name="sport_dashboard_remove">Remove</string>
+    <string name="sport_dashboard_menu">Show trends</string>
+    <string name="sport_dashboard_show">Show %1$s trends</string>
+    <string name="sport_dashboard_removed">%1$s trends removed. Bring them back from the menu.</string>
+    <string name="sport_metric_avg_hr">Avg heart rate</string>
+    <string name="sport_metric_max_hr">Max heart rate</string>
+    <string name="sport_metric_kcal">Calories</string>
+    <string name="sport_metric_distance">Distance</string>
+    <string name="sport_metric_duration">Duration</string>
+    <string name="sport_metric_pace">Pace</string>
+    <string name="sport_metric_speed">Speed</string>
+    <string name="sport_metric_recovery">Heart-rate recovery</string>
+    <string name="sport_metric_ascent">Elevation gain</string>
+    <string name="sport_metric_cadence">Cadence</string>
+    <string name="sport_metric_vo2_max">VO2 max</string>
+    <string name="unit_vo2_max">ml/kg/min</string>
+    <string name="unit_spm">spm</string>
+    <string name="unit_rpm">rpm</string>
+</resources>

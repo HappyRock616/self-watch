@@ -51,6 +51,8 @@ object FoodListCsv {
         "Name", "Brand", "Barcode", "Basis", "Serving", "Serving grams",
         "Energy (kcal)", "Protein (g)", "Fat (g)", "Saturated fat (g)", "Carbs (g)", "Sugar (g)", "Fiber (g)",
         "Sodium (mg)", "Cholesterol (mg)",
+        "Trans fat (g)", "Monounsaturated fat (g)", "Polyunsaturated fat (g)", "Added sugars (g)", "Potassium (mg)",
+        "Calcium (mg)", "Iron (mg)", "Vitamin A (µg)", "Vitamin C (mg)", "Vitamin D (µg)",
     )
 
     private val COLUMNS = ColumnMatcher(
@@ -88,10 +90,12 @@ object FoodListCsv {
             val n = f.per
             fun x10(v: Int?): String = v?.let { Numbers.formatScaled(it, 10) }.orEmpty()
             w.row(
-                f.name, f.brand.orEmpty(), f.barcode?.toString().orEmpty(), basisName(f.basis), s?.label.orEmpty(),
-                s?.gramsX10?.let { Numbers.formatScaled(it, 10) }.orEmpty(),
-                x10(n.kcalX10), x10(n.proteinX10), x10(n.fatX10), x10(n.satfatX10), x10(n.carbX10), x10(n.sugarX10),
-                x10(n.fibreX10), n.sodiumMg?.toString().orEmpty(), n.cholesterolMg?.toString().orEmpty(),
+                listOf(
+                    f.name, f.brand.orEmpty(), f.barcode?.toString().orEmpty(), basisName(f.basis), s?.label.orEmpty(),
+                    s?.gramsX10?.let { Numbers.formatScaled(it, 10) }.orEmpty(),
+                    x10(n.kcalX10), x10(n.proteinX10), x10(n.fatX10), x10(n.satfatX10), x10(n.carbX10), x10(n.sugarX10),
+                    x10(n.fibreX10), n.sodiumMg?.toString().orEmpty(), n.cholesterolMg?.toString().orEmpty(),
+                ) + NutrientColumns.V2_FIELDS.map { NutrientColumns.cell(n, it) },
             )
         }
         w.flush()

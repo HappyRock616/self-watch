@@ -357,7 +357,7 @@ Gadgetbridge deliberately has **no internet permission**. Anything that needs th
 
 Self Watch is one app, so it gives up that guarantee and must earn the trust another way:
 
-1. **Everything is off by default,** except the food data download and Open Food Facts barcode lookups, and both can be turned off.
+1. **Everything is off by default,** except what the app needs out of the box: the food data download, watch app web requests, apps on this phone (127.0.0.1, never leaves the phone) and GPS help for the watch. Each can be turned off. Open Food Facts barcode lookups start off.
 2. A firewall switch for each feature, and for each watch app's web requests.
 3. A **Network activity** screen listing every request: when, which host, which feature, and how many bytes.
 4. No analytics, no crash reporting to servers, no ads, no third-party code that phones home.

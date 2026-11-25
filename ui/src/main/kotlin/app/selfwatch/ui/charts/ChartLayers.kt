@@ -19,6 +19,13 @@ import app.selfwatch.model.health.SleepStageSample
 enum class Axis { LEFT, RIGHT, HIDDEN }
 
 /**
+ * How a layer's shown value (`value / scale`) is written in the scrub bubble, TalkBack and axis labels.
+ * [NUMBER] is a plain decimal. [MIN_SEC] reads the shown value as minutes and writes "m:ss" (pace): give
+ * such a layer seconds as raw values and `scale = 60`, so the chart still draws minutes.
+ */
+enum class ValueStyle { NUMBER, MIN_SEC }
+
+/**
  * One layer of an [OverlayChartView]. The chart draws stages and bands first, then bars, then lines,
  * whatever order the list is in. [id] is stable (it keys visibility, chips and saved state); [label] is
  * shown on chips, in the scrub bubble and to TalkBack; [color] is the series colour.
@@ -110,8 +117,8 @@ data class BarLayer(
 /**
  * Scattered readings with a smoothed trend through them, e.g. weigh-ins: a dot per reading at [points]
  * (epoch seconds, ascending) with raw [values], a smooth line through [trend] (one value per point; empty
- * draws no line), and an optional dashed [goal] line. All values are shown divided by [scale]. The scrub
- * reading is the nearest reading within [gapSec] of the finger.
+ * draws no line), and an optional dashed [goal] line. All values are shown divided by [scale] and written
+ * as [style] says. The scrub reading is the nearest reading within [gapSec] of the finger.
  */
 data class DotTrendLayer(
     override val id: String,
@@ -126,6 +133,7 @@ data class DotTrendLayer(
     val gapSec: Long = 43_200L,
     val unit: String = "",
     override val lockedOn: Boolean = false,
+    val style: ValueStyle = ValueStyle.NUMBER,
 ) : ChartLayer {
     /** Number of usable readings. */
     val size: Int get() = minOf(points.size, values.size)
@@ -133,7 +141,8 @@ data class DotTrendLayer(
     override fun equals(other: Any?): Boolean =
         other is DotTrendLayer && other.id == id && other.label == label && other.color == color && other.axis == axis &&
             other.points.contentEquals(points) && other.values.contentEquals(values) && other.trend.contentEquals(trend) &&
-            other.goal == goal && other.scale == scale && other.gapSec == gapSec && other.unit == unit && other.lockedOn == lockedOn
+            other.goal == goal && other.scale == scale && other.gapSec == gapSec && other.unit == unit && other.lockedOn == lockedOn &&
+            other.style == style
 
     override fun hashCode(): Int = (id.hashCode() * 31 + points.contentHashCode()) * 31 + values.contentHashCode()
 }

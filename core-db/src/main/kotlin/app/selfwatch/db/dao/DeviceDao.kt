@@ -74,6 +74,57 @@ public class DeviceDao internal constructor(private val db: SelfWatchDb) {
         it.queryOne("SELECT last_sync_sec FROM device WHERE id = ?", args(id)) { c -> c.longOrNull(0) }
     }
 
+    /**
+     * Deletes device [id]'s stored data in one transaction and returns what was removed. Activity
+     * minutes, metrics, sleep and body readings from the device always go (imported rows too, since
+     * they carry the device id). With [keepWorkouts] (the Devices "reset" hold) workouts and the
+     * `sync_file` bookkeeping stay, so the watch does not send the same files again. Without it (removing
+     * a device and its data) workouts, sync files and the watch's app list go too; the caller deletes
+     * the workout files listed in [DeviceDataDeleted.workoutFiles].
+     */
+    public suspend fun deleteData(id: Long, keepWorkouts: Boolean): DeviceDataDeleted {
+        val tables = mutableSetOf(Table.ACTIVITY, Table.METRIC, Table.SLEEP_SESSION, Table.SLEEP_STAGE, Table.BODY)
+        if (!keepWorkouts) tables += setOf(Table.WORKOUT, Table.SYNC_FILE, Table.WATCH_APP, Table.DEVICE_BATTERY)
+        return db.write(tables) { d ->
+            val a = args(id)
+            // The time span of everything deleted, found before deleting, so the caller can rebuild the day
+            // summaries of exactly those days.
+            var first: Long? = null
+            var last: Long? = null
+            fun span(sql: String) {
+                d.queryOne(sql, a) { c -> c.longOrNull(0)?.let { lo -> lo to (c.longOrNull(1) ?: lo) } }?.let { (lo, hi) ->
+                    first = minOf(first ?: lo, lo)
+                    last = maxOf(last ?: hi, hi)
+                }
+            }
+            span("SELECT MIN(t_sec), MAX(t_sec) FROM activity_minute WHERE device_id = ?")
+            span("SELECT MIN(t_sec), MAX(t_sec) FROM metric WHERE device_id = ?")
+            span("SELECT MIN(t_sec), MAX(t_sec) FROM sleep_stage WHERE device_id = ?")
+            span("SELECT MIN(start_sec), MAX(end_sec) FROM sleep_session WHERE device_id = ?")
+            span("SELECT MIN(t_sec), MAX(t_sec) FROM body_measure WHERE device_id = ?")
+            // Paths are collected here but the files are deleted by the caller after the commit: a file
+            // deleted inside a transaction that then rolls back could not be brought back.
+            val files = ArrayList<String>()
+            if (!keepWorkouts) {
+                span("SELECT MIN(start_sec), MAX(end_sec) FROM workout WHERE device_id = ?")
+                d.queryList("SELECT fit_path, track_path FROM workout WHERE device_id = ?", a) { c ->
+                    listOfNotNull(c.strOrNull(0), c.strOrNull(1))
+                }.forEach { files += it }
+            }
+            var rows = 0
+            for (t in DATA_TABLES) rows += d.delete(t, "device_id = ?", a)
+            if (!keepWorkouts) {
+                rows += d.delete("workout", "device_id = ?", a)
+                d.delete("sync_file", "device_id = ?", a)
+                d.delete("watch_app", "device_id = ?", a)
+                d.delete("device_battery", "device_id = ?", a)
+            }
+            val lo = first
+            val hi = last
+            DeviceDataDeleted(rows, if (lo != null && hi != null) lo to hi else null, files)
+        }
+    }
+
     /** Sets the priority used when two devices report the same minute (higher wins). */
     public suspend fun setPriority(id: Long, priority: Int) {
         update(id, ContentValues().apply { put("priority", priority) })
@@ -108,6 +159,9 @@ public class DeviceDao internal constructor(private val db: SelfWatchDb) {
     }
 
     internal companion object {
+        /** Tables of per-device readings a reset clears (workouts are kept). */
+        private val DATA_TABLES = listOf("activity_minute", "metric", "sleep_stage", "sleep_session", "body_measure")
+
         private const val SELECT =
             "SELECT id, kind, address, name, model, product_id, firmware, serial, features FROM device"
 
@@ -150,3 +204,9 @@ public class DeviceDao internal constructor(private val db: SelfWatchDb) {
             s.split(',').mapNotNullTo(LinkedHashSet()) { name -> Feature.entries.firstOrNull { it.name == name } }
     }
 }
+
+/**
+ * What [DeviceDao.deleteData] removed: the row count, the time span the rows covered (epoch seconds,
+ * null when there were none) so the day summaries can be rebuilt, and workout files to delete.
+ */
+public data class DeviceDataDeleted(val rows: Int, val spanSec: Pair<Long, Long>?, val workoutFiles: List<String>)

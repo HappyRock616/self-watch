@@ -17,6 +17,7 @@ Files made by the `fit` module's own `FitWriter` (generators in `fit/src/test/ko
 | `activity_compressed_bigendian.fit` | Same kind of run with compressed timestamp headers and big-endian record definitions |
 | `oddities_devfields.fit` | Developer fields (typed via `field_description` and untyped), strings, arrays, an unknown message |
 | `weight.fit` | Output of `WeightFileWriter`: two weigh-ins |
+| `metrics_vo2max.fit` | Metrics file (type 44): `max_met_data` VO2 max for running (48.3) and cycling (51.0), one repeated, one placeholder 0 |
 
 ## real/ (task H02, waiting)
 

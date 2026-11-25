@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The card framework: small and large forms, cards waiting for data, Edit cards. -->
+<resources>
+    <item name="small_card_dot" type="id" />
+    <item name="small_card_name" type="id" />
+    <item name="small_card_tile" type="id" />
+    <item name="small_card_note" type="id" />
+    <item name="small_card_bar" type="id" />
+    <item name="edit_cards_show_all" type="id" />
+
+    <dimen name="card_status_dot">10dp</dimen>
+
+    <string name="card_home_body">Body cards</string>
+    <string name="card_home_activity">Activity cards</string>
+    <string name="card_home_food">Food cards</string>
+
+    <string name="card_status_good">On track</string>
+    <string name="card_status_close">Close</string>
+    <string name="card_status_off">Off track</string>
+    <string name="card_no_data">No data yet</string>
+    <string name="card_open_hint">Double tap for details</string>
+    <string name="card_not_recorded">Your devices don\'t record this</string>
+    <string name="card_not_recorded_help">It shows up here when you pair a device that records it.</string>
+    <string name="card_not_recorded_description">%1$s. Your devices don\'t record this yet.</string>
+
+    <string name="edit_cards_on_tab">On this tab</string>
+    <string name="edit_cards_show_all">Show all</string>
+    <string name="edit_cards_show_all_help">Also list cards your devices don\'t record yet.</string>
+    <string name="edit_cards_small">Small</string>
+    <string name="edit_cards_large">Large</string>
+    <string name="edit_cards_size_description">Size of %1$s</string>
+</resources>

@@ -59,10 +59,9 @@
     <!-- Watch app settings -->
     <string name="menu_settings_read">Read from watch</string>
     <string name="menu_settings_restore">Restore saved copy</string>
-    <string name="menu_settings_raw">Show raw keys</string>
     <string name="devices_settings_empty">No settings yet. Read them from the watch, or install the app with its settings file.</string>
     <string name="devices_settings_from_definition">From the app\'s settings file</string>
-    <string name="devices_settings_raw">Raw keys (no settings file for this app)</string>
+    <string name="devices_settings_raw">Values as stored on the watch (this app has no settings file)</string>
     <string name="devices_settings_save">Save to watch</string>
     <string name="devices_settings_restore">Restore saved copy</string>
     <string name="devices_settings_no_copies">No saved copies yet</string>
@@ -160,6 +159,13 @@
     <string name="devices_connection_mode">Connection mode</string>
     <string name="devices_mode_always">Always connected</string>
     <string name="devices_mode_sync_only">Sync only</string>
+    <string name="devices_fake_auth">Answer the watch\'s Garmin sign-in requests itself</string>
+    <string name="devices_fake_auth_help">Keeps weather and GPS help working on the watch without signing in to Garmin Connect every 90 days. Off by default.</string>
+    <string name="devices_fake_auth_confirm_title">Answer Garmin sign-in requests?</string>
+    <string name="devices_fake_auth_confirm">Every 90 days or so your watch asks to sign in to Garmin again. Without that, weather and GPS help on the watch stop working. Self Watch can answer for Garmin with a made-up sign-in, just for this watch.\n\nDo not turn this on if you also use Garmin Connect or the watch\'s own Wi-Fi.\n\nTo sign in to Garmin again later, the watch may need a factory reset, which erases what is on it.</string>
+    <string name="devices_fake_auth_turn_on">Turn on</string>
+    <string name="devices_fake_auth_keep_off">Keep off</string>
+    <string name="devices_fake_auth_hint">Your watch asked to sign in to Garmin, so weather and GPS help may stop working. Turn on the switch above to fix it.</string>
 
     <!-- Several devices, Device order and Other devices -->
     <string name="devices_kind_watch">Garmin watch</string>
@@ -195,4 +201,26 @@
     <string name="device_order_empty">No devices paired yet.</string>
     <string name="device_order_drag">Drag %1$s</string>
     <string name="device_order_primary">Primary · %1$s</string>
+
+    <!-- Devices page: one card per device -->
+    <string name="devices_my_devices">My devices</string>
+    <string name="devices_empty">Pair your Garmin watch, a heart rate strap or a scale to get started.</string>
+    <string name="devices_state_user_off">Off. Tap to connect.</string>
+    <string name="devices_state_standby">Not in use. Tap to use this watch.</string>
+    <string name="devices_card_cd">%1$s, %2$s. Tap to connect or disconnect. Touch and hold for 3 seconds to reset its data.</string>
+    <string name="devices_connecting_to">Connecting to %1$s</string>
+    <string name="devices_disconnected_from">%1$s disconnected. Tap it to connect again.</string>
+    <string name="devices_switch_watch">Using %1$s. Only one watch connects at a time.</string>
+    <string name="devices_trash_cd">Remove %1$s</string>
+    <string name="devices_remove_also_data">Also delete its data (workouts too)</string>
+    <string name="devices_remove_with_data_done">Device and its data removed</string>
+    <string name="devices_reset_action">Reset data</string>
+    <string name="devices_reset_title">Reset data from %1$s?</string>
+    <string name="devices_reset_message">Deletes this device\'s steps, heart rate, sleep and other readings. Workouts stay. This can\'t be undone.</string>
+    <string name="devices_reset_confirm">Reset</string>
+    <string name="devices_reset_done">Data reset. Workouts kept.</string>
+    <string name="devices_hold_hint">Keep holding to reset</string>
+    <string name="devices_exclusive">Exclusive</string>
+    <string name="devices_exclusive_note">On: Self Watch keeps reconnecting when another phone or app takes this watch. Off: it steps back and checks once an hour, which saves watch battery.</string>
+    <string name="devices_hr_from_strap">Heart rate comes from %1$s while it\'s connected.</string>
 </resources>

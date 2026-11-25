@@ -24,6 +24,8 @@ import app.selfwatch.garmin.gfdi.GfdiMessage.SettingValue
 import app.selfwatch.garmin.link.GarminUuids
 import app.selfwatch.garmin.link.GfdiTransport
 import app.selfwatch.garmin.link.LinkSelector
+import app.selfwatch.garmin.link.MultiLinkGfdiTransport
+import app.selfwatch.garmin.features.LiveLink
 import app.selfwatch.garmin.models.GarminModels
 import app.selfwatch.garmin.session.AuthPolicy
 import app.selfwatch.garmin.session.Features
@@ -239,6 +241,7 @@ public class GarminDriver(
             WatchCommand.SyncTime -> l.ch.send(GfdiMessage.SystemEvent(SystemEventType.TIME_UPDATED, 0))
             is WatchCommand.AppMessage -> l.appMessages?.send(cmd.appUuid, cmd.payload)
                 ?: Outcome.Fail(SwError.Unsupported(Feature.WATCH_APP_MESSAGES))
+            is WatchCommand.LiveData -> l.live?.set(cmd.enable) ?: Outcome.Fail(SwError.Unsupported(Feature.REALTIME_HR))
             else -> Outcome.Fail(SwError.Unsupported(featureOf(cmd)))
         }
     }
@@ -257,6 +260,7 @@ public class GarminDriver(
         is WatchCommand.WebResponse -> Feature.WATCH_APP_WEB
         is WatchCommand.AppMessage -> Feature.WATCH_APP_MESSAGES
         WatchCommand.SyncTime -> Feature.TIME_SYNC
+        is WatchCommand.LiveData -> Feature.REALTIME_HR
     }
 
     /** Everything that lives for one connection. */
@@ -273,6 +277,9 @@ public class GarminDriver(
         private var running: Deferred<Outcome<SyncReport>>? = null
         override val auth = AuthPolicy(config.fakeAuth)
         var appMessages: AppMessages? = null
+
+        /** Live heart rate and steps (multi-link watches only). */
+        val live: LiveLink? = (transport as? MultiLinkGfdiTransport)?.let { LiveLink(it.link, scope) { e -> emit(e) } }
         var deviceInfo: GfdiMessage.DeviceInformation? = null
         var fileTypes: List<GfdiReplies.FileTypeInfo> = emptyList()
         var batteryPct: Int? = null
@@ -328,6 +335,7 @@ public class GarminDriver(
                 is GfdiMessage.BatteryStatus -> {
                     ch.reply(m.id)
                     if (m.percent in 0..100) {
+                        if (m.percent != batteryPct) SwLog.i(TAG, "watch battery ${m.percent}%")
                         batteryPct = m.percent
                         emit(WatchEvent.Battery(m.percent))
                         _info.value = _info.value?.copy(batteryPct = m.percent)
@@ -423,6 +431,8 @@ public class GarminDriver(
                 ch.send(GfdiMessage.SystemEvent(SystemEventType.SYNC_COMPLETE, 0))
                 ch.send(GfdiMessage.SystemEvent(SystemEventType.SETUP_WIZARD_COMPLETE, 0))
             }
+            // Balanced once per connection, as Gadgetbridge does; never HIGH (short intervals cost the watch battery).
+            port.setHighSpeed(false)
             _session.value = SessionState.READY
             _info.value = buildInfo()
             _state.value = ConnectionState.Ready
@@ -478,12 +488,10 @@ public class GarminDriver(
             val startNs = System.nanoTime()
             _session.value = SessionState.SYNCING
             _state.value = ConnectionState.Syncing(0, 0, "directory")
-            port.setHighSpeed(true)
             return try {
                 SwLog.i(TAG, "sync started ($reason)")
                 syncLocked(startNs)
             } finally {
-                port.setHighSpeed(false)
                 if (_session.value == SessionState.SYNCING) {
                     _session.value = SessionState.READY
                     _state.value = ConnectionState.Ready

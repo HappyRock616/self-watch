@@ -241,6 +241,40 @@ class HealthDaoTest : DbTest() {
         assertEquals(1L, count("workout", "import_id = 7"))
     }
 
+    @Test
+    fun workoutTrimKeepsTheOriginalAndUndoes() = test {
+        val id = db.workouts.insert(workout(t23))
+        val original = db.workouts.get(id)!!
+        assertNull(db.workouts.trim(id))
+        val cut = original.copy(startSec = t23 + 60, endSec = t23 + 1200, durationSec = 1140, distanceM = 3200, kcal = 190, avgHr = 150, routePreview = byteArrayOf(9))
+        assertTrue(db.workouts.saveTrim(cut, t23 + 60, t23 + 1200))
+        val stored = db.workouts.get(id)!!
+        assertEquals(cut, stored)
+        assertEquals("/f/$t23.fit", stored.fitPath) // the file is kept
+        val trim = db.workouts.trim(id)!!
+        assertEquals(t23 + 60 to t23 + 1200, trim.startSec to trim.endSec)
+        assertEquals(original, trim.original)
+        assertEquals(setOf(id), db.workouts.trimmedIds())
+        // Trimming again keeps the first originals.
+        assertTrue(db.workouts.saveTrim(cut.copy(endSec = t23 + 900, durationSec = 840), t23 + 60, t23 + 900))
+        assertEquals(original, db.workouts.trim(id)!!.original)
+        assertEquals(t23 + 900, db.workouts.trim(id)!!.endSec)
+        // A re-sync of the same workout (original start) leaves the trim alone.
+        assertEquals(id, db.workouts.insert(workout(t23).copy(kcal = 999)))
+        assertEquals(190, db.workouts.get(id)!!.kcal)
+        assertEquals(1L, count("workout"))
+        // Undo puts everything back.
+        assertTrue(db.workouts.undoTrim(id))
+        assertEquals(original, db.workouts.get(id))
+        assertNull(db.workouts.trim(id))
+        assertFalse(db.workouts.undoTrim(id))
+        // An empty window is refused; deleting a trimmed workout removes its trim.
+        assertFalse(db.workouts.saveTrim(cut, t23 + 100, t23 + 100))
+        assertTrue(db.workouts.saveTrim(cut, t23 + 60, t23 + 1200))
+        assertTrue(db.workouts.delete(id))
+        assertEquals(0L, count("workout_trim"))
+    }
+
     // ---- ingest ----
 
     @Test

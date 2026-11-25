@@ -91,7 +91,9 @@ object ActiveWatches {
 
     /** The first active watch now, or null. */
     suspend fun load(db: SelfWatchDb): ActiveWatch? {
-        val d = db.devices.active().firstOrNull { DeviceKinds.isWatch(it.kind) } ?: return null
+        val all = db.devices.active()
+        val chosen = ActiveWatchPick.load(db, all)
+        val d = all.firstOrNull { it.id == chosen } ?: return null
         val state = WatchStatus.decode(db.settings.get(WatchStatus.stateKey(d.id)))
         return ActiveWatch(d.id, d.name, d.features, state is ConnectionState.Ready || state is ConnectionState.Syncing)
     }

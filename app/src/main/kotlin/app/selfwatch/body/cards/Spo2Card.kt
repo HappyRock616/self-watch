@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
@@ -18,6 +19,8 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.ui.components.EmptyState
@@ -35,6 +38,22 @@ object Spo2Card : Card<Spo2Card.Data>("spo2", CardTab.BODY, R.string.card_spo2, 
     override val tables: Set<Table> = setOf(Table.METRIC)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyLoader(env.db, env.clock).spo2(), env.clock.today())
+
+    override val needs: Set<DataKind> = setOf(DataKind.SPO2)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val o = data.spo2 ?: return null
+        return SmallFace(
+            value = o.lastPct.toString(),
+            label = if (o.lastDay == data.today) ctx.getString(R.string.sleep_card_last_night) else Fmt.day(ctx, o.lastDay.yyyymmdd),
+            unit = ctx.getString(R.string.unit_percent),
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(SleepDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

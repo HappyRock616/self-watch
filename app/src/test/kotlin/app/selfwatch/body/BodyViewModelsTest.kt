@@ -54,7 +54,7 @@ import org.robolectric.annotation.Config
 object TestDb {
     private val TABLES = listOf(
         "activity_minute", "metric", "sleep_stage", "sleep_session", "workout", "body_measure", "measure_kind",
-        "goal", "setting", "day_summary", "diary_entry", "import_batch", "device",
+        "goal", "setting", "day_summary", "diary_entry", "import_batch", "sync_file", "device_battery", "device",
     )
 
     /** The database, emptied. */

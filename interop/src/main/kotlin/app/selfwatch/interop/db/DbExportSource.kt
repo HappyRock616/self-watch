@@ -10,6 +10,7 @@ package app.selfwatch.interop.db
 import android.content.Context
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.fit.decode.WorkoutDecoder
+import app.selfwatch.fit.encode.ActivityFileWriter
 import app.selfwatch.interop.api.DiaryRow
 import app.selfwatch.interop.api.ExportSource
 import app.selfwatch.interop.api.TrackFormat
@@ -27,6 +28,8 @@ import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.TimeRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -58,7 +61,30 @@ class DbExportSource(
         else -> db.workouts.all()
     }
 
-    override suspend fun track(workout: Workout): List<TrackPoint> = withContext(Dispatchers.IO) {
+    /** The track of [workout]; for a trimmed workout only the points inside its trim window. */
+    override suspend fun track(workout: Workout): List<TrackPoint> {
+        val all = fullTrack(workout)
+        val trim = db.workouts.trim(workout.id) ?: return all
+        return all.filter { it.tSec in trim.startSec..trim.endSec }
+    }
+
+    /**
+     * A trimmed workout's FIT file written from its trimmed track and summary (the original file stays
+     * as it is); any other workout's original file.
+     */
+    override suspend fun fitFile(workout: Workout): InputStream? {
+        if (db.workouts.trim(workout.id) == null) return openFit(workout)
+        workout.fitPath?.let { files.resolve(it) }?.takeIf { it.isFile } ?: return null
+        val points = track(workout)
+        return withContext(Dispatchers.IO) {
+            val bytes = ByteArrayOutputStream()
+            ActivityFileWriter.write(bytes, workout, points)
+            ByteArrayInputStream(bytes.toByteArray())
+        }
+    }
+
+    /** Every point of [workout]'s file in time order, a trim ignored (the trim screen shows the whole recording). */
+    suspend fun fullTrack(workout: Workout): List<TrackPoint> = withContext(Dispatchers.IO) {
         try {
             val fit = workout.fitPath?.let { files.resolve(it) }?.takeIf { it.isFile }
             if (fit != null) {

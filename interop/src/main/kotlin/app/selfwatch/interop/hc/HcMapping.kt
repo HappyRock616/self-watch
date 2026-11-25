@@ -202,6 +202,16 @@ internal object HcMapping {
             .setDietaryFiber(gramsX10(n.fibreX10))
             .setSodium(n.sodiumMg?.takeIf { it >= 0 }?.let { milligrams(it.toDouble()) })
             .setCholesterol(n.cholesterolMg?.takeIf { it >= 0 }?.let { milligrams(it.toDouble()) })
+            // Food database v2 nutrients (Health Connect has no added-sugar field).
+            .setTransFat(gramsX10(n.transfatX10))
+            .setMonounsaturatedFat(gramsX10(n.monofatX10))
+            .setPolyunsaturatedFat(gramsX10(n.polyfatX10))
+            .setPotassium(n.potassiumMg?.takeIf { it >= 0 }?.let { milligrams(it.toDouble()) })
+            .setCalcium(n.calciumMg?.takeIf { it >= 0 }?.let { milligrams(it.toDouble()) })
+            .setIron(n.ironX10?.takeIf { it >= 0 }?.let { milligrams(it / 10.0) })
+            .setVitaminA(n.vitaUg?.takeIf { it >= 0 }?.let { Mass.fromGrams(it / 1_000_000.0) })
+            .setVitaminC(n.vitcX10?.takeIf { it >= 0 }?.let { milligrams(it / 10.0) })
+            .setVitaminD(n.vitdX10?.takeIf { it >= 0 }?.let { Mass.fromGrams(it / 10_000_000.0) })
             .setMealType(mealType(d.slotName, e.mealSlotId))
         e.name.take(NAME_MAX).ifBlank { null }?.let { b.setMealName(it) }
         b.build()
@@ -373,6 +383,15 @@ internal object HcMapping {
                 fibreX10 = x10(gramsOf(r.dietaryFiber)),
                 sodiumMg = gramsOf(r.sodium)?.let { (it * 1000).roundToInt() },
                 cholesterolMg = gramsOf(r.cholesterol)?.let { (it * 1000).roundToInt() },
+                transfatX10 = x10(gramsOf(r.transFat)),
+                monofatX10 = x10(gramsOf(r.monounsaturatedFat)),
+                polyfatX10 = x10(gramsOf(r.polyunsaturatedFat)),
+                potassiumMg = gramsOf(r.potassium)?.let { (it * 1000).roundToInt() },
+                calciumMg = gramsOf(r.calcium)?.let { (it * 1000).roundToInt() },
+                ironX10 = gramsOf(r.iron)?.let { (it * 10_000).roundToInt() },
+                vitaUg = gramsOf(r.vitaminA)?.let { (it * 1_000_000).roundToInt() },
+                vitcX10 = gramsOf(r.vitaminC)?.let { (it * 10_000).roundToInt() },
+                vitdX10 = gramsOf(r.vitaminD)?.let { (it * 10_000_000).roundToInt() },
             ),
             importId = importId,
         )

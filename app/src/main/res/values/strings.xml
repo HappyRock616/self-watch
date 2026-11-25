@@ -60,7 +60,7 @@
 
     <!-- Activity -->
     <string name="activity_of_goal">of %1$s</string>
-    <string name="activity_active">active min</string>
+    <string name="activity_active_week">min this week</string>
     <string name="activity_active_kcal_short">active kcal</string>
     <string name="activity_trends">Trends</string>
     <string name="activity_distance">Distance</string>
@@ -117,10 +117,6 @@
     <string name="devices_data_workouts">Workouts</string>
     <string name="devices_data_files">Watch files stored</string>
     <string name="devices_data_last">Last stored</string>
-    <string name="devices_debug">Debug</string>
-    <string name="devices_ble_capture">Bluetooth capture</string>
-    <string name="devices_share_capture">Share Bluetooth capture</string>
-    <string name="devices_share_logs">Share logs</string>
     <string name="devices_share_none">Nothing to share yet</string>
     <string name="devices_share_title">Send to</string>
     <string name="devices_bt_reason">Self Watch needs \"Nearby devices\" to connect to your watch over Bluetooth.</string>
@@ -190,9 +186,6 @@
         <item quantity="other">Copied %d items</item>
     </plurals>
     <string name="food_glass_full">Glass %1$d of %2$d, drunk. Tap to remove</string>
-    <string name="food_glass_empty">Glass %1$d of %2$d. Tap to add 250 ml</string>
-    <string name="food_water_ml">%1$s ml</string>
-    <string name="food_water_of_goal">%1$s of %2$s ml</string>
     <string name="food_fast_start">Start fast</string>
     <string name="food_fast_end">End fast</string>
     <string name="food_fast_progress">%1$s of %2$s</string>

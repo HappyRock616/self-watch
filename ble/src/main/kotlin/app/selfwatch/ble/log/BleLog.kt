@@ -19,7 +19,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeParseException
 
 /**
- * Optional Bluetooth capture ("Bluetooth capture" in About → Debug). While [enabled], every write
+ * Optional Bluetooth capture (debug builds only: Devices › Debug). While [enabled], every write
  * and notification is appended to `<dir>/<yyyy-mm-dd>.bin` in [BleLogFormat]. Off by default.
  * Files older than [KEEP_DAYS] days are deleted when capture is turned on and when a new day's file
  * starts. Thread-safe; each record is flushed at once so a crash loses at most a partial record,

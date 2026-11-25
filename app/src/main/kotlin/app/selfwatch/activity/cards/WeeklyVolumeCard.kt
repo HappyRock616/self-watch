@@ -7,6 +7,7 @@
  */
 package app.selfwatch.activity.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityStatsLoader
@@ -19,6 +20,8 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
@@ -30,7 +33,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Weekly volume (C20): workout time (and distance) this week and the 5 weeks before as bars, plus the
+ * Workout time this week (C20, formerly "Weekly volume"): workout time (and distance) this week and the 5 weeks before as bars, plus the
  * long-session check ([LongSessionCheck]): a run, walk or hike in the last 7 days more than 10% longer
  * than the longest of its kind in the 30 days before it is pointed out, gently.
  */
@@ -77,6 +80,20 @@ object WeeklyVolumeCard : Card<WeeklyVolumeCard.Data>("weekly_volume", CardTab.A
         val now = env.clock.nowSec()
         val checked = workouts.any { LongSessionCheck.family(it.sport) != null && it.startSec >= now - LongSessionCheck.RECENT_DAYS * DAY_SEC }
         return Data(starts, time.toList(), dist.toList(), checked, LongSessionCheck.check(workouts, now), env.units)
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.WORKOUTS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        if (data.isEmpty) return null
+        val loc = Locale.getDefault()
+        val labels = FmtLabels.from(ctx)
+        val metres = data.distancesM.lastOrNull() ?: 0
+        return SmallFace(
+            value = Fmt.duration((data.durationsSec.lastOrNull() ?: 0).toLong(), loc, labels),
+            label = ctx.getString(R.string.wv_label),
+            note = if (metres > 0) Fmt.distance(metres.toDouble(), data.units, loc, labels) else null,
+        )
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)

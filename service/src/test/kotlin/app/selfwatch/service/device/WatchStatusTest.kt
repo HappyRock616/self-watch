@@ -10,6 +10,7 @@ package app.selfwatch.service.device
 import app.selfwatch.db.Table
 import app.selfwatch.model.device.ConnectionState
 import app.selfwatch.model.result.SwError
+import app.selfwatch.model.time.TimeRange
 import app.selfwatch.service.ServiceDbTest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -71,6 +72,19 @@ class WatchStatusTest : ServiceDbTest() {
         yield()
         assertEquals(2, notices)
         watcher.cancel()
+    }
+
+    @Test
+    fun publisherKeepsTheBatteryHistoryOncePerChange() = runBlocking {
+        val id = addDevice()
+        val info = device("AA:BB:CC:DD:EE:01").copy(id = id, batteryPct = 81)
+        var t = 1_000L
+        val p = WatchStatusPublisher(db.settings) { dev, pct -> db.battery.add(dev, t++, pct) }
+        p.publish(listOf(DeviceStatus(info, ConnectionState.Ready, null)))
+        p.publish(listOf(DeviceStatus(info, ConnectionState.Syncing(1, 2, "x"), null)))
+        p.publish(listOf(DeviceStatus(info.copy(batteryPct = 80), ConnectionState.Ready, null)))
+        p.publish(listOf(DeviceStatus(info.copy(batteryPct = null), ConnectionState.Ready, null)))
+        assertEquals(listOf(81, 80), db.battery.readings(TimeRange(0, 10_000), id).map { it.pct })
     }
 
     @Test

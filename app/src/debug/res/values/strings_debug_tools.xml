@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Developer tools (debug builds only, see app.selfwatch.debug.DebugTools). Not shipped. -->
+<resources>
+    <string name="devices_debug">Debug</string>
+    <string name="devices_ble_capture">Bluetooth capture</string>
+    <string name="devices_share_capture">Share Bluetooth capture</string>
+    <string name="devices_share_logs">Share logs</string>
+
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_ble_capture">Bluetooth capture</string>
+    <string name="settings_ble_capture_help">Debug builds only. Records watch traffic on this phone to help fix bugs.</string>
+
+    <string name="menu_settings_raw">Show raw keys</string>
+</resources>

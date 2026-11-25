@@ -55,7 +55,9 @@ class DbDevicesSource(
         db.settings.observe(WatchSettings.BLE_CAPTURE).map { WatchSettings.bleCaptureOn(it, debuggable) }
 
     private suspend fun loadWatch(): WatchCard? {
-        val d = db.devices.active().firstOrNull { DeviceKinds.isWatch(it.kind) } ?: return null
+        val all = db.devices.active()
+        val chosen = ActiveWatchPick.load(db, all)
+        val d = all.firstOrNull { it.id == chosen } ?: return null
         val model = models()?.match(d.name, d.productId)
         return WatchCard(
             id = d.id,

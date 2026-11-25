@@ -7,6 +7,9 @@
  */
 package app.selfwatch.food
 
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
+import app.selfwatch.cards.MainGoal
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.model.health.SleepSession
 import app.selfwatch.model.time.Day
@@ -102,7 +105,7 @@ class SleepCaloriesOverlay(val firstDay: Day, val sleepMin: IntArray, val kcalIn
 
 /**
  * The sleep and calories chart's layers and which the user switched off, kept in settings under [KEY]
- * as the comma list of hidden ids. Both start on.
+ * as the comma list of hidden ids. With nothing stored, the main goal's defaults apply ([ChartDefaults]).
  */
 object SleepCaloriesLayers {
     /** Settings key. */
@@ -117,18 +120,18 @@ object SleepCaloriesLayers {
     /** Layers in chip order. */
     val ALL: List<String> = listOf(SLEEP, KCAL)
 
-    /** The hidden ids stored as [stored] (null: never chosen, nothing hidden); unknown ids are dropped. */
-    fun decode(stored: String?): Set<String> =
-        stored?.split(',')?.map { it.trim() }?.filter { it in ALL }?.toSet() ?: emptySet()
+    /** The stored choice; with none, the main goal's defaults ([ChartDefaults]). */
+    val CHOICE: ChartChoice by lazy { ChartChoice(ChartId.SLEEP_KCAL) }
+
+    /** The hidden ids stored as [stored] (null: never chosen, [goal]'s defaults); unknown ids are dropped. */
+    fun decode(stored: String?, goal: MainGoal): Set<String> = CHOICE.decode(stored, goal)
 
     /** [hidden] as stored, in chip order. */
-    fun encode(hidden: Set<String>): String = ALL.filter { it in hidden }.joinToString(",")
+    fun encode(hidden: Set<String>): String = CHOICE.encode(hidden)
 
     /** The hidden layer ids. */
-    suspend fun load(db: SelfWatchDb): Set<String> = decode(db.settings.get(KEY))
+    suspend fun load(db: SelfWatchDb): Set<String> = CHOICE.load(db)
 
     /** Saves the hidden layer ids. */
-    suspend fun save(db: SelfWatchDb, hidden: Set<String>) {
-        db.settings.set(KEY, encode(hidden))
-    }
+    suspend fun save(db: SelfWatchDb, hidden: Set<String>): Unit = CHOICE.save(db, hidden)
 }

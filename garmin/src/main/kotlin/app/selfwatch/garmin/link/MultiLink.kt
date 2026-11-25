@@ -239,6 +239,38 @@ public class MultiLink(
         return register(st)
     }
 
+    /**
+     * Closes [service] (a no-op when it is not open): asks the watch to close its handle and waits for the
+     * answer (at most the control timeout). The service's [MlServiceChannel.incoming] ends; a later
+     * [openService] registers it again. Never use it for GFDI, which the session needs.
+     */
+    public suspend fun closeService(service: Int): Outcome<Unit> {
+        val st = services.remove(service) ?: return Outcome.Ok(Unit)
+        return controlLock.withLock {
+            val hd = st.handle
+            detach(st)
+            if (hd < 0) return@withLock Outcome.Ok(Unit)
+            // Ref: Gadgetbridge 160beab41 service/devices/garmin/communicator/v2/CommunicatorV2.java (closeService: CLOSE_HANDLE_REQ, service code, handle)
+            val w = writeRaw(MlControl.request(MlControl.CLOSE_HANDLE_REQ, clientId, service, hd))
+            if (w is Outcome.Fail) return@withLock w
+            if (awaitControl { it is MlResponse.Closed && it.service == service } == null) {
+                SwLog.w(TAG, "no close response for service $service")
+            }
+            Outcome.Ok(Unit)
+        }
+    }
+
+    private fun detach(st: ServiceState) {
+        st.mlr?.close()
+        st.mlr = null
+        if (st.handle >= 0) {
+            byHandle.remove(st.handle)
+            byMlrHandle.remove(st.handle and 0x07)
+        }
+        st.handle = -1
+        st.inbox.close()
+    }
+
     private suspend fun register(st: ServiceState): Outcome<MlServiceChannel> = controlLock.withLock {
         repeat(2) { attempt ->
             val flag = if (st.wantReliable) MlControl.RELIABLE_REQUEST_FLAG else 0
@@ -324,7 +356,11 @@ public class MultiLink(
             SwLog.w(TAG, "data for unknown handle $b0")
             return
         }
-        st.inbox.send(pkt.copyOfRange(1, pkt.size))
+        try {
+            st.inbox.send(pkt.copyOfRange(1, pkt.size))
+        } catch (e: kotlinx.coroutines.channels.ClosedSendChannelException) {
+            SwLog.d(TAG) { "data for closed service ${st.code}: ${e.message}" }
+        }
     }
 
     private fun onControl(r: MlResponse) {
@@ -367,7 +403,8 @@ public class MultiLink(
 
 /** A [GfdiTransport] over one multi-link service: COBS framing on top of the service's byte stream. */
 public class MultiLinkGfdiTransport(
-    private val link: MultiLink,
+    /** The multi-link this transport runs on (other services, such as live readings, open on it too). */
+    public val link: MultiLink,
     private val channel: MlServiceChannel,
     scope: CoroutineScope,
 ) : GfdiTransport {

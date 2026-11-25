@@ -40,6 +40,7 @@ import app.selfwatch.ui.components.ToggleItem
 import app.selfwatch.ui.components.dp
 import app.selfwatch.ui.components.sp
 import app.selfwatch.ui.components.themeColor
+import app.selfwatch.ui.format.Fmt
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.time.ZoneId
 import kotlin.math.abs
@@ -515,8 +516,8 @@ class OverlayChartView @JvmOverloads constructor(
         val rightLayers = values.filter { it.axis == Axis.RIGHT }
         leftTicks = domainOf(leftLayers)?.let { ChartMath.niceTicks(it.first, it.second, maxTicks) }
         rightTicks = domainOf(rightLayers)?.let { ChartMath.niceTicks(it.first, it.second, maxTicks) }
-        leftLabels = labelsFor(leftTicks)
-        rightLabels = labelsFor(rightTicks)
+        leftLabels = labelsFor(leftTicks, leftLayers)
+        rightLabels = labelsFor(rightTicks, rightLayers)
         // Axis labels take their layer's colour, darkened or lightened to 4.5:1 on the card if needed.
         leftLabelColor = if (rightTicks != null && leftLayers.size == 1) SwContrast.ensure(leftLayers[0].color, surface) else mutedColor
         rightLabelColor = if (rightLayers.size == 1) SwContrast.ensure(rightLayers[0].color, surface) else mutedColor
@@ -580,10 +581,18 @@ class OverlayChartView @JvmOverloads constructor(
         timeTickLabels = Array(ticks.size) { format.axis(ticks[it], step) }
     }
 
-    private fun labelsFor(t: Ticks?): Array<String> {
+    /** Axis labels for [t]; "m:ss" when every layer on the axis ([ls]) is a [ValueStyle.MIN_SEC] layer. */
+    private fun labelsFor(t: Ticks?, ls: List<ChartLayer>): Array<String> {
         if (t == null) return emptyArray()
         val d = t.decimals
-        return t.values().map { format.number(it, d) }.toTypedArray()
+        val minSec = ls.isNotEmpty() && ls.all { it is DotTrendLayer && it.style == ValueStyle.MIN_SEC }
+        return t.values().map { if (minSec) Fmt.minSec(it * SEC_PER_MIN) else format.number(it, d) }.toTypedArray()
+    }
+
+    /** [v] (a shown value, `raw / scale`) as text in [style], with [decimals] for plain numbers. */
+    private fun valueText(v: Double, decimals: Int, style: ValueStyle): String = when (style) {
+        ValueStyle.NUMBER -> format.number(v, decimals)
+        ValueStyle.MIN_SEC -> Fmt.minSec(v * SEC_PER_MIN)
     }
 
     private fun buildStages(l: StageLayer) {
@@ -820,7 +829,7 @@ class OverlayChartView @JvmOverloads constructor(
                     LayerValue(l.id, l.label, l.color, null, none)
                 } else {
                     val v = l.values[i].toDouble() / l.scale
-                    LayerValue(l.id, l.label, l.color, v, withUnit(format.number(v, decimalsForScale(l.scale)), l.unit))
+                    LayerValue(l.id, l.label, l.color, v, withUnit(valueText(v, decimalsForScale(l.scale), l.style), l.unit))
                 }
             }
             is BandLayer -> {
@@ -1137,6 +1146,7 @@ class OverlayChartView @JvmOverloads constructor(
         const val DOT_ALPHA: Int = 0x80
         const val DOT_RADIUS_DP: Float = 3f
         const val DAY_SEC: Long = 86_400L
+        const val SEC_PER_MIN: Double = 60.0
         const val A11Y_SLICES: Int = 12
         const val TABLE_ROWS: Int = 48
     }

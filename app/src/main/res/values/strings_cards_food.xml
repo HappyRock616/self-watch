@@ -6,10 +6,10 @@
     <string name="food_card_unit_mg">mg</string>
     <string name="food_card_unit_g_per_h">g/h</string>
     <string name="food_card_unit_kcal_per_kg">kcal/kg</string>
-    <string name="food_card_target_min">Target %1$s g/kg or more</string>
-    <string name="food_card_target_band">Target band %1$s–%2$s g/kg</string>
+    <string name="food_card_target_min">Target %1$s or more</string>
+    <string name="food_card_target_band">Target band %1$s–%2$s</string>
     <string name="food_card_log_weight">Log weight</string>
-    <string name="food_card_no_weight">Add a weigh-in to see this per kg of body weight.</string>
+    <string name="food_card_no_weight">Add a weigh-in to see this for your body weight.</string>
     <string name="food_card_description">%1$s: %2$s. %3$s</string>
 
     <!-- C4 logging days -->
@@ -29,17 +29,17 @@
     <string name="sleep_calories_link">Sleep and calories</string>
 
     <!-- C7 protein per kg -->
-    <string name="card_protein_per_kg">Protein per kg</string>
-    <string name="card_protein_per_kg_summary">Protein for each kg of body weight</string>
+    <string name="card_protein_per_kg">Protein for body weight</string>
+    <string name="card_protein_per_kg_summary">Protein for your body weight</string>
     <string name="protein_kg_inputs">%1$s g protein, body weight %2$s</string>
-    <string name="protein_kg_reason_loss">At least 1.2 g/kg helps keep muscle while losing weight.</string>
-    <string name="protein_kg_reason_loss_strength">Strength training this week: 1.6 g/kg helps keep and build muscle while losing weight.</string>
-    <string name="protein_kg_reason_muscle">About 1.6 g/kg supports building muscle.</string>
-    <string name="protein_kg_reason_training">1.2–2.0 g/kg supports training and recovery.</string>
-    <string name="protein_kg_reason_active_aging">1.0–1.2 g/kg helps keep muscle as you get older.</string>
-    <string name="protein_kg_reason_general">About 1.2 g/kg is a good everyday amount.</string>
+    <string name="protein_kg_reason_loss">At least %1$s helps keep muscle while losing weight.</string>
+    <string name="protein_kg_reason_loss_strength">Strength training this week: %1$s helps keep and build muscle while losing weight.</string>
+    <string name="protein_kg_reason_muscle">About %1$s supports building muscle.</string>
+    <string name="protein_kg_reason_training">%1$s supports training and recovery.</string>
+    <string name="protein_kg_reason_active_aging">%1$s helps keep muscle as you get older.</string>
+    <string name="protein_kg_reason_general">About %1$s is a good everyday amount.</string>
     <string name="protein_kg_reason_own">From your protein goal of %1$s g.</string>
-    <string name="protein_kg_empty">Log a meal with protein to see grams per kg here.</string>
+    <string name="protein_kg_empty">Log a meal with protein to see it against your body weight here.</string>
 
     <!-- C8 protein per meal -->
     <string name="card_protein_per_meal">Protein per meal</string>
@@ -48,19 +48,19 @@
         <item quantity="one">%1$d of %2$d meal reached %3$s g protein</item>
         <item quantity="other">%1$d of %2$d meals reached %3$s g protein</item>
     </plurals>
-    <string name="protein_meals_from_weight">%1$s g is 0.25 g per kg of your body weight; spreading protein over the day helps muscle.</string>
+    <string name="protein_meals_from_weight">%1$s g suits your body weight; spreading protein over the day helps muscle.</string>
     <string name="protein_meals_no_weight">Add a weigh-in to fit this to your body weight (now %1$s g).</string>
     <string name="protein_meals_item">%1$s %2$s g</string>
     <string name="protein_meals_item_none">%1$s nothing logged</string>
     <string name="protein_meals_empty">Log a meal to see which meals bring enough protein.</string>
 
     <!-- C9 carbs per kg -->
-    <string name="card_carbs_per_kg">Carbs per kg</string>
-    <string name="card_carbs_per_kg_summary">Carbs for each kg, banded by your training time</string>
+    <string name="card_carbs_per_kg">Carbs for body weight</string>
+    <string name="card_carbs_per_kg_summary">Carbs for your body weight, banded by your training time</string>
     <string name="carbs_kg_inputs">%1$s g carbs, body weight %2$s</string>
     <string name="carbs_kg_training">About %1$s of training a day over the last 7 days.</string>
     <string name="carbs_kg_training_none">Little training logged over the last 7 days.</string>
-    <string name="carbs_kg_empty">Log a meal to see carbs per kg here.</string>
+    <string name="carbs_kg_empty">Log a meal to see carbs against your body weight here.</string>
 
     <!-- C22 workout fuel -->
     <string name="card_workout_fuel">Workout fuel</string>
@@ -77,13 +77,13 @@
 
     <!-- C24 fuel balance -->
     <string name="card_fuel_balance">Fuel for training</string>
-    <string name="card_fuel_balance_summary">Food minus active calories, per kg of fat-free mass</string>
-    <string name="fuel_balance_label">7-day estimate per kg of fat-free mass</string>
-    <string name="fuel_balance_low">You may be under-fuelling for your training. A little more food on training days can help.</string>
-    <string name="fuel_balance_ok">About 30 kcal/kg or more covers training and everyday needs.</string>
+    <string name="card_fuel_balance_summary">Food minus active calories, for your fat-free mass</string>
+    <string name="fuel_balance_label">7-day estimate for your fat-free mass</string>
+    <string name="fuel_balance_low">You may be under-fueling for your training. A little more food on training days can help.</string>
+    <string name="fuel_balance_ok">About %1$s or more covers training and everyday needs.</string>
     <plurals name="fuel_balance_inputs">
-        <item quantity="one">About %1$s kcal eaten and %2$s active kcal a day, %3$s kg fat-free mass (%4$d day logged). An estimate.</item>
-        <item quantity="other">About %1$s kcal eaten and %2$s active kcal a day, %3$s kg fat-free mass (%4$d days logged). An estimate.</item>
+        <item quantity="one">About %1$s kcal eaten and %2$s active kcal a day, %3$s fat-free mass (%4$d day logged). An estimate.</item>
+        <item quantity="other">About %1$s kcal eaten and %2$s active kcal a day, %3$s fat-free mass (%4$d days logged). An estimate.</item>
     </plurals>
     <string name="fuel_balance_no_body_fat">This needs a body fat reading, from a scale or entered by hand, to estimate your fat-free mass.</string>
     <string name="fuel_balance_add_body_fat">Add body fat</string>

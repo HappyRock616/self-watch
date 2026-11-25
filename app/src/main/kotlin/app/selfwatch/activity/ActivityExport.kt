@@ -90,7 +90,7 @@ object ActivityExportPlan {
 }
 
 /**
- * An [ExportSource] that reports each workout as the exporter reads it ([track] or [openFit] is
+ * An [ExportSource] that reports each workout as the exporter reads it ([track] or [fitFile] is
  * called exactly once per workout), so the screen can show "Exporting 3 of 12".
  */
 class ProgressExportSource(private val inner: ExportSource, private val onWorkout: (Int) -> Unit) : ExportSource by inner {
@@ -98,7 +98,7 @@ class ProgressExportSource(private val inner: ExportSource, private val onWorkou
 
     override suspend fun track(workout: Workout): List<TrackPoint> = inner.track(workout).also { onWorkout(count.incrementAndGet()) }
 
-    override fun openFit(workout: Workout): InputStream? = inner.openFit(workout).also { onWorkout(count.incrementAndGet()) }
+    override suspend fun fitFile(workout: Workout): InputStream? = inner.fitFile(workout).also { onWorkout(count.incrementAndGet()) }
 }
 
 /** How the last export ended. */

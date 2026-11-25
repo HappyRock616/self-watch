@@ -7,14 +7,17 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.body.WeightDetailFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.me.GoalsFragment
 import app.selfwatch.ui.format.Fmt
@@ -35,6 +38,40 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
 
     override suspend fun load(env: CardEnv): InUnits<ProteinPerKg> =
         InUnits(FoodCardLoader(env.db, env.clock).proteinPerKg(env.day), env.units)
+
+    override fun small(ctx: Context, data: InUnits<ProteinPerKg>): SmallFace? {
+        val p = data.value
+        if (p.kgX100 == null) {
+            return SmallFace(
+                value = ctx.getString(R.string.dash),
+                label = ctx.getString(R.string.small_per_kg),
+                unit = FoodCardText.gramsUnit(ctx, data.units),
+                note = ctx.getString(R.string.small_needs_weight),
+            )
+        }
+        val perKg = p.perKg ?: return null
+        val protein = p.proteinG ?: return null
+        val t = p.target.target
+        val high = t.high
+        // As on the large card: reaching the bottom of the target is on track (more protein is fine).
+        return SmallFace(
+            value = FoodCardText.perKg(perKg, data.units),
+            label = if (high == null) {
+                ctx.getString(R.string.small_aim_min, FoodCardText.perKg(t.low, data.units))
+            } else {
+                ctx.getString(R.string.small_aim_band, FoodCardText.perKg(t.low, data.units), FoodCardText.perKg(high, data.units))
+            },
+            unit = FoodCardText.gramsUnit(ctx, data.units),
+            status = CardStatusColors.ofProgress(perKg, t.low),
+            note = ctx.getString(R.string.small_protein_grams, Fmt.number(protein.toLong())),
+            progress = if (t.low > 0) (perKg / t.low).toFloat() else null,
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(GoalsFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<InUnits<ProteinPerKg>> = Holder(host, parent)
 
@@ -64,9 +101,10 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
             }
             showContent()
             val t = p.target.target
-            tile.value = FoodCardText.perKg(perKg)
-            tile.unit = ctx.getString(R.string.food_card_unit_g_per_kg)
-            val target = FoodCardText.target(ctx, t)
+            val u = data.units
+            tile.value = FoodCardText.perKg(perKg, u)
+            tile.unit = FoodCardText.gramsUnit(ctx, u)
+            val target = FoodCardText.target(ctx, t, u)
             tile.label = target
             val reached = perKg >= t.low
             bar.set(
@@ -75,13 +113,16 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
                 low = t.low.toFloat(), high = t.high?.toFloat(),
             )
             show(bar, true)
+            // The target the reason names: "1.2 g/kg" or "1.2–2.0 g/kg" (per lb for US units).
+            val top = t.high
+            val amount = if (top == null) FoodCardText.grams(ctx, t.low, u) else FoodCardText.gramsRange(ctx, t.low, top, u)
             val reason = when (p.target.reason) {
-                ProteinReason.LOSS -> ctx.getString(R.string.protein_kg_reason_loss)
-                ProteinReason.LOSS_STRENGTH -> ctx.getString(R.string.protein_kg_reason_loss_strength)
-                ProteinReason.MUSCLE -> ctx.getString(R.string.protein_kg_reason_muscle)
-                ProteinReason.TRAINING -> ctx.getString(R.string.protein_kg_reason_training)
-                ProteinReason.ACTIVE_AGING -> ctx.getString(R.string.protein_kg_reason_active_aging)
-                ProteinReason.GENERAL -> ctx.getString(R.string.protein_kg_reason_general)
+                ProteinReason.LOSS -> ctx.getString(R.string.protein_kg_reason_loss, amount)
+                ProteinReason.LOSS_STRENGTH -> ctx.getString(R.string.protein_kg_reason_loss_strength, amount)
+                ProteinReason.MUSCLE -> ctx.getString(R.string.protein_kg_reason_muscle, amount)
+                ProteinReason.TRAINING -> ctx.getString(R.string.protein_kg_reason_training, amount)
+                ProteinReason.ACTIVE_AGING -> ctx.getString(R.string.protein_kg_reason_active_aging, amount)
+                ProteinReason.GENERAL -> ctx.getString(R.string.protein_kg_reason_general, amount)
                 ProteinReason.OWN_GOAL -> ctx.getString(R.string.protein_kg_reason_own, Fmt.number((p.goalG ?: 0).toLong()))
             }
             text(note, reason)

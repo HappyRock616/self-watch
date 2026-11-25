@@ -7,13 +7,17 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.food.SleepCaloriesFragment
 
@@ -34,6 +38,29 @@ object LoggingDaysCard : Card<LoggingWeek>(
     override val tables: Set<Table> = setOf(Table.DIARY)
 
     override suspend fun load(env: CardEnv): LoggingWeek = FoodCardLoader(env.db, env.clock).loggingWeek(env.day)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: LoggingWeek): SmallFace {
+        val n = data.count
+        // Gentle: logging some days is "close", never "off" (no broken-streak alarm).
+        return SmallFace(
+            value = n.toString(),
+            label = ctx.getString(R.string.small_logging_label),
+            status = when {
+                n >= NICE_FROM -> CardStatus.GOOD
+                n > 0 -> CardStatus.CLOSE
+                else -> CardStatus.NONE
+            },
+            note = ctx.getString(
+                when {
+                    n >= NICE_FROM -> R.string.small_logging_nice
+                    n > 0 -> R.string.small_logging_some
+                    else -> R.string.small_logging_start
+                },
+            ),
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<LoggingWeek> = Holder(host, parent)
 

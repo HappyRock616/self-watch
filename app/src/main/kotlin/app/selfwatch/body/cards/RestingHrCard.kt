@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -18,8 +19,11 @@ import app.selfwatch.body.RestingHrTrend
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.Sparkline
@@ -40,6 +44,31 @@ object RestingHrCard : Card<RestingHrCard.Data>("resting_hr", CardTab.BODY, R.st
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.METRIC)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyTrendLoader(env.db, env.clock).restingHr())
+
+    override val needs: Set<DataKind> = setOf(DataKind.RESTING_HR, DataKind.HEART_RATE)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val t = data.trend ?: return null
+        val d = abs(t.deltaBpm ?: 0)
+        val (status, note) = when (t.status) {
+            null -> CardStatus.NONE to ctx.getString(R.string.small_learning_usual)
+            RangeStatus.WITHIN -> CardStatus.GOOD to ctx.getString(R.string.small_steady)
+            RangeStatus.BELOW -> CardStatus.GOOD to ctx.getString(R.string.small_rhr_lower, d)
+            RangeStatus.ABOVE -> CardStatus.CLOSE to ctx.getString(R.string.small_rhr_higher, d)
+        }
+        return SmallFace(
+            value = t.currentBpm.toString(),
+            label = ctx.getString(R.string.rhr_card_label),
+            unit = ctx.getString(R.string.unit_bpm),
+            status = status,
+            note = note,
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(HeartDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

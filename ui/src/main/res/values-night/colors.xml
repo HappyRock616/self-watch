@@ -1,39 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Self Watch color tokens, dark palette (the default look). -->
 <resources>
-    <!-- Color themes. The dark look uses the Just Go 5K colors unchanged (they already reach 3:1);
-         Forest's and Yellow's text on green is a dark green, because the watch's light text on that green
-         is under 4.5:1 at phone text sizes. -->
+    <!-- Color themes. The dark look uses the Just Go 5K colors and text-on colors unchanged (Theme.mc).
+         accent_text is the primary, lightened only as far as 4.5:1 on every surface needs;
+         accent_text_inverse follows the light-surface rule (primary, else Just Go 5K's text-on color,
+         else the normal text color). -->
     <color name="sw_theme_turquoise_primary">#19D3C5</color>
     <color name="sw_theme_turquoise_on_primary">#04342C</color>
     <color name="sw_theme_turquoise_secondary">#FFD84D</color>
     <color name="sw_theme_turquoise_on_secondary">#412402</color>
     <color name="sw_theme_turquoise_accent_text">#19D3C5</color>
-    <color name="sw_theme_turquoise_accent_text_inverse">#137971</color>
+    <color name="sw_theme_turquoise_accent_text_inverse">#04342C</color>
     <color name="sw_theme_purple_primary">#BD93F9</color>
     <color name="sw_theme_purple_on_primary">#26215C</color>
     <color name="sw_theme_purple_secondary">#7CC8FF</color>
     <color name="sw_theme_purple_on_secondary">#042C53</color>
     <color name="sw_theme_purple_accent_text">#C5A1FA</color>
-    <color name="sw_theme_purple_accent_text_inverse">#7A60A0</color>
+    <color name="sw_theme_purple_accent_text_inverse">#26215C</color>
     <color name="sw_theme_orange_primary">#FF8A1F</color>
     <color name="sw_theme_orange_on_primary">#412402</color>
     <color name="sw_theme_orange_secondary">#4DABF7</color>
     <color name="sw_theme_orange_on_secondary">#042C53</color>
     <color name="sw_theme_orange_accent_text">#FF993B</color>
-    <color name="sw_theme_orange_accent_text_inverse">#A45A18</color>
+    <color name="sw_theme_orange_accent_text_inverse">#412402</color>
     <color name="sw_theme_yellow_primary">#F5B841</color>
     <color name="sw_theme_yellow_on_primary">#412402</color>
     <color name="sw_theme_yellow_secondary">#2E9E5B</color>
-    <color name="sw_theme_yellow_on_secondary">#092012</color>
+    <color name="sw_theme_yellow_on_secondary">#E8F5EC</color>
     <color name="sw_theme_yellow_accent_text">#F5B841</color>
-    <color name="sw_theme_yellow_accent_text_inverse">#866627</color>
+    <color name="sw_theme_yellow_accent_text_inverse">#412402</color>
     <color name="sw_theme_forest_primary">#2E9E5B</color>
-    <color name="sw_theme_forest_on_primary">#092012</color>
+    <color name="sw_theme_forest_on_primary">#E8F5EC</color>
     <color name="sw_theme_forest_secondary">#F5B841</color>
     <color name="sw_theme_forest_on_secondary">#412402</color>
     <color name="sw_theme_forest_accent_text">#77C094</color>
-    <color name="sw_theme_forest_accent_text_inverse">#257947</color>
+    <color name="sw_theme_forest_accent_text_inverse">#16202A</color>
 
     <color name="sw_background">#0B0B0B</color>
     <color name="sw_surface">#16324A</color>

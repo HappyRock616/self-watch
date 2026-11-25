@@ -15,6 +15,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.lifecycleScope
 import app.selfwatch.R
+import app.selfwatch.cards.ChartChoice
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.graph
@@ -54,7 +55,7 @@ import kotlinx.coroutines.launch
 abstract class ActivityOverlayFragment<T : Any> : DetailFragment() {
 
     /** Where the hidden layers are remembered. */
-    protected abstract val layerStore: OverlayLayers
+    protected abstract val layerStore: ChartChoice
 
     /** Tables that reload the chart. */
     protected abstract val tables: Set<Table>
@@ -147,7 +148,7 @@ abstract class ActivityOverlayFragment<T : Any> : DetailFragment() {
         /** Day length used for buckets. */
         const val DAY_SEC: Long = 86_400L
 
-        /** "Nov 20 · Training load 84 · HRV 52 ms" for the layers shown at [tSec]. */
+        /** "Nov 20 · Effort 84 · HRV 52 ms" for the layers shown at [tSec]. */
         fun readoutText(ctx: Context, tSec: Long, values: List<LayerValue>): String {
             val locale = Locale.getDefault()
             val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMd")
@@ -168,12 +169,12 @@ abstract class ActivityOverlayFragment<T : Any> : DetailFragment() {
 }
 
 /**
- * Training and recovery (overlay O4), opened from the Training load card: daily training load and
+ * Training and recovery (overlay O4), opened from the Weekly effort card: daily training load and
  * intensity minutes as bars, with the next mornings' HRV (7-day average, inside the usual-HRV band) and
  * resting heart rate (7-day average), over the last 12 weeks ([TrainingOverlay]).
  */
 class TrainingDetailFragment : ActivityOverlayFragment<TrainingOverlay>() {
-    override val layerStore: OverlayLayers = OverlayLayers.TRAINING
+    override val layerStore: ChartChoice = OverlayLayers.TRAINING
     override val tables: Set<Table> = setOf(Table.WORKOUT, Table.METRIC, Table.ACTIVITY, Table.DAY_SUMMARY)
     override val chartId: Int = R.id.training_chart
     override val noteRes: Int = R.string.training_note
@@ -249,7 +250,7 @@ class TrainingDetailFragment : ActivityOverlayFragment<TrainingOverlay>() {
  * and the weekly average night's sleep as a line, over the last 26 weeks ([ExerciseSleepOverlay]).
  */
 class ExerciseSleepDetailFragment : ActivityOverlayFragment<ExerciseSleepOverlay>() {
-    override val layerStore: OverlayLayers = OverlayLayers.EXERCISE_SLEEP
+    override val layerStore: ChartChoice = OverlayLayers.EXERCISE_SLEEP
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY)
     override val chartId: Int = R.id.exercise_sleep_chart
     override val noteRes: Int = R.string.exercise_sleep_note

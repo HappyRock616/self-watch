@@ -16,6 +16,7 @@ import kotlin.math.roundToLong
 /**
  * Turns the metric messages that can appear in any health file (monitoring, sleep, metrics, HRV status)
  * into [MetricSample]s. One sample per kind and second; a later duplicate replaces an earlier one.
+ * VO2 max (`max_met_data`) is handled by [Vo2Max].
  */
 internal class MetricExtractor(private val deviceId: Long) {
     private val samples = LinkedHashMap<Long, MetricSample>()
@@ -28,6 +29,8 @@ internal class MetricExtractor(private val deviceId: Long) {
                 // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (negative stress values are not measurements)
                 val t = rec.time(1) ?: rec.tSec ?: return true
                 val v = rec.int(0) ?: return true
+                // Ref: Gadgetbridge 160beab41 FitCodeGenerator/src/main/resources/fit_profile.json (stress_level field 3 body_energy, SINT8)
+                rec.int(3)?.takeIf { it in 0..100 }?.let { add(MetricKind.ENERGY_LEVEL, t, it) }
                 if (v in 0..100) add(MetricKind.STRESS, t, v)
             }
             FitMsg.RESPIRATION_RATE -> {
@@ -57,6 +60,7 @@ internal class MetricExtractor(private val deviceId: Long) {
                 val ms = (raw / 128.0).roundToLong()
                 if (ms in 1..1000) add(MetricKind.HRV_RMSSD, t, ms.toInt())
             }
+            FitMsg.MAX_MET_DATA -> Vo2Max.fromMaxMet(rec)?.let { (kind, t, x10) -> add(kind, t, x10) }
             else -> return false
         }
         return true
@@ -69,6 +73,7 @@ internal class MetricExtractor(private val deviceId: Long) {
     fun addRestingKcal(dayStartSec: Long, kcalPerDay: Int) = add(MetricKind.RESTING_KCAL, dayStartSec, kcalPerDay)
 
     private fun add(kind: MetricKind, tSec: Long, value: Int) {
+        // One map key per (second, kind): the kind code takes the low 4 bits, so codes must stay below 16.
         samples[(tSec shl 4) or kind.code.toLong()] = MetricSample(deviceId, kind, tSec, value)
     }
 

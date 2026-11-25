@@ -7,6 +7,7 @@
  */
 package app.selfwatch.activity.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityStatsLoader
@@ -14,8 +15,11 @@ import app.selfwatch.activity.HrZones
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.DayRange
 import app.selfwatch.ui.format.Fmt
@@ -55,6 +59,24 @@ object EasyHardCard : Card<EasyHardCard.Data>("easy_hard", CardTab.ACTIVITY, R.s
             sessions.sumOf { s -> s.zoneSec?.let { HrZones.hardSec(it) } ?: 0 },
             sessions.size,
             maxHr.bpm,
+        )
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.WORKOUTS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val pct = data.easyPct ?: return null
+        // Close to the usual mix (as the large card's hint) is on track; much harder or almost all easy is close.
+        val mix = pct >= HrZones.EASY_REF_LOW_PCT - Holder.MARGIN_PCT && pct <= ALL_EASY_PCT
+        return SmallFace(
+            value = Fmt.percent(pct / 100.0, 0, Locale.getDefault()),
+            label = ctx.getString(R.string.small_easy_label),
+            status = if (mix) CardStatus.GOOD else CardStatus.CLOSE,
+            note = ctx.getString(
+                R.string.small_easy_usual,
+                Fmt.number(HrZones.EASY_REF_LOW_PCT.toLong()),
+                Fmt.number(HrZones.EASY_REF_HIGH_PCT.toLong()),
+            ),
         )
     }
 

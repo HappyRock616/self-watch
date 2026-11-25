@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: the Devices page "Debug" card (DebugTools.addDevicesCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/debug_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/devices_debug">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/debug_capture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/devices_ble_capture"
+            android:textAppearance="@style/TextAppearance.SelfWatch.BodyLarge" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_share_capture"
+            style="@style/Widget.SelfWatch.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/devices_share_capture" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/debug_share_logs"
+            style="@style/Widget.SelfWatch.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/devices_share_logs" />
+    </LinearLayout>
+</app.selfwatch.ui.components.SwCard>

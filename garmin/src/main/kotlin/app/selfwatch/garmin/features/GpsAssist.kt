@@ -16,7 +16,7 @@ import app.selfwatch.model.result.Outcome
 import app.selfwatch.model.result.SwError
 
 /**
- * GPS assistance (A24, skeleton). Feature GPS_ASSIST is off by default and not yet in
+ * GPS assistance (A24, skeleton). The firewall switch GPS_ASSIST is on by default; this upload route is not yet in
  * `Features.IMPLEMENTED`: nothing here has been tried on a watch.
  *
  * Two routes exist:

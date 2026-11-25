@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -18,8 +19,11 @@ import app.selfwatch.body.RangeStatus
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.Sparkline
@@ -36,6 +40,39 @@ object HrvBaselineCard : Card<HrvInfo>("hrv_baseline", CardTab.BODY, R.string.ca
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY)
 
     override suspend fun load(env: CardEnv): HrvInfo = BodyTrendLoader(env.db, env.clock).hrv()
+
+    override val needs: Set<DataKind> = setOf(DataKind.HRV)
+
+    override fun small(ctx: Context, data: HrvInfo): SmallFace? {
+        val label = ctx.getString(R.string.small_seven_night_avg)
+        val r = data.result
+        if (r == null) {
+            if (data.nights == 0 || data.nights >= data.needed) return null
+            return SmallFace(
+                value = ctx.getString(R.string.dash),
+                label = label,
+                note = ctx.getString(R.string.small_learning_nights, data.nights, data.needed),
+            )
+        }
+        // Higher HRV than usual is not a worry; lower is the one to watch.
+        val (status, note) = when (r.status) {
+            RangeStatus.WITHIN -> CardStatus.GOOD to R.string.small_usual_within
+            RangeStatus.ABOVE -> CardStatus.GOOD to R.string.small_usual_above
+            RangeStatus.BELOW -> CardStatus.CLOSE to R.string.small_usual_below
+        }
+        return SmallFace(
+            value = r.sevenDayMs.toString(),
+            label = label,
+            unit = ctx.getString(R.string.unit_ms),
+            status = status,
+            note = ctx.getString(note),
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(HeartDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<HrvInfo> = Holder(host, parent)
 

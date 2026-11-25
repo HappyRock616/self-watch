@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -22,8 +23,11 @@ import app.selfwatch.body.WeightInfo
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.health.BodyKind
 import app.selfwatch.model.time.Day
@@ -51,6 +55,40 @@ object WeightCard : Card<WeightCard.Data>("weight", CardTab.BODY, R.string.card_
 
     override suspend fun load(env: CardEnv): Data =
         Data(BodyLoader(env.db, env.clock).weight(), env.units, BodyTrendLoader(env.db, env.clock).weightBand())
+
+    override val needs: Set<DataKind> = setOf(DataKind.WEIGHT)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val w = data.weight ?: return null
+        val units = data.units
+        // Trend first, as on the large card.
+        val trendX100 = w.spark.lastOrNull() ?: w.latestKgX100
+        val unit = BodyUnits.unit(BodyKind.WEIGHT, units)
+        val note = w.weekChangeX100?.let {
+            val sign = if (it < 0) "−" else if (it > 0) "+" else ""
+            ctx.getString(R.string.body_this_week, sign + Fmt.number(BodyUnits.toDisplay(BodyKind.WEIGHT, abs(it), units), 1) + " " + unit)
+        }
+        val b = data.band
+        val status = when {
+            b == null -> CardStatus.NONE
+            b.kind == WeightBand.Kind.UNPLANNED_LOSS -> CardStatus.CLOSE
+            b.status == null -> CardStatus.NONE
+            b.status == RangeStatus.WITHIN -> CardStatus.GOOD
+            else -> CardStatus.CLOSE
+        }
+        return SmallFace(
+            value = BodyUnits.number(BodyKind.WEIGHT, trendX100, units),
+            label = ctx.getString(R.string.small_trend),
+            unit = unit,
+            status = status,
+            note = note,
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(WeightDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

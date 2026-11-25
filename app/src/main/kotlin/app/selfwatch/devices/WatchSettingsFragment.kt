@@ -25,15 +25,17 @@ import app.selfwatch.R
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.db.Table
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.graph
 import app.selfwatch.me.SettingsActivity
+import app.selfwatch.me.SwitchRow
 import app.selfwatch.model.device.Feature
 import app.selfwatch.shell.DetailFragment
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.components.ListRow
 import app.selfwatch.watch.WatchSettings
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.conflate
@@ -51,12 +53,22 @@ data class WatchSettingsUiState(
     val syncOnly: Boolean = false,
     /** Bluetooth capture on. */
     val bleCapture: Boolean = false,
+    /** This watch's "answer the watch's Garmin sign-in requests" switch (off by default). */
+    val fakeAuth: Boolean = false,
+    /** The watch asked to sign in to Garmin and nobody answered (weather and GPS help may stop). */
+    val signInAsked: Boolean = false,
 ) {
     /** True when find my watch shows. */
     val canFind: Boolean get() = watch != null && FeatureGate.shows(watch.features, Feature.FIND_WATCH)
+
+    /** True when the "your watch asked to sign in" hint shows. */
+    val showSignInHint: Boolean get() = watch != null && signInAsked && !fakeAuth
 }
 
-/** Watch settings (C19): find my watch, sync now, connection mode, Bluetooth capture (debug), remove. */
+/**
+ * Watch settings (C19): find my watch, sync now, connection mode, the per-watch Garmin sign-in answer
+ * (COMPATIBILITY R1), Bluetooth capture (debug), remove.
+ */
 class WatchSettingsViewModel(
     private val db: SelfWatchDb,
     private val commands: WatchCommands,
@@ -67,11 +79,14 @@ class WatchSettingsViewModel(
     val state: StateFlow<WatchSettingsUiState> =
         db.changes.observe(setOf(Table.SETTING, Table.DEVICE)).conflate()
             .map {
+                val watch = ActiveWatches.load(db)
                 WatchSettingsUiState(
                     loading = false,
-                    watch = ActiveWatches.load(db),
+                    watch = watch,
                     syncOnly = db.settings.get(SettingKeys.CONNECTION_MODE) == SYNC_ONLY,
                     bleCapture = WatchSettings.bleCaptureOn(db.settings.get(WatchSettings.BLE_CAPTURE), debuggable),
+                    fakeAuth = watch != null && WatchSettings.fakeAuthOn(db.settings, watch.id),
+                    signInAsked = watch != null && db.settings.get(SettingKeys.deviceSignInAsked(watch.id)) != null,
                 )
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), WatchSettingsUiState())
@@ -86,9 +101,24 @@ class WatchSettingsViewModel(
     /** "Sync now". */
     fun syncNow(): Boolean = commands.syncNow()
 
-    /** The Bluetooth capture switch. */
+    /**
+     * The current watch's Garmin sign-in answer. The screen calls this with true only after the user
+     * read the warning and chose "Turn on". Turning it on also clears the "watch asked" hint.
+     */
+    fun setFakeAuth(on: Boolean) {
+        viewModelScope.launch {
+            val w = ActiveWatches.load(db) ?: return@launch
+            val updates = buildMap<String, String?> {
+                put(SettingKeys.deviceFakeAuth(w.id), on.toString())
+                if (on) put(SettingKeys.deviceSignInAsked(w.id), null)
+            }
+            db.settings.setAll(updates)
+        }
+    }
+
+    /** The Bluetooth capture switch (debug builds only; ignored otherwise). */
     fun setBleCapture(on: Boolean) {
-        viewModelScope.launch { db.settings.setBool(WatchSettings.BLE_CAPTURE, on) }
+        if (debuggable) viewModelScope.launch { db.settings.setBool(WatchSettings.BLE_CAPTURE, on) }
     }
 
     /** Factory. */
@@ -107,15 +137,16 @@ class WatchSettingsViewModel(
 class WatchSettingsFragment : DetailFragment() {
 
     private val vm: WatchSettingsViewModel by viewModels {
-        WatchSettingsViewModel.factory(requireContext().graph, WatchSettings.isDebuggable(requireContext()))
+        WatchSettingsViewModel.factory(requireContext().graph, DebugTools.ENABLED)
     }
 
     private lateinit var findBox: LinearLayout
     private lateinit var mode: ListRow
-    private lateinit var capture: MaterialSwitch
+    private lateinit var fakeAuth: SwitchRow
+    private lateinit var signInHint: TextView
+    private var showCapture: ((Boolean) -> Unit)? = null
     private lateinit var remove: MaterialButton
     private lateinit var noWatch: TextView
-    private var updating = false
 
     override fun title(): CharSequence = getString(R.string.devices_watch_settings)
 
@@ -147,9 +178,12 @@ class WatchSettingsFragment : DetailFragment() {
             onClick = { startActivity(Intent(ctx, SettingsActivity::class.java)) }
         }
         mc.addView(mode, Views.matchWrap(ctx))
-        capture = DevicesUi.switch(mc, getString(R.string.devices_ble_capture))
-        capture.isVisible = WatchSettings.isDebuggable(ctx)
-        capture.setOnCheckedChangeListener { _, on -> if (!updating) vm.setBleCapture(on) }
+        fakeAuth = SwitchRow(ctx, getString(R.string.devices_fake_auth), getString(R.string.devices_fake_auth_help)).apply {
+            onChange = { on -> if (on) confirmFakeAuth() else vm.setFakeAuth(false) }
+        }
+        mc.addView(fakeAuth, Views.matchWrap(ctx))
+        signInHint = DevicesUi.note(mc, getString(R.string.devices_fake_auth_hint))
+        if (DebugTools.ENABLED) showCapture = DebugTools.addCaptureSwitch(mc) { vm.setBleCapture(it) }
 
         val r = Views.card(column, null)
         val rc = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
@@ -163,10 +197,22 @@ class WatchSettingsFragment : DetailFragment() {
             findBox.isVisible = s.canFind
             remove.isVisible = s.watch != null
             mode.subtitle = getString(if (s.syncOnly) R.string.devices_mode_sync_only else R.string.devices_mode_always)
-            updating = true
-            capture.isChecked = s.bleCapture
-            updating = false
+            fakeAuth.isVisible = s.watch != null
+            fakeAuth.checked = s.fakeAuth
+            signInHint.isVisible = s.showSignInHint
+            showCapture?.invoke(s.bleCapture)
         }
+    }
+
+    /** The risk in plain words; only "Turn on" turns the Garmin sign-in answer on. */
+    private fun confirmFakeAuth() {
+        fakeAuth.checked = false
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.devices_fake_auth_confirm_title)
+            .setMessage(R.string.devices_fake_auth_confirm)
+            .setPositiveButton(R.string.devices_fake_auth_turn_on) { _, _ -> vm.setFakeAuth(true) }
+            .setNegativeButton(R.string.devices_fake_auth_keep_off, null)
+            .show()
     }
 
     private fun ring(on: Boolean) {

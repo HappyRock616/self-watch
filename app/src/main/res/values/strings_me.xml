@@ -24,30 +24,33 @@
     <string-array name="privacy_promises">
         <item>No account, no ads, no analytics, no crash reports sent anywhere.</item>
         <item>Your health data stays on this phone unless you export it.</item>
-        <item>Every internet feature has its own switch in the Privacy center, and most start off.</item>
+        <item>Nothing goes out unless its switch in the Privacy center is on. Only the food list, watch app requests, GPS help and this-phone requests start on.</item>
         <item>Every request is listed in Network activity: when, where, and how much.</item>
         <item>Food data can be loaded from a file, so the internet can stay off completely.</item>
     </string-array>
     <string name="privacy_switches_title">Internet switches</string>
-    <string name="privacy_switches_help">Turn off anything you don\'t want. A blocked feature still works offline where it can.</string>
+    <string name="privacy_switches_help">Each switch says what it sends. Turn off anything you don\'t want; a blocked feature still works offline where it can. Weather comes from a weather app on this phone and needs no switch.</string>
     <string name="privacy_permissions_title">Permissions</string>
-    <string name="privacy_permissions_help">Self Watch asks for each one only when you use the feature that needs it. Change them in Android settings.</string>
+    <string name="privacy_permissions_help">Tap a permission to allow it, or to open the Android page where you can change it.</string>
     <string name="privacy_manage">Open Android settings</string>
     <string name="privacy_allowed">Allowed</string>
     <string name="privacy_not_allowed">Not allowed</string>
+    <string name="privacy_perm_tap_allow">Tap to allow</string>
+    <string name="privacy_perm_tap_settings">Tap to allow it in Android settings</string>
+    <string name="privacy_perm_tap_revoke">Tap to change it in Android settings</string>
 
     <string name="net_food_data">Food database download</string>
-    <string name="net_food_data_help">Downloads the food list on Wi-Fi. Sends nothing about you.</string>
+    <string name="net_food_data_help">Downloads the food list from GitHub, on Wi-Fi only. Sends nothing about you, only the download request.</string>
     <string name="net_open_food_facts">Barcode lookups</string>
-    <string name="net_open_food_facts_help">Asks Open Food Facts about a barcode the food list doesn\'t know. Sends only the barcode.</string>
+    <string name="net_open_food_facts_help">Off until you turn it on. Sends a scanned barcode to Open Food Facts when the food list doesn\'t know it. Nothing else.</string>
     <string name="net_watch_app_web">Watch app web requests</string>
-    <string name="net_watch_app_web_help">Lets apps on your watch fetch from the web through the phone.</string>
+    <string name="net_watch_app_web_help">Sends the web requests that apps on your watch make (for example the TCS Companion) to the sites they name. Garmin servers stay blocked.</string>
     <string name="net_gps_assist">GPS help for the watch</string>
-    <string name="net_gps_assist_help">Downloads satellite data so the watch finds GPS faster.</string>
+    <string name="net_gps_assist_help">When the watch asks, downloads satellite position data so it finds GPS faster. Sends only that request; a fresh copy is reused.</string>
     <string name="net_recipe_book">Starter recipe book download</string>
     <string name="net_recipe_book_help">Downloads the optional recipe book on Wi-Fi.</string>
     <string name="net_local_phone_app">Phone apps on this phone</string>
-    <string name="net_local_phone_app_help">Watch apps talking to apps on this phone. Never leaves the phone.</string>
+    <string name="net_local_phone_app_help">Lets watch apps talk to apps on this phone (127.0.0.1). Never leaves the phone.</string>
 
     <string name="perm_nearby">Nearby devices (Bluetooth)</string>
     <string name="perm_notifications">Notifications</string>
@@ -58,6 +61,7 @@
     <string name="perm_contacts">Caller names</string>
     <string name="perm_answer_calls">Answer calls from the watch</string>
     <string name="perm_health_connect">Health Connect</string>
+    <string name="perm_battery">Run in the background (battery)</string>
 
     <!-- Network activity -->
     <string name="netlog_help">Every request Self Watch made, kept for 90 days. Only the host name is stored.</string>
@@ -100,14 +104,6 @@
     <string name="settings_units_imperial">Imperial (lb, in, mi)</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_color_theme">Color theme</string>
-    <string name="settings_advanced">Advanced</string>
-    <string name="settings_ble_capture">Bluetooth capture</string>
-    <string name="settings_ble_capture_help">Debug builds only. Records watch traffic on this phone to help fix bugs.</string>
-    <string name="settings_fake_auth">Fake Garmin sign-in</string>
-    <string name="settings_fake_auth_help">Off by default. Read the warning before turning it on.</string>
-    <string name="settings_fake_auth_warning">Some watches carry a Garmin sign-in token. When it runs out, weather and GPS help on the watch stop working. Self Watch can answer the watch with a fake sign-in so they keep working.\n\nThe catch: if you later go back to Garmin Connect, the watch may need a factory reset first, which erases what is on it.\n\nOnly turn this on if you understand and accept that.</string>
-    <string name="settings_fake_auth_accept">Turn on</string>
-    <string name="settings_fake_auth_keep_off">Keep off</string>
 
     <!-- About -->
     <string name="about_version">Version %1$s (%2$d)</string>
@@ -156,6 +152,13 @@
     <string name="fooddata_blocked">Food data downloads are turned off in the Privacy center</string>
     <string name="fooddata_offline">Waiting for Wi-Fi</string>
     <string name="fooddata_failed">That didn\'t work (%1$s)</string>
+    <string name="fooddata_auto_checking">Getting the food database ready…</string>
+    <string name="fooddata_auto_progress">Downloading the food database… %1$d%%</string>
+    <string name="fooddata_auto_progress_bytes">Downloading the food database… %1$s</string>
+    <string name="fooddata_auto_wifi">The food database will download by itself on Wi-Fi. Your own foods work now.</string>
+    <string name="fooddata_auto_done">Food database ready. Search now finds foods, packaged products and restaurant meals too.</string>
+    <string name="fooddata_auto_failed">The food database didn\'t download (%1$s). Try again in Me › Food data.</string>
+    <string name="fooddata_auto_needs_app">The food database needs a newer Self Watch. Your own foods still work.</string>
 
     <!-- Data -->
     <string name="data_working">Working</string>
@@ -348,6 +351,8 @@
     <string name="onboarding_profile_title">About you</string>
     <string name="onboarding_profile_help">Used to estimate the calories you burn at rest. Everything here is optional.</string>
     <string name="onboarding_height_cm">Height (cm)</string>
+    <string name="onboarding_height_ft">Height (feet)</string>
+    <string name="onboarding_goal_active_min">Active minutes per week</string>
     <string name="onboarding_height_in">Height (inches)</string>
     <string name="onboarding_birth_year">Birth year</string>
     <string name="onboarding_sex">Sex for the calorie estimate</string>

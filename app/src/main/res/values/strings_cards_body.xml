@@ -116,9 +116,9 @@
     <string name="signals_card_note">Not medical advice; signals rise for many everyday reasons.</string>
 
     <!-- O3: body composition with protein and strength (body fat and waist screens) -->
-    <string name="body_comp_layer_protein">Protein g/kg (weekly)</string>
+    <string name="body_comp_layer_protein">Protein %1$s (weekly)</string>
     <string name="body_comp_layer_strength">Strength sessions</string>
-    <string name="body_comp_caption">Weekly protein per kg of body weight; the dashed line is 1.6 g/kg. Protein helps most alongside strength training. Read the measurement over months, not days.</string>
+    <string name="body_comp_caption">Weekly protein for your body weight; the dashed line is %1$s. Protein helps most alongside strength training. Read the measurement over months, not days.</string>
 
     <!-- O6: intensity minutes and resting heart rate (Heart screen) -->
     <string name="heart_trend_title">Intensity minutes and resting heart rate</string>
@@ -133,4 +133,56 @@
     <string name="signals_layer_band">Usual range</string>
     <string name="signals_caption">Each line shows how far a signal is from your usual (the 28 nights before); the band is your usual range. Skin temperature also rises in parts of the menstrual cycle. Not medical advice.</string>
     <string name="signals_empty">Body signals show here after about a week of nights with your watch on.</string>
+
+    <!-- Heart rate now (HeartRateNowCard) -->
+    <string name="card_heart_rate_now">Heart rate</string>
+    <string name="card_heart_rate_now_summary">Your heart rate now, with today\'s low, high and resting</string>
+    <string name="hrn_live">Live from your watch</string>
+    <string name="hrn_just_now">Just now</string>
+    <plurals name="hrn_minutes_ago">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <plurals name="hrn_hours_ago">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <string name="hrn_at">Last reading %1$s</string>
+    <string name="hrn_today">Today: low %1$s · high %2$s · resting %3$s bpm</string>
+    <string name="hrn_spark_caption">Last 24 hours</string>
+    <string name="hrn_empty">Your heart rate shows here after your watch syncs. With the watch connected, it updates live while this card is on screen.</string>
+    <string name="hrn_description">Heart rate %1$s beats a minute, %2$s. %3$s</string>
+
+    <!-- Heart rate trends (HeartRateTrendsCard) -->
+    <string name="card_heart_rate_trends">Heart rate trends</string>
+    <string name="card_heart_rate_trends_summary">Resting and daily average heart rate, last 30 days</string>
+    <string name="hrt_layer_resting">Resting</string>
+    <string name="hrt_layer_average">Daily average</string>
+    <string name="hrt_summary">30-day average: resting %1$s bpm, daily %2$s bpm</string>
+    <string name="hrt_note">A resting heart rate that is lower or steady over weeks is a good sign. Single days swing.</string>
+    <string name="hrt_empty">Your resting and daily average heart rate fill in here as your watch syncs over the coming days.</string>
+    <string name="hrt_description">Heart rate trends, last 30 days. %1$s</string>
+
+    <!-- Breathing rate (BreathingRateCard) -->
+    <string name="card_breathing_rate">Breathing rate</string>
+    <string name="card_breathing_rate_summary">Overnight breathing against your usual range</string>
+    <string name="unit_brpm">breaths/min</string>
+    <string name="br_label">Last night\'s average</string>
+    <string name="br_within">Within your usual range</string>
+    <string name="br_below">Lower than your usual</string>
+    <string name="br_above">Higher than your usual</string>
+    <string name="br_band">Your usual: %1$s–%2$s breaths a minute</string>
+    <string name="br_learning">Learning your usual range: %1$d of %2$d nights so far. Wear your watch to sleep and it fills in.</string>
+    <string name="br_note">Breathing while you sleep, from your watch. Not a medical reading.</string>
+    <string name="br_empty">Your breathing rate while you sleep shows here. Wear your watch to sleep and it fills in.</string>
+    <string name="br_description">Breathing rate last night %1$s breaths a minute. %2$s</string>
+
+    <!-- Energy level (EnergyLevelCard) -->
+    <string name="card_energy_level">Energy level</string>
+    <string name="card_energy_level_summary">Your watch\'s energy level today, from 0 to 100</string>
+    <string name="el_label">of 100 · %1$s</string>
+    <string name="el_today">Today: high %1$d · low %2$d</string>
+    <string name="el_note">Your watch estimates this from your heart rate, stress, sleep and activity. Rest and sleep fill it up.</string>
+    <string name="el_empty">Your watch\'s energy level shows here after it syncs.</string>
+    <string name="el_description">Energy level %1$d of 100. %2$s</string>
 </resources>

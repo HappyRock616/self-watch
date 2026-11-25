@@ -186,14 +186,15 @@ class BodyBaselinesTest {
 
     @Test
     fun layerChoiceRemembersHiddenLayers() {
-        val c = LayerChoice("k", listOf("a", "b", "c"))
-        assertEquals(emptySet<String>(), c.decode(null))
-        assertEquals(setOf("a", "c"), c.decode("c, a,zzz"))
-        assertEquals("a,c", c.encode(setOf("c", "a", "zzz")))
-        assertEquals(emptySet<String>(), c.decode(""))
-        assertEquals(setOf("b"), LayerChoice("k", listOf("a", "b"), setOf("b")).decode(null))
-        // Every overlay starts with every layer on.
-        for (l in listOf(ProteinOverlay.LAYERS, HeartTrendOverlay.LAYERS, SignalsOverlay.LAYERS)) assertTrue(l.defaultHidden.isEmpty())
+        val c = SignalsOverlay.LAYERS
+        val goal = MainGoal.GENERAL_HEALTH
+        assertEquals(setOf("skin_temp", "band"), c.decode("band, skin_temp,zzz", goal))
+        assertEquals("skin_temp,band", c.encode(setOf("band", "skin_temp", "zzz")))
+        assertEquals(emptySet<String>(), c.decode("", goal))
+        // Heart trend and body signals start with every layer on; body composition hides strength sessions.
+        for (l in listOf(HeartTrendOverlay.LAYERS, SignalsOverlay.LAYERS)) assertTrue(l.decode(null, goal).isEmpty())
+        assertEquals(setOf(BodyCompLayers.STRENGTH), ProteinOverlay.LAYERS.decode(null, goal))
+        assertEquals(emptySet<String>(), ProteinOverlay.LAYERS.decode(null, MainGoal.BUILD_MUSCLE))
     }
 
     @Test

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small (half-width) forms of the Body cards: short labels and notes that must fit at 2x font. -->
+<resources>
+    <string name="small_trend">Trend</string>
+    <string name="small_change_90">%1$s in 90 days</string>
+    <string name="small_change_30">%1$s in 30 days</string>
+    <string name="small_learning_nights">Learning: %1$d of %2$d nights</string>
+    <string name="small_learning_usual">Learning your usual</string>
+    <string name="small_usual_within">Within your usual</string>
+    <string name="small_usual_below">Lower than usual</string>
+    <string name="small_usual_above">Higher than usual</string>
+    <string name="small_steady">Steady</string>
+    <string name="small_seven_night_avg">7-night average</string>
+
+    <string name="small_signals_label">Signals up</string>
+    <string name="small_signals_up">of %1$d up</string>
+    <string name="small_signals_flag">Several up; take it easy</string>
+    <string name="small_signals_one">One signal is up</string>
+    <string name="small_signals_calm">All within your usual</string>
+
+    <string name="small_stress_today">Average today</string>
+    <string name="small_stress_on">Average, %1$s</string>
+    <string name="small_rest_time">Rest time %1$s</string>
+
+    <string name="small_energy_left">left today</string>
+    <string name="small_energy_over">over today</string>
+    <string name="small_energy_net">in minus out today</string>
+    <string name="small_energy_eaten">eaten today</string>
+    <string name="small_energy_burned">burned today</string>
+
+    <string name="small_of_100">of 100</string>
+    <string name="small_energy_level_range">High %1$d · low %2$d</string>
+
+    <string name="small_hr_resting">Resting %1$s bpm</string>
+    <string name="small_hrt_resting">Resting, 30 days</string>
+    <string name="small_hrt_daily">Daily average, 30 days</string>
+    <string name="small_hrt_daily_note">Daily average %1$s bpm</string>
+
+    <string name="small_rhr_lower">%1$d bpm lower than usual</string>
+    <string name="small_rhr_higher">%1$d bpm higher than usual</string>
+
+    <string name="small_recovery_sleep">Sleep last night</string>
+    <string name="small_recovery_hrv">HRV %1$s ms</string>
+
+    <string name="small_waist_height_label">Waist to height</string>
+    <string name="small_wh_under">Inside the 0.5 guide</string>
+    <string name="small_wh_raised">Above the 0.5 guide</string>
+    <string name="small_wh_high">Well above the 0.5 guide</string>
+</resources>

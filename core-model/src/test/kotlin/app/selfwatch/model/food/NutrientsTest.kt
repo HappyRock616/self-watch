@@ -17,7 +17,7 @@ class NutrientsTest {
         val n = Nutrients(1000, 50, 30, 10, 200, 100, 20, 400, 5)
         assertEquals(n, n.scaled(1000))
         assertEquals(Nutrients(1500, 75, 45, 15, 300, 150, 30, 600, 8), n.scaled(1500)) // 7.5 -> 8
-        assertEquals(Nutrients.ZERO, n.scaled(0))
+        assertEquals(Nutrients(0, 0, 0, 0, 0, 0, 0, 0, 0), n.scaled(0))
     }
 
     @Test fun scaledRoundsHalfAwayFromZero() {
@@ -43,7 +43,7 @@ class NutrientsTest {
         val a = Nutrients(100, 10, 5, 1, 20, 4, 2, 300, 0)
         val b = Nutrients(50, 1, 2, 0, 3, 1, 1, 100, 10)
         assertEquals(Nutrients(150, 11, 7, 1, 23, 5, 3, 400, 10), a + b)
-        assertEquals(a, a + Nutrients.ZERO)
+        assertEquals(Nutrients.ZERO.copy(kcalX10 = 100, proteinX10 = 10, fatX10 = 5, satfatX10 = 1, carbX10 = 20, sugarX10 = 4, fibreX10 = 2, sodiumMg = 300), a + Nutrients.ZERO)
     }
 
     @Test fun plusSkipsUnknownValues() {
@@ -57,5 +57,47 @@ class NutrientsTest {
 
     @Test fun plusClampsOverflow() {
         assertEquals(Int.MAX_VALUE, (kcal(Int.MAX_VALUE) + kcal(1)).kcalX10)
+    }
+
+    @Test fun v2FieldsDefaultUnknownScaleAndSum() {
+        val old = Nutrients(100, 10, 5, 1, 20, 4, 2, 300, 0)
+        assertEquals(null, old.potassiumMg)
+        assertEquals(9, old.knownCount)
+        val a = old.copy(potassiumMg = 200, vitdX10 = 15, transfatX10 = 3)
+        assertEquals(400, a.scaled(2000).potassiumMg)
+        assertEquals(30, a.scaled(2000).vitdX10)
+        assertEquals(null, a.scaled(2000).calciumMg)
+        val b = Nutrients.UNKNOWN.copy(potassiumMg = 50, calciumMg = 20)
+        val sum = a + b
+        assertEquals(250, sum.potassiumMg)
+        assertEquals(20, sum.calciumMg)
+        assertEquals(3, sum.transfatX10)
+        assertEquals(null, sum.ironX10)
+        assertEquals(250, sum[Nutrients.Field.POTASSIUM])
+        assertEquals(Nutrients.Field.entries.size, Nutrients.ZERO.knownCount)
+        assertEquals(a, Nutrients.fromList(a.toList()))
+    }
+
+    @Test fun dietInfoNeverClaimsFreeWhenUnknown() {
+        val unknown = DietInfo.UNKNOWN
+        assertEquals(null, unknown.vegan)
+        assertEquals(null, unknown.has(Allergen.MILK))
+        assertEquals(true, unknown.isUnknown)
+        // Vegan decided yes, vegetarian not decided: vegan implies vegetarian.
+        val vegan = DietInfo(DietInfo.VEGAN, DietInfo.VEGAN, 0, false)
+        assertEquals(true, vegan.vegan)
+        assertEquals(true, vegan.vegetarian)
+        // Decided "not vegan" (known bit without the diet bit).
+        val notVegan = DietInfo(DietInfo.VEGETARIAN, DietInfo.VEGAN or DietInfo.VEGETARIAN, Allergen.MILK.bit, true)
+        assertEquals(false, notVegan.vegan)
+        assertEquals(true, notVegan.vegetarian)
+        assertEquals(true, notVegan.has(Allergen.MILK))
+        assertEquals(false, notVegan.has(Allergen.PEANUT)) // full list checked
+        assertEquals(listOf(Allergen.MILK), notVegan.contains)
+        val gf = DietInfo(DietInfo.GLUTEN_FREE_NATURAL, 0, 0, false)
+        assertEquals(false, gf.has(Allergen.GLUTEN))
+        assertEquals(null, gf.has(Allergen.SOY))
+        assertEquals(Allergen.MILK.bit or Allergen.SOY.bit, Allergen.maskOf(listOf(Allergen.MILK, Allergen.SOY)))
+        assertEquals(setOf(Allergen.GLUTEN, Allergen.SESAME), Allergen.of(257))
     }
 }

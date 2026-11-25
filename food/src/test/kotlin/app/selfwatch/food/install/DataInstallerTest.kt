@@ -9,6 +9,7 @@ package app.selfwatch.food.install
 
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.food.FoodsDbFixture
+import app.selfwatch.food.source.FoodDbFormat
 import app.selfwatch.food.source.FoodsDbHandle
 import app.selfwatch.food.source.FoodsDbSource
 import app.selfwatch.model.fake.FakeHttp
@@ -74,7 +75,7 @@ class DataInstallerTest {
     }
 
     /** A gzipped fixture with [dataVersion] (and optional breakage), as served bytes. */
-    private fun release(dataVersion: Int, applicationId: Int? = null, userVersion: Int = 1, rows: Boolean = true): ByteArray {
+    private fun release(dataVersion: Int, applicationId: Int? = null, userVersion: Int = FoodDbFormat.SCHEMA_VERSION, rows: Boolean = true): ByteArray {
         val db = File(work, "build-$dataVersion-${applicationId ?: 0}-$userVersion-$rows.db")
         if (applicationId != null) {
             FoodsDbFixture.buildFoods(db, applicationId = applicationId, userVersion = userVersion, withRows = rows, dataVersion = dataVersion)
@@ -86,7 +87,7 @@ class DataInstallerTest {
         return gz.readBytes()
     }
 
-    private fun manifest(dataVersion: Int, bytes: ByteArray, schema: Int = 1, minApp: Int = 1, sha: String? = null): String {
+    private fun manifest(dataVersion: Int, bytes: ByteArray, schema: Int = FoodDbFormat.SCHEMA_VERSION, minApp: Int = 1, sha: String? = null): String {
         val f = File(work, "m.bin").apply { writeBytes(bytes) }
         val hash = sha ?: DataInstaller.sha256(f)
         return """{"schema_version":$schema,"data_version":$dataVersion,"min_app_version":$minApp,"file":"foods.db.gz",
@@ -162,17 +163,17 @@ class DataInstallerTest {
     fun wrongSchemaKeepsTheOldFile() = runBlocking {
         installFirst()
         val before = File(dir, "foods.db").readBytes()
-        // The manifest says schema 2: not offered.
+        // The manifest says schema 3: not offered.
         val v2 = release(20261201)
-        http.enqueue(200, manifest(20261201, v2, schema = 2))
-        assertEquals(UpdateCheck.NeedsNewerApp(2, 1), (installer.checkForUpdate() as Outcome.Ok).value)
+        http.enqueue(200, manifest(20261201, v2, schema = 3))
+        assertEquals(UpdateCheck.NeedsNewerApp(3, 1), (installer.checkForUpdate() as Outcome.Ok).value)
         http.enqueue(200, manifest(20261201, v2, minApp = 9))
-        assertEquals(UpdateCheck.NeedsNewerApp(1, 9), (installer.checkForUpdate() as Outcome.Ok).value)
-        // The file itself says user_version 2 although the manifest says 1.
-        val lying = release(20261201, userVersion = 2)
+        assertEquals(UpdateCheck.NeedsNewerApp(2, 9), (installer.checkForUpdate() as Outcome.Ok).value)
+        // The file itself says user_version 3 although the manifest says 2.
+        val lying = release(20261201, userVersion = 3)
         serve(manifest(20261201, lying), lying)
         val check = (installer.checkForUpdate() as Outcome.Ok).value as UpdateCheck.Available
-        assertEquals(Outcome.Fail(SwError.BadInput("user_version 2")), installer.install(check.manifest))
+        assertEquals(Outcome.Fail(SwError.BadInput("user_version 3")), installer.install(check.manifest))
         // An empty food table fails the row check.
         val empty = release(20261202, rows = false)
         serve(manifest(20261202, empty), empty)

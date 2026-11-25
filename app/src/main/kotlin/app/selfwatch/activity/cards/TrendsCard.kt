@@ -22,8 +22,13 @@ import app.selfwatch.activity.TrendRange
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.graph
 import app.selfwatch.shell.Views
@@ -41,18 +46,45 @@ import app.selfwatch.ui.R as UiR
 
 /**
  * The long-trend bars (Week · Month · Year · All) with chips for distance, active minutes, steps and
- * active kcal. The chosen range is a setting ([TrendRange.KEY]), so the Activity menu can change it too.
+ * active kcal. The chosen range is a setting ([TrendRange.KEY]), so the Activity menu can change it too;
+ * the chips start from the main goal's defaults and the user's choice is kept in settings ([CHOICE]).
  */
 object TrendsCard : Card<TrendsCard.Data>("trends", CardTab.ACTIVITY, R.string.card_trends, R.string.card_trends_summary) {
 
-    /** The trend bars in display [units]. */
-    data class Data(val trend: Trend, val units: Units)
+    /** The trend bars in display [units], and the metrics the user switched off. */
+    data class Data(val trend: Trend, val units: Units, val hidden: Set<String>)
+
+    /** The chips' stored choice. */
+    val CHOICE: ChartChoice by lazy { ChartChoice(ChartId.ACTIVITY_TRENDS) }
 
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.GOAL, Table.SETTING)
 
     override suspend fun load(env: CardEnv): Data {
         val loader = ActivityLoader(env.db, env.clock)
-        return Data(loader.trend(loader.trendRange()), env.units)
+        return Data(loader.trend(loader.trendRange()), env.units, CHOICE.load(env.db))
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.STEPS, DataKind.DISTANCE, DataKind.ACTIVE_TIME, DataKind.ACTIVE_CALORIES)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val t = data.trend
+        if (t.isEmpty) return null
+        // Every bar is a day or a daily average, so their mean is steps a day over the range.
+        val steps = t.values[TrendMetric.STEPS].orEmpty().filter { it >= 0 }
+        if (steps.isEmpty()) return null
+        val range = when (t.range) {
+            TrendRange.WEEK -> R.string.small_range_week
+            TrendRange.MONTH -> R.string.small_range_month
+            TrendRange.YEAR -> R.string.small_range_year
+            TrendRange.ALL -> R.string.small_range_all
+        }
+        return SmallFace(
+            value = Fmt.number(steps.average().roundToInt().toLong()),
+            label = ctx.getString(R.string.small_steps_a_day),
+            note = ctx.getString(range),
+        )
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
@@ -74,7 +106,13 @@ object TrendsCard : Card<TrendsCard.Data>("trends", CardTab.ACTIVITY, R.string.c
     /** Each metric is one series of the color theme's chart palette, in chip order. */
     private fun color(ctx: Context, m: TrendMetric): Int = ChartPalette.of(ctx).series(m.ordinal)
 
-    private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_trends)) {
+    /** Saves the metrics switched off. */
+    fun saveHidden(host: CardHost, hidden: Set<String>) {
+        val settings = host.context.graph.settings
+        host.launch { CHOICE.save(settings, hidden) }
+    }
+
+    private class Holder(private val host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_trends)) {
         private val ctx: Context = root.context
         private val charts = find<LinearLayout>(R.id.trend_charts)
         private val chips = find<ToggleChipGroup>(R.id.trend_chips)
@@ -89,20 +127,27 @@ object TrendsCard : Card<TrendsCard.Data>("trends", CardTab.ACTIVITY, R.string.c
         private var last: Data? = null
 
         init {
-            chips.chartId = "activity_trend"
-            chips.items = TrendMetric.entries.map { m ->
-                ToggleItem(m.id, ctx.getString(label(m)), color(ctx, m), m == TrendMetric.DISTANCE || m == TrendMetric.ACTIVE_MIN)
-            }
             find<FrameLayout>(R.id.trend_segments).addView(segments)
-            chips.onChange = { _, _, on -> last?.let { bindTrend(it, on) } }
+            chips.onChange = { _, _, on ->
+                last?.let { bindTrend(it, on) }
+                saveHidden(host, TrendMetric.entries.map { it.id }.filter { it !in on }.toSet())
+            }
         }
 
         override fun bind(data: Data) {
             last = data
+            bindChips(data.hidden)
             Views.selectSegment(segments, data.trend.range.ordinal)
             bindTrend(data, chips.onIds)
             find<EmptyState>(R.id.trend_empty).visibility = if (data.trend.isEmpty) View.VISIBLE else View.GONE
             charts.visibility = if (data.trend.isEmpty) View.GONE else View.VISIBLE
+        }
+
+        /** Builds the chips from the stored choice when it differs from what they show. */
+        private fun bindChips(hidden: Set<String>) {
+            val on = TrendMetric.entries.map { it.id }.filter { it !in hidden }.toSet()
+            if (chips.items.isNotEmpty() && chips.onIds == on) return
+            chips.items = TrendMetric.entries.map { m -> ToggleItem(m.id, ctx.getString(label(m)), color(ctx, m), m.id in on) }
         }
 
         private fun bindTrend(data: Data, on: Set<String>) {

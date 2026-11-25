@@ -7,6 +7,8 @@
  */
 package app.selfwatch.activity
 
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.model.health.DaySummary
 import app.selfwatch.model.time.Clock
@@ -195,48 +197,22 @@ class ExerciseSleepOverlay(val firstWeek: Day, val exerciseMin: IntArray, val sl
     }
 }
 
-/**
- * Which layers of an overlay chart the user switched off, kept in settings under [key] as the comma list
- * of hidden ids. Every layer starts on; no stored value means none hidden.
- */
-class OverlayLayers(
-    /** Settings key. */
-    val key: String,
-    /** Layer ids that can be switched, in chip order. */
-    val toggleable: List<String>,
-) {
-    /** The hidden ids stored as [stored]; unknown ids are dropped. */
-    fun decode(stored: String?): Set<String> =
-        stored?.split(',')?.map { it.trim() }?.filter { it in toggleable }?.toSet().orEmpty()
+/** The two Activity overlays' layer ids and their stored choices. */
+object OverlayLayers {
+    /** O4 layers. */
+    const val LOAD: String = "load"
+    const val INTENSITY: String = "intensity"
+    const val HRV: String = "hrv"
+    const val HRV_BAND: String = "hrv_band"
+    const val RESTING_HR: String = "resting_hr"
 
-    /** [hidden] as stored, in chip order. */
-    fun encode(hidden: Set<String>): String = toggleable.filter { it in hidden }.joinToString(",")
+    /** O5 layers. */
+    const val EXERCISE: String = "exercise"
+    const val SLEEP: String = "sleep"
 
-    /** The hidden layer ids. */
-    suspend fun load(db: SelfWatchDb): Set<String> = decode(db.settings.get(key))
+    /** O4, training and recovery. */
+    val TRAINING: ChartChoice = ChartChoice(ChartId.TRAINING)
 
-    /** Saves the hidden layer ids. */
-    suspend fun save(db: SelfWatchDb, hidden: Set<String>) {
-        db.settings.set(key, encode(hidden))
-    }
-
-    /** The two Activity overlays' layer ids and stores. */
-    companion object {
-        /** O4 layers. */
-        const val LOAD: String = "load"
-        const val INTENSITY: String = "intensity"
-        const val HRV: String = "hrv"
-        const val HRV_BAND: String = "hrv_band"
-        const val RESTING_HR: String = "resting_hr"
-
-        /** O5 layers. */
-        const val EXERCISE: String = "exercise"
-        const val SLEEP: String = "sleep"
-
-        /** O4, training and recovery. */
-        val TRAINING: OverlayLayers = OverlayLayers("chart.training.layers", listOf(LOAD, INTENSITY, HRV, HRV_BAND, RESTING_HR))
-
-        /** O5, exercise and sleep. */
-        val EXERCISE_SLEEP: OverlayLayers = OverlayLayers("chart.exercise_sleep.layers", listOf(EXERCISE, SLEEP))
-    }
+    /** O5, exercise and sleep. */
+    val EXERCISE_SLEEP: ChartChoice = ChartChoice(ChartId.EXERCISE_SLEEP)
 }

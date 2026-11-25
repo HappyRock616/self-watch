@@ -149,7 +149,7 @@ hc/        Health Connect read and write (optional)
 ### net (Android library)
 
 - `HttpClient` on Android's built-in `HttpURLConnection` (no extra HTTP library). Every request names its `Feature` (food data, Open Food Facts, watch-app web request, GPS assistance…).
-- `Firewall`: checks the feature's switch before any request. Off by default, except food data and Open Food Facts.
+- `Firewall`: checks the feature's switch before any request. Off by default, except food data, watch app web requests, apps on this phone (127.0.0.1) and GPS help (`NetFeature.defaultOn`).
 - `NetworkLog`: writes time, feature, host, bytes and result for every request, allowed or blocked.
 - Later, with the first device that needs them: Wi-Fi join, FTP, UDP.
 

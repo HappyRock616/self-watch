@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import androidx.annotation.VisibleForTesting
 import app.selfwatch.db.dao.ActivityDao
+import app.selfwatch.db.dao.BatteryDao
 import app.selfwatch.db.dao.BodyDao
 import app.selfwatch.db.dao.DeviceDao
 import app.selfwatch.db.dao.DiaryDao
@@ -87,6 +88,9 @@ public class SelfWatchDb internal constructor(
 
     /** Watch sync file bookkeeping. */
     public val syncFiles: SyncFileDao by lazy { SyncFileDao(this) }
+
+    /** Device battery history. */
+    public val battery: BatteryDao by lazy { BatteryDao(this) }
 
     /** Minute activity data. */
     public val activity: ActivityDao by lazy { ActivityDao(this) }
@@ -166,7 +170,7 @@ public class SelfWatchDb internal constructor(
     /** Constants and the per-process instance. */
     public companion object {
         /** Current schema version. */
-        public const val VERSION: Int = 1
+        public const val VERSION: Int = 4
 
         /** File name. */
         public const val NAME: String = "selfwatch.db"

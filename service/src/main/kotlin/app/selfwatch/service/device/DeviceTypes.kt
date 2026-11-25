@@ -55,6 +55,12 @@ public interface PortFactory {
 
     /** Releases a link made by [create] (closes GATT). Called once per link, even after failures. */
     public suspend fun release(port: BlePort) {}
+
+    /**
+     * True when another app on this phone holds a Bluetooth link to [address] while Self Watch has
+     * none (Android lists the phone's connected GATT devices). False when unknown.
+     */
+    public fun heldElsewhere(address: String): Boolean = false
 }
 
 /** Makes the protocol driver for a device kind. The app wires this to `garmin.GarminDriver`. */
@@ -84,8 +90,14 @@ public interface SyncScheduler {
 
 /** Reconnect delays after a connection ends or fails. */
 public object Backoff {
-    /** Delays in seconds: 1, 2, 5, 10, 30, 60, then every 5 minutes (WP-05). */
-    public val DELAYS_SEC: List<Int> = listOf(1, 2, 5, 10, 30, 60, 300)
+    /**
+     * Delays in seconds: 5, 10, 30, 60, 120, then every 5 minutes. Every attempt wakes the watch's radio
+     * (Gadgetbridge starts at 2 s and doubles to 64 s).
+     */
+    public val DELAYS_SEC: List<Int> = listOf(5, 10, 30, 60, 120, 300)
+
+    /** A link must stay up this long (ms) before the delays start again from the first one. */
+    public const val STABLE_MS: Long = 5 * 60_000L
 
     /** The delay for retry number [attempt] (0-based); attempts past the list repeat the last delay. */
     public fun delaySec(attempt: Int): Int = DELAYS_SEC[attempt.coerceIn(0, DELAYS_SEC.lastIndex)]

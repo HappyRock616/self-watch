@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -20,6 +21,8 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.ui.components.EmptyState
@@ -41,6 +44,27 @@ object BodyStressCard : Card<BodyStressCard.Data>("body_stress", CardTab.BODY, R
     override val tables: Set<Table> = setOf(Table.METRIC)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyTrendLoader(env.db, env.clock).stress(), env.clock.today())
+
+    override val needs: Set<DataKind> = setOf(DataKind.STRESS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        val s = data.stress ?: return null
+        val label = if (s.day == data.today) {
+            ctx.getString(R.string.small_stress_today)
+        } else {
+            ctx.getString(R.string.small_stress_on, Fmt.day(ctx, s.day.yyyymmdd))
+        }
+        return SmallFace(
+            value = s.avg.toString(),
+            label = label,
+            note = ctx.getString(R.string.small_rest_time, SleepCard.duration(ctx, s.restMin)),
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(HeartDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

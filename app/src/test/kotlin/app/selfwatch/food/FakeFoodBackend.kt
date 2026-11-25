@@ -167,13 +167,23 @@ class FakeFoodBackend(override val clock: FakeClock = FakeClock()) : FoodBackend
     }
 
     override suspend fun lastServing(ref: FoodRef): Pair<Serving, Int>? = last[ref]
+    override suspend fun entriesBetween(from: Day, to: Day): List<DiaryEntry> = entries.filter { it.day >= from && it.day <= to }.sortedBy { it.day }
     override suspend fun addWater(ml: Int, day: Day) {
         water += ml
+        glasses.add(ml)
         bump()
     }
 
+    /** The glasses added, in order (removeWater takes the last back). */
+    private val glasses = ArrayList<Int>()
+
+    /** Display units the screens read. */
+    var units: app.selfwatch.ui.format.Units = app.selfwatch.ui.format.Units.METRIC
+
+    override suspend fun displayUnits(): app.selfwatch.ui.format.Units = units
+
     override suspend fun removeWater(day: Day) {
-        water = (water - 250).coerceAtLeast(0)
+        water = (water - (glasses.removeLastOrNull() ?: 0)).coerceAtLeast(0)
         bump()
     }
 
@@ -250,6 +260,35 @@ class FakeFoodBackend(override val clock: FakeClock = FakeClock()) : FoodBackend
 
     override fun skipMatch(r: Recipe, seq: Int): Recipe =
         r.copy(items = r.items.map { if (it.seq == seq) it.copy(food = null, match = MatchState.SKIPPED) else it })
+
+    var prefs: app.selfwatch.food.nutrition.DietPrefs = app.selfwatch.food.nutrition.DietPrefs.NONE
+    var inputs: app.selfwatch.food.nutrition.TargetInputs = app.selfwatch.food.nutrition.TargetInputs()
+
+    override suspend fun dietPrefs(): app.selfwatch.food.nutrition.DietPrefs = prefs
+    override suspend fun setDietPrefs(prefs: app.selfwatch.food.nutrition.DietPrefs) {
+        this.prefs = prefs
+        bump()
+    }
+
+    override suspend fun targetInputs(day: Day): app.selfwatch.food.nutrition.TargetInputs = inputs.copy(prefs = prefs, overrides = overrides)
+
+    var overrides: Map<Nutrients.Field, Int> = emptyMap()
+    override suspend fun targetOverrides(): Map<Nutrients.Field, Int> = overrides
+    override suspend fun setTargetOverrides(overrides: Map<Nutrients.Field, Int>) {
+        this.overrides = overrides
+        bump()
+    }
+
+    /** Category id per logged food ref (for the vegetarian offer). */
+    val categories = HashMap<FoodRef, Int>()
+    override suspend fun loggedCategories(from: Day, to: Day): List<List<Int?>> =
+        entries.filter { it.day >= from && it.day <= to }.groupBy { it.day }.toSortedMap().values.map { es -> es.map { e -> e.food?.let { categories[it] } } }
+
+    var vegHintDone = false
+    override suspend fun vegHintDone(): Boolean = vegHintDone
+    override suspend fun setVegHintDone() {
+        vegHintDone = true
+    }
 
     companion object {
         fun n(kcal: Int): Nutrients = Nutrients(kcal * 10, 10, 20, null, 30, null, null, null, null)

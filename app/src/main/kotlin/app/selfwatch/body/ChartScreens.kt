@@ -115,6 +115,40 @@ class ChartCard(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) 
         chips.chartId = chipsKey
         chart.bindChips(chips)
     }
+
+    private var appliedChoice: String? = null
+
+    /**
+     * Shows [layers] over [start]..[end] with the choice kept in settings: [hidden] is the stored choice
+     * among [toggleable] for the view named [view] (applied once each time the view changes; after that
+     * the chips drive the chart); a chip change calls [onSave] with the new hidden set.
+     */
+    fun bind(
+        start: Long,
+        end: Long,
+        layers: List<ChartLayer>,
+        view: String,
+        hidden: Set<String>,
+        toggleable: List<String>,
+        hasData: Boolean,
+        onSave: (Set<String>) -> Unit,
+    ) {
+        card.visibility = if (hasData) View.VISIBLE else View.GONE
+        empty.visibility = if (hasData) View.GONE else View.VISIBLE
+        if (!hasData) return
+        if (appliedChoice != view) {
+            for (id in toggleable) chart.setVisible(id, id !in hidden)
+            appliedChoice = view
+        }
+        chart.range = app.selfwatch.model.time.TimeRange(start, end)
+        chart.layers = layers
+        chips.chartId = null
+        chart.bindChips(chips)
+        chips.onChange = { id, on, _ ->
+            chart.setVisible(id, on)
+            onSave(toggleable.filterNot { chart.isLayerVisible(it) }.toSet())
+        }
+    }
 }
 
 /** The [SwCard] that holds this view (the view itself when none). */

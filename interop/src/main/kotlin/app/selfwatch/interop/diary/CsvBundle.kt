@@ -103,6 +103,36 @@ object NutrientColumns {
     /** Field: cholesterol (mg). */
     const val CHOLESTEROL: String = "cholesterol"
 
+    /** Field: trans fat (g). */
+    const val TRANSFAT: String = "transfat"
+
+    /** Field: monounsaturated fat (g). */
+    const val MONOFAT: String = "monofat"
+
+    /** Field: polyunsaturated fat (g). */
+    const val POLYFAT: String = "polyfat"
+
+    /** Field: added sugars (g). */
+    const val ADDSUGAR: String = "addsugar"
+
+    /** Field: potassium (mg). */
+    const val POTASSIUM: String = "potassium"
+
+    /** Field: calcium (mg). */
+    const val CALCIUM: String = "calcium"
+
+    /** Field: iron (mg). */
+    const val IRON: String = "iron"
+
+    /** Field: vitamin A, RAE (µg). */
+    const val VITA: String = "vita"
+
+    /** Field: vitamin C (mg). */
+    const val VITC: String = "vitc"
+
+    /** Field: vitamin D (µg; IU converted). */
+    const val VITD: String = "vitd"
+
     /** Aliases for every nutrient (merge into an importer's table). */
     val ALIASES: Map<String, List<String>> = linkedMapOf(
         KCAL to listOf("energy", "calories", "kcal", "energy kcal", "food calories", "cals"),
@@ -114,7 +144,40 @@ object NutrientColumns {
         FIBRE to listOf("fiber", "fibre", "dietary fiber", "dietary fibre"),
         SODIUM to listOf("sodium", "salt sodium"),
         CHOLESTEROL to listOf("cholesterol"),
+        TRANSFAT to listOf("trans fats", "trans fat", "trans", "trans fatty acids"),
+        MONOFAT to listOf("monounsaturated", "monounsaturated fat", "mono fat", "monounsaturated fats"),
+        POLYFAT to listOf("polyunsaturated", "polyunsaturated fat", "poly fat", "polyunsaturated fats"),
+        ADDSUGAR to listOf("added sugars", "added sugar", "sugars added"),
+        POTASSIUM to listOf("potassium"),
+        CALCIUM to listOf("calcium"),
+        IRON to listOf("iron"),
+        VITA to listOf("vitamin a", "vit a", "vitamin a rae"),
+        VITC to listOf("vitamin c", "vit c"),
+        VITD to listOf("vitamin d", "vit d"),
     )
+
+    /** The v2 columns (food database schema 2), for writers that list them. */
+    val V2_FIELDS: List<String> = listOf(TRANSFAT, MONOFAT, POLYFAT, ADDSUGAR, POTASSIUM, CALCIUM, IRON, VITA, VITC, VITD)
+
+    /** Milligrams ×10 from [v] given in [unit] (mg by default). */
+    private fun mgX10(v: Double, unit: String?): Int = when (unit) {
+        "g" -> Numbers.scaled(v * 1000, 10)
+        "µg", "mcg", "ug" -> Numbers.scaled(v / 1000.0, 10)
+        else -> Numbers.scaled(v, 10)
+    }
+
+    /** Micrograms from [v] given in [unit] (µg by default). */
+    private fun ug(v: Double, unit: String?): Int = when (unit) {
+        "mg" -> Numbers.scaled(v * 1000, 1)
+        else -> Numbers.scaled(v, 1)
+    }
+
+    /** Vitamin D µg ×10 from [v] given in [unit] (µg by default; 40 IU = 1 µg). */
+    private fun vitdX10(v: Double, unit: String?): Int = when (unit) {
+        "iu" -> Numbers.scaled(v / 40.0, 10)
+        "mg" -> Numbers.scaled(v * 1000, 10)
+        else -> Numbers.scaled(v, 10)
+    }
 
     /** Grams ×10 from [v] given in [unit] (g by default). */
     private fun massX10(v: Double, unit: String?): Int = when (unit) {
@@ -144,8 +207,45 @@ object NutrientColumns {
             fibreX10 = v(FIBRE)?.let { massX10(it, map.unit(FIBRE)) },
             sodiumMg = v(SODIUM)?.let { mg(it, map.unit(SODIUM)) },
             cholesterolMg = v(CHOLESTEROL)?.let { mg(it, map.unit(CHOLESTEROL)) },
+            transfatX10 = v(TRANSFAT)?.let { massX10(it, map.unit(TRANSFAT)) },
+            monofatX10 = v(MONOFAT)?.let { massX10(it, map.unit(MONOFAT)) },
+            polyfatX10 = v(POLYFAT)?.let { massX10(it, map.unit(POLYFAT)) },
+            addsugarX10 = v(ADDSUGAR)?.let { massX10(it, map.unit(ADDSUGAR)) },
+            potassiumMg = v(POTASSIUM)?.let { mg(it, map.unit(POTASSIUM)) },
+            calciumMg = v(CALCIUM)?.let { mg(it, map.unit(CALCIUM)) },
+            ironX10 = v(IRON)?.let { mgX10(it, map.unit(IRON)) },
+            vitaUg = v(VITA)?.let { ug(it, map.unit(VITA)) },
+            vitcX10 = v(VITC)?.let { mgX10(it, map.unit(VITC)) },
+            vitdX10 = v(VITD)?.let { vitdX10(it, map.unit(VITD)) },
         )
     }
+
+    /**
+     * The cell for [field] of [n] in the unit its writer header names (g, mg, µg; kcal for energy),
+     * or "" when unknown.
+     */
+    fun cell(n: Nutrients, field: String): String = when (field) {
+        KCAL -> n.kcalX10?.let { Numbers.formatScaled(it, 10) }
+        PROTEIN -> n.proteinX10?.let { Numbers.formatScaled(it, 10) }
+        FAT -> n.fatX10?.let { Numbers.formatScaled(it, 10) }
+        SATFAT -> n.satfatX10?.let { Numbers.formatScaled(it, 10) }
+        CARB -> n.carbX10?.let { Numbers.formatScaled(it, 10) }
+        SUGAR -> n.sugarX10?.let { Numbers.formatScaled(it, 10) }
+        FIBRE -> n.fibreX10?.let { Numbers.formatScaled(it, 10) }
+        SODIUM -> n.sodiumMg?.toString()
+        CHOLESTEROL -> n.cholesterolMg?.toString()
+        TRANSFAT -> n.transfatX10?.let { Numbers.formatScaled(it, 10) }
+        MONOFAT -> n.monofatX10?.let { Numbers.formatScaled(it, 10) }
+        POLYFAT -> n.polyfatX10?.let { Numbers.formatScaled(it, 10) }
+        ADDSUGAR -> n.addsugarX10?.let { Numbers.formatScaled(it, 10) }
+        POTASSIUM -> n.potassiumMg?.toString()
+        CALCIUM -> n.calciumMg?.toString()
+        IRON -> n.ironX10?.let { Numbers.formatScaled(it, 10) }
+        VITA -> n.vitaUg?.toString()
+        VITC -> n.vitcX10?.let { Numbers.formatScaled(it, 10) }
+        VITD -> n.vitdX10?.let { Numbers.formatScaled(it, 10) }
+        else -> null
+    }.orEmpty()
 
     /** Grams ×10 for an amount in a mass unit, or null for other units. */
     fun gramsX10(amount: Double, unit: String): Int? = when (unit.trim().lowercase()) {

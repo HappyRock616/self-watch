@@ -12,8 +12,8 @@ import app.selfwatch.R
 import app.selfwatch.db.SettingKeys
 
 /**
- * The user's main goal. It picks the default cards on every tab ([CardPresets]); another goal is one
- * more entry here (id, name, one line) and one more row per tab there.
+ * The user's main goal. It sets the charts' default layers ([ChartDefaults]), the weight band and whether
+ * onboarding asks for a protein goal. It no longer picks cards (one default layout for everyone).
  */
 enum class MainGoal(
     /** Stable id stored in [SettingKeys.MAIN_GOAL]. */
@@ -51,11 +51,8 @@ enum class MainGoal(
     GENERAL_HEALTH("general_health", R.string.main_goal_general, R.string.main_goal_general_help),
     ;
 
-    /** The default cards on [tab], in order (from [CardPresets]). */
-    fun cards(tab: CardTab): List<Card<*>> = CardPresets.cardsFor(this, tab)
-
     /** True when onboarding asks for a protein goal with this goal. */
-    val asksProtein: Boolean get() = this in CardPresets.ASK_PROTEIN
+    val asksProtein: Boolean get() = this == BUILD_MUSCLE || this == ATHLETIC || this == ENDURANCE
 
     /** Lookup. */
     companion object {

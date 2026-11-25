@@ -41,8 +41,33 @@ object SwSnackbar {
         if (actionText != null && onAction != null) bar.setAction(actionText) { onAction() }
         if (anchor != null) bar.anchorView = anchor
         bar.animationMode = BaseTransientBottomBar.ANIMATION_MODE_SLIDE
+        holdUntilShown(bar)
         bar.show()
         return bar
+    }
+
+    /**
+     * The newest message that is not on screen yet. Material's SnackbarManager keeps a message that waits
+     * for the current one to slide away only through a WeakReference, and until it is shown nothing else
+     * holds it (callers drop the returned bar). A garbage collection in that moment silently dropped it:
+     * the food was logged but its Undo never appeared. Once shown, the view in the window holds the bar.
+     * Only the newest is kept, matching SnackbarManager's single "next" slot. Main thread only.
+     */
+    private var waiting: Snackbar? = null
+
+    /** The message [holdUntilShown] is holding, for tests. */
+    internal val waitingForTests: Snackbar? get() = waiting
+
+    private fun holdUntilShown(bar: Snackbar) {
+        waiting = bar
+        bar.addCallback(object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
+            override fun onShown(transientBottomBar: Snackbar) = release(transientBottomBar)
+            override fun onDismissed(transientBottomBar: Snackbar, event: Int) = release(transientBottomBar)
+        })
+    }
+
+    private fun release(bar: Snackbar) {
+        if (waiting === bar) waiting = null
     }
 
     /** "Deleted. Undo": calls [onUndo] if Undo is tapped before the message goes away. */

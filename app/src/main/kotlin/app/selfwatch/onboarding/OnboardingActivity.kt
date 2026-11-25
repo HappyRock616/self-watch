@@ -27,29 +27,42 @@ import app.selfwatch.R
 import app.selfwatch.ble.pair.PairFilter
 import app.selfwatch.cards.MainGoal
 import app.selfwatch.cards.MainGoalPicker
-import app.selfwatch.cards.MainGoalSwitchDialog
 import app.selfwatch.ble.pair.Pairing
 import app.selfwatch.data.ImportActivity
 import app.selfwatch.devices.AppDeviceActions
 import app.selfwatch.devices.DevicesViewModel
 import app.selfwatch.food.FoodViews
+import app.selfwatch.food.WaterGlass
 import app.selfwatch.graph
+import app.selfwatch.food.cards.BurnSource
 import app.selfwatch.me.FoodDataActivity
+import app.selfwatch.me.WeightLossPlanner
+import app.selfwatch.me.GoalField
 import app.selfwatch.me.MeScreenActivity
+import app.selfwatch.activity.ActivityGoals
 import app.selfwatch.me.MeViews
+import app.selfwatch.me.ProfileForm
 import app.selfwatch.me.SwitchRow
 import app.selfwatch.model.food.Profile
 import app.selfwatch.model.food.Sex
 import app.selfwatch.model.food.UnitSystem
 import app.selfwatch.model.log.SwLog
+import app.selfwatch.model.time.Day
 import app.selfwatch.model.result.Outcome
 import app.selfwatch.service.device.WatchStatus
+import app.selfwatch.ui.format.Fmt
+import app.selfwatch.shell.DisplayUnits
 import app.selfwatch.ui.format.Units
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
@@ -185,8 +198,14 @@ class OnboardingActivity : MeScreenActivity() {
             listOf(R.string.settings_units_phone, R.string.settings_units_metric, R.string.settings_units_imperial),
             UNIT_ORDER.indexOf(p.units),
         )
-        val height = field(if (imperial) R.string.onboarding_height_in else R.string.onboarding_height_cm, number = true)
-        p.heightCm?.let { height.setText(numText(if (imperial) (it / CM_PER_IN).roundToInt() else it)) }
+        val shownUnits = if (imperial) Units.IMPERIAL else Units.METRIC
+        val height = field(if (imperial) R.string.onboarding_height_ft else R.string.onboarding_height_cm, number = true)
+        val inches = if (imperial) field(R.string.onboarding_height_in, number = true) else null
+        p.heightCm?.let { cm ->
+            val (main, inch) = ProfileForm.heightFields(cm, shownUnits)
+            height.setText(main)
+            inches?.setText(inch)
+        }
         val year = field(R.string.onboarding_birth_year, number = true)
         p.birthYear?.let { year.setText(numText(it)) }
         val sex = radios(R.string.onboarding_sex, listOf(R.string.onboarding_sex_female, R.string.onboarding_sex_male, R.string.onboarding_sex_unspecified),
@@ -194,8 +213,7 @@ class OnboardingActivity : MeScreenActivity() {
         MeViews.add(column, MeViews.caption(this, getString(R.string.onboarding_sex_help)))
         readForm = {
             val unitSystem = UNIT_ORDER.getOrElse(units.checkedIndex()) { UnitSystem.FOLLOW_PHONE }
-            val heightValue = height.text?.toString()?.trim()?.toDoubleOrNull()
-            val cm = heightValue?.let { if (imperial) (it * CM_PER_IN).roundToInt() else it.roundToInt() }
+            val cm = ProfileForm.heightCm(height.text?.toString().orEmpty().trim(), inches?.text?.toString().orEmpty().trim(), shownUnits)
             vm.saveProfile(
                 Profile(
                     heightCm = cm,
@@ -210,9 +228,11 @@ class OnboardingActivity : MeScreenActivity() {
     private fun goals(s: OnboardingUiState) {
         heading(R.string.main_goal_title, R.string.main_goal_help)
         var showProtein: (MainGoal) -> Unit = {}
+        var showPlan: (MainGoal) -> Unit = {}
         val picker = MainGoalPicker(this) { goal ->
             vm.pickMainGoal(goal)
             showProtein(goal)
+            showPlan(goal)
         }
         picker.select(s.mainGoal)
         MeViews.add(column, picker.view)
@@ -224,29 +244,140 @@ class OnboardingActivity : MeScreenActivity() {
         s.goals.proteinG?.let { protein.setText(numText(it)) }
         showProtein = { goal -> proteinLayout.first.visibility = if (goal.asksProtein) View.VISIBLE else View.GONE }
         showProtein(s.mainGoal)
-        val kcal = field(R.string.onboarding_goal_kcal, number = true)
-        val steps = field(R.string.onboarding_goal_steps, number = true)
+        // Weight loss: current weight, goal weight, then goal date, then the worked-out calories.
+        val planTop = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        MeViews.add(column, planTop)
+        val currentLayout = FoodViews.field(this, if (imperial) R.string.wl_current_weight_lb else R.string.wl_current_weight_kg, NUMBER)
+        MeViews.add(planTop, currentLayout.first, gap = false)
+        val current = currentLayout.second.apply { tag = "current_weight" }
         val weight = field(if (imperial) R.string.onboarding_goal_weight_lb else R.string.onboarding_goal_weight_kg, number = true)
+        val planMid = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        MeViews.add(column, planMid)
+        val dateButton = FoodViews.outlinedButton(this, getString(R.string.wl_pick_date)) {}.apply { tag = "plan_date" }
+        MeViews.add(planMid, dateButton, gap = false)
+        val step = FoodViews.text(this, UiR.style.TextAppearance_SelfWatch_BodyLarge).apply { tag = "plan_step" }
+        MeViews.add(planMid, step)
+        val kcal = field(R.string.onboarding_goal_kcal, number = true)
+        val planEnd = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        MeViews.add(column, planEnd)
+        val explain = MeViews.caption(this, null).apply { tag = "plan_explain" }
+        MeViews.add(planEnd, explain, gap = false)
+        val tooSoon = MeViews.body(this, null).apply { tag = "plan_too_soon" }
+        MeViews.add(planEnd, tooSoon)
+        val useDate = FoodViews.outlinedButton(this, "") {}.apply { tag = "plan_use_date" }
+        MeViews.add(planEnd, useDate)
+        val steps = field(R.string.onboarding_goal_steps, number = true)
+        val active = field(R.string.onboarding_goal_active_min, number = true)
         val water = field(if (imperial) R.string.onboarding_goal_water_oz else R.string.onboarding_goal_water_ml, number = true)
         s.goals.kcalIn?.let { kcal.setText(numText(it)) }
-        s.goals.steps?.let { steps.setText(numText(it)) }
+        s.goals.weightKgX100?.let { weight.setText(weightText(it, imperial)) }
+        s.goals.currentWeightKgX100?.let { current.setText(weightText(it, imperial)) }
+        var goalDate: Int? = s.goals.goalDate
+        var autoKcal: Int? = if (s.goals.kcalAuto) s.goals.kcalIn else null
+        fun kgX100(e: TextInputEditText): Int? =
+            e.text?.toString()?.trim()?.replace(',', '.')?.toDoubleOrNull()?.takeIf { it > 0 }?.let { (if (imperial) it * KG_PER_LB else it) * HUNDRED }?.roundToInt()
+        var updating = false
+        fun update(fill: Boolean) {
+            val on = picker.selected == MainGoal.WEIGHT_LOSS
+            val cw = kgX100(current)
+            val gw = kgX100(weight)
+            val stepText = when {
+                cw == null -> R.string.wl_step_current
+                gw == null -> R.string.wl_step_weight
+                goalDate == null -> R.string.wl_step_date
+                else -> 0
+            }
+            step.text = if (stepText == 0) null else getString(stepText)
+            step.visibility = if (on && stepText != 0) View.VISIBLE else View.GONE
+            dateButton.text = goalDate?.let { getString(R.string.wl_date_chosen, Fmt.day(this, it)) } ?: getString(R.string.wl_pick_date)
+            val d = goalDate
+            if (!on || cw == null || gw == null || d == null) {
+                explain.visibility = View.GONE
+                tooSoon.visibility = View.GONE
+                useDate.visibility = View.GONE
+                return
+            }
+            val today = Day.of(LocalDate.now())
+            val p = vm.state.value.profile
+            val a = WeightLossPlanner.advise(cw, gw, today, Day(d), WeightLossPlanner.estimatedBurn(cw, p, today), BurnSource.ESTIMATED, p.sex)
+            if (fill || kcal.text.isNullOrBlank()) {
+                updating = true
+                kcal.setText(numText(a.kcal))
+                updating = false
+                autoKcal = a.kcal
+            }
+            explain.text = WeightLossPlanner.explain(this, a, if (imperial) Units.IMPERIAL else Units.METRIC)
+            explain.visibility = View.VISIBLE
+            val earliest = a.earliestSafe
+            if (a.tooSoon && earliest != null) {
+                val day = Fmt.day(this, earliest.yyyymmdd)
+                tooSoon.text = getString(R.string.wl_too_soon, day)
+                useDate.text = getString(R.string.wl_use_date, day)
+                useDate.setOnClickListener {
+                    goalDate = earliest.yyyymmdd
+                    update(fill = true)
+                }
+                tooSoon.visibility = View.VISIBLE
+                useDate.visibility = View.VISIBLE
+            } else {
+                tooSoon.visibility = View.GONE
+                useDate.visibility = View.GONE
+            }
+        }
+        dateButton.setOnClickListener {
+            pickGoalDate(goalDate) { picked ->
+                goalDate = picked
+                update(fill = true)
+            }
+        }
+        val watcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(t: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(t: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(e: android.text.Editable?) {
+                if (!updating) update(fill = true)
+            }
+        }
+        current.addTextChangedListener(watcher)
+        weight.addTextChangedListener(watcher)
+        weight.imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+        weight.setOnEditorActionListener { _, action, _ ->
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE && picker.selected == MainGoal.WEIGHT_LOSS && goalDate == null && kgX100(weight) != null) {
+                dateButton.performClick()
+            }
+            false
+        }
+        showPlan = { goal ->
+            val v = if (goal == MainGoal.WEIGHT_LOSS) View.VISIBLE else View.GONE
+            planTop.visibility = v
+            planMid.visibility = v
+            planEnd.visibility = v
+            update(fill = false)
+        }
+        showPlan(s.mainGoal)
+        // Steps and active time start at their defaults; left there, they stay unset and follow the default.
+        steps.setText(numText(s.goals.steps ?: ActivityGoals.DEFAULT_STEPS))
+        active.setText(numText(s.goals.activeMinWeek ?: ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK))
+        // Water starts at 8 glasses (96 fl oz or 2,800 ml); left there, it stays unset and follows the default.
+        val units = if (imperial) Units.IMPERIAL else Units.METRIC
+        val waterDefault = GoalField.WATER.toText(WaterGlass.defaultGoalMl(units), units)
+        water.setText(s.goals.waterMl?.let { GoalField.WATER.toText(it, units) } ?: waterDefault)
         MeViews.add(column, MeViews.caption(this, getString(R.string.onboarding_goals_later)))
         readForm = {
             fun num(e: TextInputEditText): Double? = e.text?.toString()?.trim()?.replace(',', '.')?.toDoubleOrNull()
+            val typedKcal = num(kcal)?.roundToInt()
+            val planOn = picker.selected == MainGoal.WEIGHT_LOSS
             val starter = StarterGoals(
-                kcalIn = num(kcal)?.roundToInt(),
-                steps = num(steps)?.roundToInt(),
+                kcalIn = typedKcal,
+                steps = num(steps)?.roundToInt()?.takeIf { it != ActivityGoals.DEFAULT_STEPS },
+                activeMinWeek = num(active)?.roundToInt()?.takeIf { it != ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK },
                 weightKgX100 = num(weight)?.let { (if (imperial) it * KG_PER_LB else it) * HUNDRED }?.roundToInt(),
-                waterMl = num(water)?.let { if (imperial) it * ML_PER_OZ else it }?.roundToInt(),
+                waterMl = water.text?.toString()?.trim()?.takeIf { it != waterDefault }?.let { GoalField.WATER.parse(it, units) },
                 proteinG = if (picker.selected?.asksProtein == true) num(protein)?.roundToInt() else null,
+                currentWeightKgX100 = if (planOn) kgX100(current) else null,
+                goalDate = if (planOn) goalDate else null,
+                kcalAuto = planOn && typedKcal != null && typedKcal == autoKcal,
             )
-            // First setup: the goal's cards are applied on every tab. With cards of their own already
-            // (setup run again), one question covers all tabs.
-            if (vm.asksToSwitchCards) {
-                MainGoalSwitchDialog.ask(this, vm.state.value.mainGoal) { switch -> vm.saveGoals(starter, switchCards = switch) }
-            } else {
-                vm.saveGoals(starter)
-            }
+            vm.saveGoals(starter)
         }
     }
 
@@ -383,23 +514,35 @@ class OnboardingActivity : MeScreenActivity() {
 
     private fun numText(n: Int): String = String.format(Locale.getDefault(), "%d", n)
 
+    private fun weightText(kgX100: Int, imperial: Boolean): String =
+        String.format(Locale.getDefault(), "%.1f", if (imperial) kgX100 / HUNDRED / KG_PER_LB else kgX100 / HUNDRED)
+
+    /** The goal date picker (today or later); [onPicked] gets `yyyymmdd`. */
+    private fun pickGoalDate(current: Int?, onPicked: (Int) -> Unit) {
+        val start = (current?.let { Day(it).toLocalDate() } ?: LocalDate.now().plusMonths(3)).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val dialog = MaterialDatePicker.Builder.datePicker()
+            .setTitleText(R.string.goal_weight_date)
+            .setSelection(start)
+            .setCalendarConstraints(CalendarConstraints.Builder().setValidator(DateValidatorPointForward.now()).build())
+            .build()
+        dialog.addOnPositiveButtonClickListener { ms ->
+            onPicked(Day.of(java.time.Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate()).yyyymmdd)
+        }
+        dialog.show(supportFragmentManager, "goal_date")
+    }
+
     private fun RadioGroup.checkedIndex(): Int = (checkedRadioButtonId - RADIO_BASE).coerceAtLeast(0)
 
-    private fun isImperial(u: UnitSystem): Boolean = when (u) {
-        UnitSystem.IMPERIAL -> true
-        UnitSystem.METRIC -> false
-        UnitSystem.FOLLOW_PHONE -> Units.forLocale(Locale.getDefault()) == Units.IMPERIAL
-    }
+    private fun isImperial(u: UnitSystem): Boolean = DisplayUnits.of(u) == Units.IMPERIAL
 
     private companion object {
         const val TAG = "OnboardingActivity"
         const val MENU_SKIP_ALL = 1
         const val RADIO_BASE = 10
         const val WEIGHT_NEXT = 1.4f
-        const val CM_PER_IN = 2.54
         const val KG_PER_LB = 0.45359237
-        const val ML_PER_OZ = 29.5735
         const val HUNDRED = 100.0
+        const val NUMBER = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         val UNIT_ORDER = listOf(UnitSystem.FOLLOW_PHONE, UnitSystem.METRIC, UnitSystem.IMPERIAL)
     }
 }

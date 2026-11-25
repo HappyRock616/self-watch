@@ -13,6 +13,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.selfwatch.AppGraph
+import app.selfwatch.cards.ChartDefaults
+import app.selfwatch.cards.ChartId
+import app.selfwatch.cards.MainGoal
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.db.dao.MeasureKind
@@ -72,7 +75,7 @@ data class WeightUiState(
     val loading: Boolean = true,
     val trend: List<Int> = emptyList(),
     val overlay: WeightOverlay? = null,
-    val hiddenLayers: Set<String> = WeightLayers.DEFAULT_HIDDEN,
+    val hiddenLayers: Set<String> = ChartDefaults.hidden(MainGoal.DEFAULT, ChartId.WEIGHT),
 )
 
 /** Pure weight-screen rules. */

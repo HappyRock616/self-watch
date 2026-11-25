@@ -114,15 +114,77 @@ class WebRequestRouterTest {
         // The marker only opens the ephemeris path, nothing else on Garmin's servers.
         assertEquals(WebRoute.Refused(WebStatus.BLOCKED), WebRequestRouter.route("https://connect.garmin.com/ephemeris/x", ephemeris = true))
         assertEquals(WebRoute.Refused(WebStatus.BLOCKED), WebRequestRouter.route("https://api.gcs.garmin.com/other", ephemeris = true))
-        // GPS_ASSIST is off by default: the firewall blocks it and the watch hears "failed".
+        // GPS_ASSIST turned off: the firewall blocks it and the watch hears "timed out", as with
+        // Gadgetbridge when no AGPS file is set (an outright failure may keep the watch asking).
         http.blocked.add(NetFeature.GPS_ASSIST)
-        assertEquals(WebStatus.BLOCKED, router.answer(req(url, headers = marker)).status)
+        assertEquals(WebStatus.NETWORK_ERROR, router.answer(req(url, headers = marker)).status)
         http.blocked.clear()
         http.enqueue(200, "eph")
         assertEquals(200, router.answer(req(url, headers = marker)).status)
         val sent = http.requests().last()
         assertEquals(NetFeature.GPS_ASSIST, sent.feature)
         assertEquals(mapOf("Accept" to "*/*"), sent.headers)
+    }
+
+    @Test
+    fun gpsAssistIsCachedAndRevalidatedNeverRefetchedWhileFresh() = runBlocking {
+        var now = 1_000_000L
+        val store = MemoryEphemerisStore()
+        val r = WebRequestRouter(http, scope, ephemerisStore = store, nowSec = { now })
+        val marker = mapOf(WebRequestRouter.EPHEMERIS_HEADER to "1")
+        val url = "https://api.gcs.garmin.com/ephemeris/cpe/sony/lle?coverage=WEEKS_1"
+        http.enqueue(200, "eph1", mapOf("ETag" to listOf("\"v1\""), "Last-Modified" to listOf("Mon, 23 Nov 2026 00:00:00 GMT")))
+        assertEquals("eph1", String(r.answer(req(url, headers = marker)).body))
+        assertEquals(1, http.requests().size)
+        assertTrue("first fetch is unconditional", http.requests()[0].headers.keys.none { it.startsWith("If-") })
+
+        // Fresh: answered from the phone, no request at all.
+        now += 3_600
+        assertEquals("eph1", String(r.answer(req(url, headers = marker)).body))
+        assertEquals(1, http.requests().size)
+
+        // Stale: a conditional request; 304 answers with the cached file.
+        now += WebRequestRouter.EPHEMERIS_FRESH_SEC
+        http.enqueue(304, "")
+        val revalidated = r.answer(req(url, headers = marker))
+        assertEquals(200, revalidated.status)
+        assertEquals("eph1", String(revalidated.body))
+        val cond = http.requests().last().headers
+        assertEquals("\"v1\"", cond["If-None-Match"])
+        assertEquals("Mon, 23 Nov 2026 00:00:00 GMT", cond["If-Modified-Since"])
+        assertEquals(2, http.requests().size)
+
+        // The 304 renewed the freshness: the next ask costs nothing.
+        now += 60
+        r.answer(req(url, headers = marker))
+        assertEquals(2, http.requests().size)
+
+        // Changed on the server: the new file replaces the old one.
+        now += WebRequestRouter.EPHEMERIS_FRESH_SEC
+        http.enqueue(200, "eph2", mapOf("ETag" to listOf("\"v2\"")))
+        assertEquals("eph2", String(r.answer(req(url, headers = marker)).body))
+        assertEquals("\"v2\"", store.load(url)?.etag)
+
+        // Other watch-app requests are never cached.
+        http.enqueue(200, "a")
+        http.enqueue(200, "b")
+        assertEquals("a", String(r.answer(req("https://api.example.org/x")).body))
+        assertEquals("b", String(r.answer(req("https://api.example.org/x")).body))
+    }
+
+    @Test
+    fun fileEphemerisStoreRoundTrips() {
+        val dir = kotlin.io.path.createTempDirectory("eph").toFile()
+        try {
+            val s = FileEphemerisStore(dir)
+            val e = CachedEphemeris("x".toByteArray(), "application/octet-stream", "\"e\"", null, 42L)
+            assertEquals(null, s.load("https://a/1"))
+            s.save("https://a/1", e)
+            assertEquals(e, FileEphemerisStore(dir).load("https://a/1"))
+            assertEquals(null, s.load("https://a/2"))
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 
     @Test

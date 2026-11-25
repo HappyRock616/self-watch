@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small (half-width) forms of the Activity cards: short labels and notes that must fit at 2x font. -->
+<resources>
+    <string name="small_active_days_label">active days this week</string>
+    <string name="small_most_days">Most days is the aim</string>
+    <string name="small_goal">your goal %1$s</string>
+    <string name="small_reference">reference %1$s</string>
+    <string name="small_burned_so_far">burned so far</string>
+    <string name="small_kcal_parts">Active %1$s + resting %2$s</string>
+    <string name="small_avg_7_days">7-day average %1$s</string>
+    <string name="small_easy_label">easy, last 4 weeks</string>
+    <string name="small_easy_usual">Usual mix %1$s–%2$s%%</string>
+    <string name="small_of_week_target">of %1$s this week</string>
+    <string name="small_target_reached">Target reached</string>
+    <string name="small_min_to_go">%1$s min to go</string>
+    <string name="small_drop_label">drop in 1 minute</string>
+    <string name="small_recent_avg">Recent average %1$s</string>
+    <string name="small_of_steps">of %1$s steps</string>
+    <string name="small_to_go">%1$s to go</string>
+    <string name="small_days_aim">days · aim %1$s</string>
+    <string name="small_rings_note">Active %1$s min · %2$s kcal</string>
+    <string name="small_steps_so_far">steps so far</string>
+    <string name="small_busiest_hour">Busiest hour %1$s</string>
+    <string name="small_steps_a_day">steps a day</string>
+    <string name="small_range_week">Last 7 days</string>
+    <string name="small_range_month">Last 30 days</string>
+    <string name="small_range_year">Last 12 months</string>
+    <string name="small_range_all">All time</string>
+</resources>

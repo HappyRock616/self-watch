@@ -16,6 +16,7 @@ import app.selfwatch.fit.io.FitBaseType.BYTE
 import app.selfwatch.fit.io.FitBaseType.ENUM
 import app.selfwatch.fit.io.FitBaseType.FLOAT32
 import app.selfwatch.fit.io.FitBaseType.SINT16
+import app.selfwatch.fit.io.FitBaseType.SINT8
 import app.selfwatch.fit.io.FitBaseType.UINT16
 import app.selfwatch.fit.io.FitBaseType.UINT32
 import app.selfwatch.fit.io.FitBaseType.UINT8
@@ -198,6 +199,26 @@ class MonitoringDecoderTest {
                 Triple(MetricKind.RESTING_HR, 1200L, 50),
                 Triple(MetricKind.SKIN_TEMP_DELTA, 1500L, -35),
                 Triple(MetricKind.HRV_RMSSD, 1800L, 45),
+            ),
+            m,
+        )
+    }
+
+    @Test
+    fun energyLevelComesFromTheStressMessage() {
+        // The vivoactive 5 sends stress_level with fields 0 to 4; field 3 is the energy level.
+        val b = fit {
+            msg(1, FitMsg.STRESS_LEVEL, F(0, SINT16, 30), F(1, UINT32, ft(t0 + 180)), F(2, SINT8, 25), F(3, SINT8, 72))
+            msg(1, FitMsg.STRESS_LEVEL, F(0, SINT16, -2), F(1, UINT32, ft(t0 + 360)), F(2, SINT8, 25), F(3, SINT8, 70))
+            msg(1, FitMsg.STRESS_LEVEL, F(0, SINT16, 31), F(1, UINT32, ft(t0 + 540)), F(2, SINT8, 25), F(3, SINT8, -1))
+        }
+        val m = decode(b, ZoneOffset.UTC).metrics.map { Triple(it.kind, it.tSec - t0, it.value) }
+        assertEquals(
+            listOf(
+                Triple(MetricKind.STRESS, 180L, 30),
+                Triple(MetricKind.ENERGY_LEVEL, 180L, 72),
+                Triple(MetricKind.ENERGY_LEVEL, 360L, 70),
+                Triple(MetricKind.STRESS, 540L, 31),
             ),
             m,
         )

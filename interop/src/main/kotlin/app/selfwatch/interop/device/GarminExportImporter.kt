@@ -13,6 +13,7 @@ import app.selfwatch.fit.decode.MonitoringCarry
 import app.selfwatch.fit.decode.MonitoringDecoder
 import app.selfwatch.fit.decode.SleepDecoder
 import app.selfwatch.fit.decode.WeightDecoder
+import app.selfwatch.fit.decode.WorkoutDecoder
 import app.selfwatch.fit.io.FitReader
 import app.selfwatch.interop.api.BaseImporter
 import app.selfwatch.interop.api.DateFormatGuess
@@ -131,7 +132,11 @@ class GarminExportImporter(sink: ImportSink = ImportSink.NONE, private val zone:
             val input = ByteArrayInputStream(f.bytes)
             when (f.type) {
                 FitFileType.ACTIVITY -> when (val r = WorkoutFiles.parse(TrackFormat.FIT, Texts.baseName(f.name), f.bytes)) {
-                    is Outcome.Ok -> workouts.addAll(r.value)
+                    is Outcome.Ok -> {
+                        workouts.addAll(r.value)
+                        // The workout's VO2 max goes with the export's other watch data (one device series).
+                        for (m in WorkoutDecoder.vo2Max(input, 0)) series.metric(m)
+                    }
                     is Outcome.Fail -> badFit++
                 }
                 FitFileType.MONITORING_A, FitFileType.MONITORING_B, FitFileType.MONITORING_DAILY, FitFileType.METRICS ->

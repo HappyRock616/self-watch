@@ -11,9 +11,7 @@ package app.selfwatch.body
 
 import android.app.Application
 import app.selfwatch.body.cards.IntensityCard
-import app.selfwatch.body.cards.MacrosCard
 import app.selfwatch.body.cards.Spo2Card
-import app.selfwatch.body.cards.StepsCard
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.food.cards.MacrosTodayCard
@@ -76,7 +74,7 @@ class BodyCardsTest {
                 MetricSample(1, MetricKind.SPO2, lastNight - 86_400, 93),
             ),
         )
-        val m = MacrosCard.load(env(db))
+        val m = MacrosTodayCard.load(env(db))
         assertEquals(92, m.proteinG)
         assertEquals(180, m.carbG)
         assertEquals(61, m.fatG)
@@ -86,7 +84,7 @@ class BodyCardsTest {
         assertNull(m.fatGoalG)
         assertFalse(m.isEmpty)
         assertEquals(IntensityInfo(todayMin = 20, weekMin = 60, weekGoalMin = 75), IntensityCard.load(env(db)))
-        val s = StepsCard.load(env(db))
+        val s = BodyLoader(db, clock).steps()
         assertEquals(500, s.steps)
         assertEquals(10_000, s.stepsGoal)
         assertEquals(50, s.activeMin)
@@ -97,7 +95,7 @@ class BodyCardsTest {
 
         // A set protein goal wins over body weight.
         db.goals.set(Goal(GoalKind.PROTEIN_G, 150, today))
-        val withGoal = MacrosCard.load(env(db))
+        val withGoal = MacrosTodayCard.load(env(db))
         assertEquals(150, withGoal.proteinGoalG)
         assertFalse(withGoal.proteinGoalAuto)
 
@@ -109,12 +107,12 @@ class BodyCardsTest {
     @Test
     fun emptyCardsSayNothing() = runBlocking {
         val db = TestDb.fresh(ctx)
-        val m = MacrosCard.load(env(db))
+        val m = MacrosTodayCard.load(env(db))
         assertTrue(m.isEmpty)
         assertNull("no weight, no goal: no protein target", m.proteinGoalG)
         assertNull(IntensityCard.load(env(db)))
         assertNull(Spo2Card.load(env(db)).spo2)
-        assertTrue(StepsCard.load(env(db)).isEmpty)
+        assertTrue(BodyLoader(db, clock).steps().isEmpty)
     }
 
     @Test

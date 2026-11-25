@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.2
+
+A big redesign of every page, a much better food database, and a new Devices page.
+
+- Cards: every card comes in a small (half-width) and a large size, and any card can go on any tab. One clean default layout per tab that only shows what your devices record. Goals are the main display: Body today and Activity goals show every goal at a glance.
+- Body: Body today (calories eaten and burned, water, energy level, sleep, weight against your goals), Sleep, HRV, resting heart rate, stress, readiness, body signals and blood oxygen, plus an optional catalog covering what Gadgetbridge and Garmin Connect offer (body composition, blood pressure, temperature, naps, battery, last sync and more).
+- Activity: Activity goals, weekly effort, workout time this week, VO2 max (running and cycling, read from the watch), heart-rate recovery, Day clock, Live heart rate and Weather. Recent activities lists your latest workouts with full stats.
+- Workouts: pick a sport in All activities for a trends dashboard (heart rate, calories, distance, pace, heart-rate recovery, VO2 max and more, each switchable), and trim a workout from the start or end when you forgot to stop the watch. Pace shows as minutes and seconds.
+- Food: Daily balance (calories eaten, burned and left; protein, carbs and fat against balanced ranges; fat types, fiber, sodium, added sugar) and a Weight goal card that works out safe daily calories to reach your goal weight by your date. Tap a meal for its nutrition summary; remove foods by swipe or the (−) button; recent foods per meal with one-tap add.
+- Food database v2: about 266,000 foods with trans, mono and poly fat, added sugar, potassium, calcium, iron and vitamins A, C and D, plus diet flags and allergens. Search shows the everyday food first ("carrot", "coke", "big mac", "mcdonalds"). It downloads automatically on Wi-Fi the first time you add food.
+- Diet and allergens: set vegan, vegetarian, gluten-free, heart-healthy or high protein and your allergens; foods show badges, clashes turn red, and Day nutrition shows your targets by day or week. Targets can be edited.
+- Devices: one card per device (watch, strap, scale); connect several at once, remove a device, or hold for 3 seconds to reset its data (workouts are kept). A connected heart-rate strap always wins over the watch.
+- Weight loss: pick a goal weight and date and the app fills in a safe calorie goal.
+- Privacy: nothing is sent unless you allow it, except the food database download, watch app web requests (for watch apps such as TCS), the local phone-app link and GPS help for the watch. Barcode lookups start off. Permissions are buttons that open the right Android setting.
+- Units: everything follows your Metric or Imperial choice in Me › Settings; water counts 12 fl oz (350 ml) glasses.
+- Watch battery: no layer retries the Bluetooth link faster than every 5 seconds.
+
 ## 0.0.1
 
 First build.

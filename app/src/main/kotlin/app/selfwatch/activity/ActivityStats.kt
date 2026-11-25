@@ -7,7 +7,6 @@
  */
 package app.selfwatch.activity
 
-import app.selfwatch.cards.MainGoal
 import app.selfwatch.model.health.ActivityMinute
 import app.selfwatch.model.health.Workout
 import app.selfwatch.model.time.Day
@@ -44,9 +43,8 @@ data class DayIntensity(val moderateMin: Int, val vigorousMin: Int) {
  * Intensity minutes and active days (catalogue C10 and C15).
  *
  * The watch marks each minute 0 (sedentary) to 3 (vigorous); 2 is moderate. A minute recorded by two
- * watches counts once, at the higher intensity. Weekly targets follow WHO 2020 (150 minutes of moderate
- * activity, vigorous minutes counting double) and, for the weight goals, the ACSM 2009 summary (250 or
- * more; 300 for extra benefit).
+ * watches counts once, at the higher intensity. The weekly target is the user's active-minutes goal
+ * (minutes per week, default 300; [ActivityGoals]); WHO 2020's minimum of 150 is shown as a note.
  */
 object IntensityMath {
     /** [ActivityMinute.intensity] of a moderate minute. */
@@ -55,33 +53,14 @@ object IntensityMath {
     /** [ActivityMinute.intensity] of a vigorous minute. */
     const val VIGOROUS: Int = 3
 
-    /** Weekly intensity minutes for most goals. */
-    const val WEEK_TARGET: Int = 150
-
-    /** Weekly intensity minutes for the weight goals. */
-    const val WEIGHT_WEEK_TARGET: Int = 250
-
-    /** Weekly intensity minutes for extra benefit (shown as a note with the weight goals). */
-    const val EXTRA_BENEFIT_MIN: Int = 300
-
-    /**
-     * A day is "active" (C15) with at least this many intensity minutes (vigorous counting double). There
-     * is no official number; 30 a day is the long-standing "30 minutes on most days" message, and 15
-     * vigorous minutes reach it too.
-     */
-    const val ACTIVE_DAY_MIN: Int = 30
-
     /** Active days a week shown as the aim ("most days"). */
     const val ACTIVE_DAYS_TARGET: Int = 5
 
-    /** The weekly target for [goal]. */
-    fun weekTarget(goal: MainGoal): Int = when (goal) {
-        MainGoal.WEIGHT_LOSS, MainGoal.WEIGHT_MANAGEMENT -> WEIGHT_WEEK_TARGET
-        else -> WEEK_TARGET
-    }
-
-    /** True when [goal]'s card also mentions [EXTRA_BENEFIT_MIN]. */
-    fun showsExtraBenefit(goal: MainGoal): Boolean = weekTarget(goal) == WEIGHT_WEEK_TARGET
+    /**
+     * A day is "active" (C15) with at least a seventh of the weekly active-minutes goal [weekGoal] in
+     * intensity minutes (vigorous counting double): 43 with the default 300.
+     */
+    fun activeDayMin(weekGoal: Int): Int = ActivityGoals.dailyShare(weekGoal).coerceAtLeast(1)
 
     /** Moderate and vigorous minutes per local day in [zone]; one reading per minute (the highest). */
     fun byDay(minutes: List<ActivityMinute>, zone: ZoneId): Map<Day, DayIntensity> {
@@ -113,32 +92,10 @@ object IntensityMath {
     fun perDay(days: List<Day>, byDay: Map<Day, DayIntensity>, summaryActiveMin: Map<Day, Int>): List<Int?> =
         days.map { d -> byDay[d]?.intensityMin ?: summaryActiveMin[d] }
 
-    /** Days among [perDay] with at least [ACTIVE_DAY_MIN]. */
-    fun activeDays(perDay: List<Int?>): Int = perDay.count { (it ?: 0) >= ACTIVE_DAY_MIN }
+    /** Days among [perDay] with at least [dayMin] intensity minutes. */
+    fun activeDays(perDay: List<Int?>, dayMin: Int): Int = perDay.count { (it ?: 0) >= dayMin }
 
     private const val MINUTE_SEC = 60L
-}
-
-/**
- * Step targets (C11). No official body sets one; 7,000 a day is where most of the benefit is reached
- * (WP-15, C11), and for people 60 and over the benefit levels off between 6,000 and 8,000.
- * A step goal the user set wins.
- */
-object StepTargets {
-    /** Default daily target. */
-    const val DEFAULT: Int = 7_000
-
-    /** Age from which [OLDER_LOW]..[OLDER_HIGH] applies. */
-    const val OLDER_AGE: Int = 60
-
-    /** Lower end of the 60+ range (the target). */
-    const val OLDER_LOW: Int = 6_000
-
-    /** Upper end of the 60+ range. */
-    const val OLDER_HIGH: Int = 8_000
-
-    /** The default target for [age] (null: unknown). */
-    fun defaultFor(age: Int?): Int = if (age != null && age >= OLDER_AGE) OLDER_LOW else DEFAULT
 }
 
 /**

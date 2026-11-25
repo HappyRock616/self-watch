@@ -66,13 +66,16 @@ public object SettingKeys {
     /** Show the caller's name (bool). */
     public const val CALLS_SHOW_NAME: String = "calls.show_name"
 
-    /** Weather to watch (bool). */
+    /** Weather to watch (bool, on by default: forwards a phone weather app's forecast, no network). */
     public const val WEATHER_ENABLED: String = "weather.enabled"
 
     /** Weather source (text). */
     public const val WEATHER_SOURCE: String = "weather.source"
 
-    /** Garmin fake sign-in (bool, COMPATIBILITY R1: off by default). */
+    /**
+     * Old global Garmin fake sign-in switch (bool, off by default). Replaced by the per-watch
+     * [deviceFakeAuth]; a stored "true" is moved to the current watch once and then removed.
+     */
     public const val GARMIN_FAKE_AUTH: String = "garmin.fake_auth"
 
     /** Automatic backup (bool). */
@@ -139,6 +142,27 @@ public object SettingKeys {
     public const val MAIN_GOAL: String = "goal.main"
 
     /**
+     * Diets the user follows (comma list, no default: none): `high_protein`, `heart_healthy`,
+     * `vegetarian`, `vegan`, `gluten_free`.
+     */
+    public const val FOOD_DIETS: String = "food.diets"
+
+    /**
+     * Allergens the user avoids (comma list, no default: none): `gluten`, `milk`, `egg`, `peanut`,
+     * `tree_nut`, `soy`, `fish`, `shellfish`, `sesame`.
+     */
+    public const val FOOD_ALLERGENS: String = "food.allergens"
+
+    /**
+     * Nutrient targets typed by hand (comma list of `FIELD=value` in the stored unit, no default: none),
+     * for example `SODIUM=1500,IRON=180`. They win over the recommended targets.
+     */
+    public const val FOOD_TARGET_OVERRIDES: String = "food.target_overrides"
+
+    /** True once the "Set vegetarian?" offer was answered or dismissed (it is never shown again). */
+    public const val FOOD_VEG_HINT_DONE: String = "food.veg_hint_done"
+
+    /**
      * Old Body card list (comma list of card ids). Replaced by `cards.body`: the app moves it there the
      * first time it reads the Body cards. Every card tab now uses `cards.<tab>` (visible ids in order),
      * `cards.<tab>.known` and `cards.<tab>.preset`; see the app's `CardStore`.
@@ -150,6 +174,32 @@ public object SettingKeys {
 
     /** Old companion of [BODY_CARDS]: the main goal it was last reset to. Moved to `cards.body.preset`. */
     public const val BODY_CARDS_PRESET: String = "body.cards.preset"
+
+    /**
+     * Per-device "disconnected by the user" flag (bool, default false): set when a Devices card is tapped
+     * to disconnect; the service then leaves that device off until it is tapped again.
+     */
+    public fun deviceOff(deviceId: Long): String = "devices.$deviceId.off"
+
+    /**
+     * Per-watch "Exclusive" switch (bool, default false). When on, Self Watch does not step back when
+     * another phone or app keeps taking the watch: it keeps reconnecting on its normal back-off instead
+     * of checking once an hour (the service's `DeviceManager` and `ContestDetector`).
+     */
+    public fun deviceExclusive(deviceId: Long): String = "devices.$deviceId.exclusive"
+
+    /**
+     * Per-watch "answer the watch's Garmin sign-in requests" switch (bool, default false, COMPATIBILITY
+     * R1). When on, Self Watch answers the watch's Garmin Connect sign-in (OAuth) requests with made-up
+     * credentials, so weather and GPS help keep working without the official app.
+     */
+    public fun deviceFakeAuth(deviceId: Long): String = "devices.$deviceId.fake_auth"
+
+    /**
+     * When the watch last asked to sign in to Garmin while [deviceFakeAuth] was off (epoch seconds;
+     * absent when it never did, or after a request was answered). Drives the hint on Watch settings.
+     */
+    public fun deviceSignInAsked(deviceId: Long): String = "devices.$deviceId.sign_in_asked"
 
     /** The firewall key for [feature]: `net.` plus the lower-case enum name, for example `net.food_data`. */
     public fun net(feature: NetFeature): String = "net." + feature.name.lowercase()
@@ -166,7 +216,7 @@ public object SettingKeys {
         put(CALLS_ENABLED, "true")
         put(CALLS_SHOW_NUMBER, "false")
         put(CALLS_SHOW_NAME, "false")
-        put(WEATHER_ENABLED, "false")
+        put(WEATHER_ENABLED, "true")
         put(WEATHER_SOURCE, "broadcast")
         put(GARMIN_FAKE_AUTH, "false")
         put(BACKUP_AUTO, "false")

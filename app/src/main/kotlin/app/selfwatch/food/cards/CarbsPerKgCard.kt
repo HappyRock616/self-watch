@@ -7,14 +7,18 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.body.WeightDetailFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.FmtLabels
@@ -34,6 +38,39 @@ object CarbsPerKgCard : Card<InUnits<CarbsPerKg>>(
     override val tables: Set<Table> = setOf(Table.DIARY, Table.BODY, Table.WORKOUT)
 
     override suspend fun load(env: CardEnv): InUnits<CarbsPerKg> = InUnits(FoodCardLoader(env.db, env.clock).carbsPerKg(env.day), env.units)
+
+    override fun small(ctx: Context, data: InUnits<CarbsPerKg>): SmallFace? {
+        val c = data.value
+        if (c.kgX100 == null) {
+            return SmallFace(
+                value = ctx.getString(R.string.dash),
+                label = ctx.getString(R.string.small_per_kg),
+                unit = FoodCardText.gramsUnit(ctx, data.units),
+                note = ctx.getString(R.string.small_needs_weight),
+            )
+        }
+        val perKg = c.perKg ?: return null
+        val carbs = c.carbsG ?: return null
+        val t = c.band.target
+        val high = t.high
+        val status = when {
+            perKg < t.low -> CardStatusColors.ofProgress(perKg, t.low)
+            high != null && perKg > high -> CardStatus.CLOSE
+            else -> CardStatus.GOOD
+        }
+        return SmallFace(
+            value = FoodCardText.perKg(perKg, data.units),
+            label = if (high == null) {
+                ctx.getString(R.string.small_aim_min, FoodCardText.perKg(t.low, data.units))
+            } else {
+                ctx.getString(R.string.small_aim_band, FoodCardText.perKg(t.low, data.units), FoodCardText.perKg(high, data.units))
+            },
+            unit = FoodCardText.gramsUnit(ctx, data.units),
+            status = status,
+            note = ctx.getString(R.string.small_carbs_grams, Fmt.number(carbs.toLong())),
+            progress = if (t.low > 0) (perKg / t.low).toFloat() else null,
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<InUnits<CarbsPerKg>> = Holder(host, parent)
 
@@ -60,9 +97,9 @@ object CarbsPerKgCard : Card<InUnits<CarbsPerKg>>(
             }
             showContent()
             val t = c.band.target
-            tile.value = FoodCardText.perKg(perKg)
-            tile.unit = ctx.getString(R.string.food_card_unit_g_per_kg)
-            val target = FoodCardText.target(ctx, t)
+            tile.value = FoodCardText.perKg(perKg, data.units)
+            tile.unit = FoodCardText.gramsUnit(ctx, data.units)
+            val target = FoodCardText.target(ctx, t, data.units)
             tile.label = target
             val inBand = perKg >= t.low && perKg <= (t.high ?: Double.MAX_VALUE)
             bar.set(

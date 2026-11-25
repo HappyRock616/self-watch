@@ -172,7 +172,7 @@ CREATE TABLE import_batch (id INTEGER PRIMARY KEY, t_sec INTEGER NOT NULL, impor
 | `calls.enabled`, `calls.show_number`, `calls.show_name` | bool | true, false, false | Call relay options (permissions) |
 | `weather.enabled`, `weather.source` | bool, text | false, `broadcast` | Weather to watch |
 | `net.<feature>` | bool | `NetFeature.defaultOn` | Firewall switch per feature |
-| `garmin.fake_auth` | bool | **false** | COMPATIBILITY R1 |
+| `devices.<id>.fake_auth` (was global `garmin.fake_auth`, moved to the current watch) | bool | **false** | COMPATIBILITY R1, per watch, Watch settings |
 | `backup.auto`, `backup.folder_uri`, `backup.every_days`, `backup.encrypt` | bool, uri, int, bool | false, —, 7, true | Automatic backup |
 | `export.auto_gpx`, `export.folder_uri` | bool, uri | false, — | Auto GPX export |
 | `onboarding.done` | bool | false | |

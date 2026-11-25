@@ -9,6 +9,7 @@ package app.selfwatch.interop.device
 
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import app.selfwatch.fit.decode.Vo2Max
 import app.selfwatch.interop.api.BaseImporter
 import app.selfwatch.interop.api.DateFormatGuess
 import app.selfwatch.interop.api.ImportData
@@ -242,6 +243,7 @@ internal class GbReader(private val d: SQLiteDatabase, private val warnings: Mut
         }
         timeSamples("GARMIN_HEART_RATE_RESTING_SAMPLE", "HEART_RATE") { dev, t, v -> if (v in 20.0..250.0) add(dev, MetricKind.RESTING_HR, t, v.roundToInt()) }
         timeSamples("GARMIN_HRV_VALUE_SAMPLE", "VALUE") { dev, t, v -> if (v in 1.0..1000.0) add(dev, MetricKind.HRV_RMSSD, t, v.roundToInt()) }
+        readVo2Max()
         val stagesByDevice = HashMap<Long, MutableList<SleepStageSample>>()
         timeSamples("GARMIN_SLEEP_STAGE_SAMPLE", "STAGE") { dev, t, v ->
             // FIT sleep_level codes: 0 unmeasurable, 1 awake, 2 light, 3 deep, 4 REM.
@@ -367,6 +369,37 @@ internal class GbReader(private val d: SQLiteDatabase, private val warnings: Mut
         }
     }
 
+    /**
+     * Garmin VO2 max from `GENERIC_METRIC_SAMPLE` rows of metric type [GB_MET_MAX_VO2] (Gadgetbridge's
+     * copy of FIT `max_met_data`), whose `METRIC_EXTRA` is the `max_met_category` (1 = cycling, see
+     * [Vo2Max.kindFor]). Type 12 (the workout's own estimate) is skipped: it carries no sport, and the
+     * watch writes the same update as `max_met_data` in that day's metrics file.
+     */
+    // Ref: Gadgetbridge 160beab41 model/MetricSample.java (GARMIN_MET_MAX_VO2 dbId 6, GENERIC_MAXIMUM_OXYGEN_UPTAKE dbId 12)
+    // Ref: Gadgetbridge 160beab41 GBDaoGenerator.java addGenericMetricsSample (metricType, metricScore, metricExtra; TIMESTAMP ms)
+    private fun readVo2Max() {
+        val t = "GENERIC_METRIC_SAMPLE"
+        val cols = columns(t)
+        if (cols.isEmpty()) return
+        if (!cols.containsAll(listOf("TIMESTAMP", "DEVICE_ID", "METRIC_TYPE", "METRIC_SCORE"))) {
+            warnings.add("$t has an unknown layout; skipped")
+            return
+        }
+        val extra = if ("METRIC_EXTRA" in cols) "METRIC_EXTRA" else "NULL"
+        d.rawQuery(
+            "SELECT TIMESTAMP, DEVICE_ID, METRIC_SCORE, $extra FROM $t WHERE METRIC_TYPE = $GB_MET_MAX_VO2 ORDER BY TIMESTAMP",
+            null,
+        ).use { c ->
+            while (c.moveToNext()) {
+                val ts = c.getLong(0) / 1000
+                if (!SeriesBuilder.plausible(ts)) continue
+                val x10 = Vo2Max.x10(c.getDouble(2)) ?: continue
+                val category = if (c.isNull(3)) null else c.getInt(3)
+                add(c.getLong(1), Vo2Max.kindFor(null, category), ts, x10)
+            }
+        }
+    }
+
     private fun readWeights(): List<BodyMeasure> {
         val out = ArrayList<BodyMeasure>()
         val seen = HashSet<Long>()
@@ -407,6 +440,9 @@ internal class GbReader(private val d: SQLiteDatabase, private val warnings: Mut
     }
 
     private companion object {
+        /** `GENERIC_METRIC_SAMPLE.METRIC_TYPE` of Garmin's VO2 max (`MetricSample.Metric.GARMIN_MET_MAX_VO2`). */
+        const val GB_MET_MAX_VO2 = 6
+
         fun Cursor.strOrNull(i: Int): String? = if (isNull(i)) null else getString(i)
 
         /** The value, or -1 (Gadgetbridge's "not measured") when null. */

@@ -41,7 +41,14 @@ public class FitModuleDecoders(private val zone: ZoneId? = null) : FitDecoders {
         val input = ByteArrayInputStream(bytes)
         return when (kind) {
             FitFileKind.ACTIVITY -> when (val w = WorkoutDecoder.summary(input, deviceId)) {
-                is Outcome.Ok -> Outcome.Ok(IngestBatch(key = null, workout = w.value.copy(fitPath = fitPath)))
+                // The workout and its VO2 max estimate (if any) go in together, in one transaction.
+                is Outcome.Ok -> Outcome.Ok(
+                    IngestBatch(
+                        key = null,
+                        workout = w.value.copy(fitPath = fitPath),
+                        metrics = WorkoutDecoder.vo2Max(ByteArrayInputStream(bytes), deviceId),
+                    ),
+                )
                 is Outcome.Fail -> w
             }
             FitFileKind.WEIGHT -> when (val m = WeightDecoder.decode(input)) {

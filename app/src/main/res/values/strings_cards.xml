@@ -19,11 +19,11 @@
     <string name="card_spo2">Blood oxygen</string>
     <string name="card_spo2_summary">Last night\'s SpO2 and 30 nights</string>
     <string name="card_today_rings">Today</string>
-    <string name="card_today_rings_summary">Steps, active minutes and active calories</string>
+    <string name="card_today_rings_summary">Steps and active calories today, active minutes this week</string>
     <string name="card_trends">Trends</string>
     <string name="card_trends_summary">Distance, minutes, steps and calories over time</string>
     <string name="card_workouts">Recent activities</string>
-    <string name="card_workouts_summary">Your latest workouts</string>
+    <string name="card_workouts_summary">Your last 5 workouts with their stats</string>
     <string name="card_macros_today">Protein and macros</string>
     <string name="card_macros_today_summary">Protein, carbs and fat for the day shown</string>
     <string name="card_water">Water</string>
@@ -48,7 +48,7 @@
     <string name="steps_label">steps</string>
     <string name="steps_goal">steps · goal %1$s</string>
     <string name="active_min_label">active min</string>
-    <string name="active_min_goal">active min · goal %1$s</string>
+    <string name="active_min_goal">active min this week · goal %1$s</string>
     <string name="steps_empty">No steps yet today. Sync your watch to see them.</string>
     <string name="steps_description">Today: %1$s steps, %2$s active minutes. Double tap to open Activity.</string>
 
@@ -69,16 +69,16 @@
     <string name="edit_cards_title_body">Body cards</string>
     <string name="edit_cards_title_activity">Activity cards</string>
     <string name="edit_cards_title_food">Food cards</string>
-    <string name="edit_cards_help">Drag to reorder. Switch off what you don\'t need.</string>
-    <string name="edit_cards_reset">Reset to defaults for my goal</string>
-    <string name="edit_cards_reset_done">Cards set for %1$s</string>
+    <string name="edit_cards_help">Drag to reorder, pick Small or Large, and switch on any card to add it here.</string>
+    <string name="edit_cards_reset">Reset to the default cards</string>
+    <string name="edit_cards_reset_done">Default cards back</string>
     <string name="edit_cards_drag">Drag to move %1$s</string>
     <string name="edit_cards_move_up">Move up</string>
     <string name="edit_cards_move_down">Move down</string>
 
     <!-- Main goal -->
     <string name="main_goal_title">What\'s your main goal?</string>
-    <string name="main_goal_help">It picks the cards on Body, Activity and Food. You can change them any time.</string>
+    <string name="main_goal_help">It sets what the charts show first. Pick cards any time with Edit cards.</string>
     <string name="main_goal_weight_loss">Lose weight</string>
     <string name="main_goal_weight_loss_help">Eat a little less, move a little more</string>
     <string name="main_goal_weight_management">Weight management</string>
@@ -97,9 +97,5 @@
     <string name="main_goal_active_aging_help">Keep moving and strong as the years go by</string>
     <string name="main_goal_general">General health</string>
     <string name="main_goal_general_help">A bit of everything, every day</string>
-    <string name="main_goal_switch_title">Switch cards?</string>
-    <string name="main_goal_switch_message">Show the cards for %1$s on Body, Activity and Food? Your own order is replaced.</string>
-    <string name="main_goal_switch_yes">Switch</string>
-    <string name="main_goal_switch_no">Keep mine</string>
     <string name="onboarding_goal_protein">Protein per day (g)</string>
 </resources>

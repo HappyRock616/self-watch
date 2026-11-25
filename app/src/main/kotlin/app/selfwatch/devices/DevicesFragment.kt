@@ -14,6 +14,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,13 +25,11 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import app.selfwatch.R
-import app.selfwatch.SelfWatchApp
-import app.selfwatch.ble.log.BleLog
 import app.selfwatch.ble.pair.PairFilter
 import app.selfwatch.ble.pair.PairedDevice
 import app.selfwatch.ble.pair.Pairing
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.graph
-import app.selfwatch.log.LogSinks
 import app.selfwatch.me.HelpFragment
 import app.selfwatch.model.device.ConnectionState
 import app.selfwatch.model.log.SwLog
@@ -42,10 +42,7 @@ import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.ListRow
 import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.format.Fmt
-import app.selfwatch.watch.WatchSettings
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -53,9 +50,10 @@ import java.time.ZoneId
 import kotlin.coroutines.resume
 
 /**
- * Devices (C06): pair the watch (Nearby devices permission, then the system picker), the watch card
- * with its live state, "Sync now" and "Remove watch", the "Data so far" check, and in debug builds the
- * Bluetooth capture switch and buttons to share captures and logs.
+ * Devices (C06, restart plan workstream C): pairing, one card per paired device ([DeviceCardsView]:
+ * the feature rows (watch apps, notifications, alarms, linked apps, watch settings), with its live state,
+ * "Sync now" and "Remove watch"), the "Data so far" check, and in debug builds only the Debug card
+ * ([DebugTools.addDevicesCard]: Bluetooth capture and buttons to share captures and logs).
  */
 class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devices) {
 
@@ -72,14 +70,13 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
     private lateinit var views: Views
     private var rows: Map<DeviceRow, ListRow> = emptyMap()
 
+    /** Shows the Bluetooth capture state on the Debug card (debug builds only). */
+    private var showCapture: ((Boolean) -> Unit)? = null
+
     private class Views(root: View) {
         val empty: EmptyState = root.findViewById(R.id.watch_empty)
-        val paired: View = root.findViewById(R.id.watch_paired)
-        val name: TextView = root.findViewById(R.id.watch_name)
-        val status: TextView = root.findViewById(R.id.watch_status)
-        val detail: TextView = root.findViewById(R.id.watch_detail)
-        val sync: MaterialButton = root.findViewById(R.id.watch_sync)
-        val remove: MaterialButton = root.findViewById(R.id.watch_remove)
+        val emptyCard: SwCard = root.findViewById(R.id.watch_card)
+        val cards: LinearLayout = root.findViewById(R.id.device_cards)
         val dataCard: SwCard = root.findViewById(R.id.data_card)
         val activity: ListRow = root.findViewById(R.id.data_activity)
         val steps: ListRow = root.findViewById(R.id.data_steps)
@@ -88,27 +85,19 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
         val workouts: ListRow = root.findViewById(R.id.data_workouts)
         val files: ListRow = root.findViewById(R.id.data_files)
         val last: ListRow = root.findViewById(R.id.data_last)
-        val debugCard: SwCard = root.findViewById(R.id.debug_card)
-        val capture: MaterialSwitch = root.findViewById(R.id.debug_capture)
-        val shareCapture: MaterialButton = root.findViewById(R.id.debug_share_capture)
-        val shareLogs: MaterialButton = root.findViewById(R.id.debug_share_logs)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val v = Views(view)
         views = v
-        v.empty.onButton = { startPairing() }
-        v.sync.setOnClickListener {
+        v.empty.onButton = { choosePairing() }
+        val cards = DeviceCardsView(this, v.cards, vm, { pairing }) {
             if (vm.syncNow()) toast(R.string.devices_sync_started) else toast(R.string.devices_service_refused)
         }
-        v.remove.setOnClickListener { vm.state.value.watch?.let { confirmRemove(it) } }
-        v.debugCard.isVisible = WatchSettings.isDebuggable(requireContext())
-        v.capture.setOnCheckedChangeListener { button, checked -> if (button.isPressed) vm.setBleCapture(checked) }
-        v.shareCapture.setOnClickListener { share(BleLog.forContext(requireContext()).dir, "application/octet-stream", "Self Watch Bluetooth capture") }
-        v.shareLogs.setOnClickListener {
-            (requireContext().applicationContext as? SelfWatchApp)?.logFile?.flush()
-            share(LogSinks.dir(requireContext()), "text/plain", "Self Watch logs")
+        if (DebugTools.ENABLED) {
+            val column = v.dataCard.parent as ViewGroup
+            showCapture = DebugTools.addDevicesCard(this, column, column.indexOfChild(v.dataCard) + 1) { vm.setBleCapture(it) }
         }
         rows = DeviceRow.entries.associateWith { r -> view.findViewById<ListRow>(r.viewId) }
         for ((r, row) in rows) {
@@ -127,12 +116,12 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
         // Registered here (not when the menu item is tapped) so "Pair again" in Bluetooth help survives rotation.
         parentFragmentManager.setFragmentResultListener(HelpFragment.REQUEST_PAIR, viewLifecycleOwner) { _, _ -> startPairing() }
         parentFragmentManager.setFragmentResultListener(REQUEST_REMOVE, viewLifecycleOwner) { _, _ ->
-            vm.state.value.watch?.let { confirmRemove(it) }
+            val s = vm.state.value
+            s.devices.firstOrNull { it.id == s.watch?.id }?.let { cards.askRemove(it) }
         }
-        val others = OtherDeviceCards(this, view.findViewById(R.id.other_devices), vm) { pairing }
         collectWhileStarted(vm.state) {
             render(it)
-            others.show(it.others, it.primaryId)
+            cards.show(it.devices, it.primaryId, it.busy)
         }
     }
 
@@ -166,20 +155,11 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
         val v = views
         val ctx = requireContext()
         val w = s.watch
+        val none = w == null && s.devices.isEmpty() && !s.loading
         toolbar.subtitle = if (w == null && !s.loading) getString(R.string.devices_no_watch) else null
-        v.empty.isVisible = w == null && !s.loading
+        v.emptyCard.isVisible = none
         v.empty.buttonText = getString(if (s.busy) R.string.devices_pairing else R.string.devices_pair)
-        v.paired.isVisible = w != null
-        v.dataCard.isVisible = w != null
-        if (w != null) {
-            v.name.text = if (w.model.isNotBlank() && w.model != w.name) getString(R.string.devices_detail_join, w.name, w.model) else w.name
-            v.status.text = statusText(ctx, w.state)
-            val sync = w.lastSyncSec?.let { getString(R.string.devices_last_sync, whenText(ctx, it)) }
-                ?: getString(R.string.devices_never_synced)
-            v.detail.text = w.batteryPct?.let { getString(R.string.devices_detail_join, sync, getString(R.string.devices_battery, it)) } ?: sync
-            v.sync.isEnabled = !s.busy
-            v.remove.isEnabled = !s.busy
-        }
+        v.dataCard.isVisible = !none && !s.loading
         s.counts?.let { c ->
             v.activity.trailing = Fmt.number(c.activityMinutes)
             v.steps.trailing = Fmt.number(c.steps)
@@ -189,7 +169,7 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
             v.files.trailing = Fmt.number(c.filesStored)
             v.last.trailing = c.lastIngestSec?.let { whenText(ctx, it) } ?: getString(R.string.dash)
         }
-        if (v.capture.isChecked != s.bleCapture) v.capture.isChecked = s.bleCapture
+        showCapture?.invoke(s.bleCapture)
         val features = w?.features.orEmpty()
         for ((r, row) in rows) row.isVisible = DeviceRow.visible(r, features)
     }
@@ -262,40 +242,6 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
             .setOnCancelListener { if (cont.isActive) cont.resume(false) }
             .show()
         cont.invokeOnCancellation { dialog.dismiss() }
-    }
-
-    // ---- Remove -----------------------------------------------------------------------------------
-
-    private fun confirmRemove(w: WatchCard) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.devices_remove_title, w.name))
-            .setMessage(R.string.devices_remove_message)
-            .setPositiveButton(R.string.devices_remove) { _, _ -> remove(w) }
-            .setNegativeButton(R.string.devices_not_now, null)
-            .show()
-    }
-
-    private fun remove(w: WatchCard) {
-        lifecycleScope.launch {
-            vm.setBusy(true)
-            try {
-                val r = pairing.unpair(PairedDevice(w.address, w.name, w.associationId))
-                if (r is Outcome.Fail) SwLog.w(TAG, "unpair: ${r.error}")
-                vm.forget(w)
-                val fully = r is Outcome.Ok && r.value.bondRemoved
-                toast(if (fully) R.string.devices_removed else R.string.devices_remove_forget, long = !fully)
-            } finally {
-                vm.setBusy(false)
-            }
-        }
-    }
-
-    // ---- Sharing ----------------------------------------------------------------------------------
-
-    private fun share(dir: java.io.File, mime: String, subject: String) {
-        val ctx = requireContext()
-        val intent = FileShare.intent(ctx, FileShare.filesIn(dir), mime, subject, getString(R.string.devices_share_title))
-        if (intent == null || !FileShare.start(ctx, intent)) toast(R.string.devices_share_none)
     }
 
     private fun toast(@StringRes text: Int, long: Boolean = false) = toastText(getString(text), long)

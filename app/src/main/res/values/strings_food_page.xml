@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Food tab: meal summary, per-meal recent foods, removing entries. -->
+<resources>
+    <string name="meal_summary_open">%1$s. Opens the meal summary</string>
+    <string name="meal_summary_energy">Calories and macros</string>
+    <string name="meal_summary_macro_value">%1$s · %2$d%%</string>
+    <string name="meal_summary_foods">What each food brings</string>
+    <string name="meal_summary_food_share">%1$s · %2$d%%</string>
+    <string name="meal_summary_complete">Full nutrient data for %1$d of %2$d foods. A dash means no food lists it.</string>
+    <string name="meal_summary_empty">Nothing in %1$s yet.</string>
+    <string name="food_remove_entry">Remove %1$s</string>
+    <string name="food_recent_for">Recent for %1$s</string>
+    <string name="food_recent_logged">%1$s added to %2$s</string>
+</resources>

@@ -135,7 +135,7 @@ class OtherDevicesFragment : DetailFragment() {
         for (d in paired) {
             val row = ListRow(ctx)
             row.title = d.name
-            row.subtitle = getString(R.string.devices_detail_join, getString(SensorType.label(d.kind)), OtherDeviceCards.detail(ctx, d))
+            row.subtitle = getString(R.string.devices_detail_join, getString(SensorType.label(d.kind)), DeviceCardsView.detail(ctx, d))
             rows.addView(row, Views.matchWrap(ctx))
             val remove = DevicesUi.button(rows, getString(R.string.devices_other_remove), outlined = true) { confirmRemove(d) }
             remove.contentDescription = getString(R.string.devices_other_remove_cd, d.name)

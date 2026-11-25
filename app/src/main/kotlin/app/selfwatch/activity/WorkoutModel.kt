@@ -21,6 +21,7 @@ import app.selfwatch.AppGraph
 import app.selfwatch.body.Series
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
+import app.selfwatch.db.dao.WorkoutTrim
 import app.selfwatch.interop.Interop
 import app.selfwatch.interop.api.ExportRequest
 import app.selfwatch.interop.api.Exporter
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -133,6 +135,8 @@ data class WorkoutUiState(
     val track: WorkoutTrack = WorkoutTrack(),
     val units: Units = Units.METRIC,
     val loading: Boolean = true,
+    /** The trim, when the workout is trimmed (its window and the values from before). */
+    val trim: WorkoutTrim? = null,
     /** True once the workout no longer exists (deleted here or elsewhere). */
     val gone: Boolean = false,
 )
@@ -161,7 +165,7 @@ class WorkoutViewModel(
                     WorkoutUiState(units = u, loading = false, gone = true)
                 } else {
                     val step = if (u == Units.METRIC) 1000.0 else Sports.METERS_PER_MILE
-                    WorkoutUiState(w, WorkoutMath.build(track(w), step), u, loading = false)
+                    WorkoutUiState(w, WorkoutMath.build(track(w), step), u, loading = false, trim = db.workouts.trim(workoutId))
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -171,6 +175,9 @@ class WorkoutViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), WorkoutUiState())
+
+    /** Puts the workout back as recorded (the trim is removed). Returns false when it was not trimmed. */
+    suspend fun undoTrim(): Boolean = db.workouts.undoTrim(workoutId)
 
     /** Deletes the workout row and its stored files. */
     suspend fun delete(): Boolean {
@@ -201,28 +208,85 @@ class WorkoutViewModel(
     }
 }
 
-/** Workout list state. */
-data class WorkoutListUiState(val units: Units = Units.METRIC, val workouts: List<Workout> = emptyList(), val loading: Boolean = true)
+/**
+ * Workout list state.
+ *
+ * @property sport the sport picked (null: all).
+ * @property dashboard the picked sport's trend dashboard (null with no sport picked).
+ * @property dashboardRemoved true when the user removed the picked sport's dashboard.
+ * @property hidden the dashboard layers the user switched off for the picked sport.
+ */
+data class WorkoutListUiState(
+    val units: Units = Units.METRIC,
+    val workouts: List<Workout> = emptyList(),
+    val loading: Boolean = true,
+    val sport: Int? = null,
+    val dashboard: SportDashboard? = null,
+    val dashboardRemoved: Boolean = false,
+    val hidden: Set<String> = emptySet(),
+) {
+    /** The workouts of the picked sport (all without one), newest first. */
+    val shown: List<Workout> get() = workouts.filter { sport == null || it.sport == sport }
+}
 
-/** Every workout, newest first (up to [LIMIT]). */
-class WorkoutListViewModel(db: SelfWatchDb) : ViewModel() {
+/** Every workout, newest first (up to [LIMIT]), and the picked sport's trend dashboard. */
+class WorkoutListViewModel(
+    private val db: SelfWatchDb,
+    track: suspend (Workout) -> List<TrackPoint> = { emptyList() },
+    initialSport: Int? = null,
+) : ViewModel() {
+    private val sport = MutableStateFlow(initialSport)
+    private val dashboards = SportDashboardLoader(db, track)
 
     /** Screen state. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val state: StateFlow<WorkoutListUiState> = combine(
-        db.changes.observe(setOf(Table.WORKOUT)).conflate(),
+        db.changes.observe(setOf(Table.WORKOUT, Table.SETTING)).conflate(),
         DisplayUnits.observe(db),
-    ) { _, u -> u }
-        .map { u -> WorkoutListUiState(u, db.workouts.list(LIMIT), loading = false) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), WorkoutListUiState())
+        sport,
+    ) { _, u, s -> u to s }
+        .conflate()
+        .mapLatest { (u, s) ->
+            val all = db.workouts.list(LIMIT)
+            if (s == null) return@mapLatest WorkoutListUiState(u, all, loading = false)
+            val dash = try {
+                dashboards.load(s, all)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: RuntimeException) {
+                SwLog.e(TAG, "dashboard load failed", e)
+                null
+            }
+            WorkoutListUiState(
+                u, all, loading = false, sport = s, dashboard = dash,
+                dashboardRemoved = s in SportDashboardPrefs.removed(db.settings),
+                hidden = SportDashboardPrefs.hidden(db.settings, s, dash?.metrics.orEmpty()),
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), WorkoutListUiState(sport = initialSport))
+
+    /** Shows [s] only (null: every sport). */
+    fun selectSport(s: Int?) {
+        sport.value = s
+    }
+
+    /** Saves the dashboard layers switched off for [s]. */
+    suspend fun saveHidden(s: Int, hidden: Set<String>): Unit = SportDashboardPrefs.saveHidden(db.settings, s, hidden)
+
+    /** Removes [s]'s dashboard, or with [shown] brings it back. */
+    suspend fun setDashboardShown(s: Int, shown: Boolean): Unit = SportDashboardPrefs.setShown(db.settings, s, shown)
 
     /** Factory. */
     companion object {
+        private const val TAG = "WorkoutList"
+
         /** Most workouts listed. */
         const val LIMIT: Int = 500
 
-        /** Builds the view model from [graph]. */
-        fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {
-            initializer { WorkoutListViewModel(graph.db) }
+        /** Builds the view model from [graph], showing [sport] first (null: all). */
+        fun factory(graph: AppGraph, ctx: Context, sport: Int?): ViewModelProvider.Factory = viewModelFactory {
+            val source = DbExportSource(graph.db, AppFiles(ctx.applicationContext.filesDir))
+            initializer { WorkoutListViewModel(graph.db, { source.track(it) }, sport) }
         }
     }
 }

@@ -308,6 +308,26 @@ New enum cases only: no renames, removals or changed signatures, so v1.1 code co
 | `Feature.HEALTH_WEIGHT`, `HEALTH_BODY_COMPOSITION`, `HEALTH_BLOOD_PRESSURE` | What a sensor offers (with the existing `HEALTH_HR` and `BATTERY`) | `HealthSensorDriver` reports them after subscribing |
 | `MetricKind.BP_SYSTOLIC(9)`, `BP_DIASTOLIC(10)`, mmHg | Blood pressure readings (the cuff's pulse is stored as `HEART_RATE`) | `HealthSensorDriver`; `metric` table codes in V1.sql |
 
+## v1.3 additions (additive only; live heart rate and the energy level)
+
+New cases only, so v1.2 code compiles unchanged (exhaustive `when`s over `WatchCommand` and `WatchEvent` need the
+new branches). Asked for by the owner (heart-rate cards, 2026-11-23); tag `core-model-v1.3` after merge.
+
+| Addition | Why | Used by |
+|---|---|---|
+| `WatchCommand.LiveData(enable: Boolean)` | Turn the watch's live heart rate and steps on only while a screen shows them (battery) | `garmin` `LiveLink` (multi-link services 6 and 7); `service` `LiveRelay`; `Feature.REALTIME_HR` when unsupported |
+| `WatchEvent.LiveHeartRate(bpm, restingBpm?)`, `WatchEvent.LiveSteps(steps, goal?)` | The live readings | `GarminDriver` emits them; `DeviceManager.live`; the screens get them by broadcast (`LiveReading`) |
+| `MetricKind.ENERGY_LEVEL(11)`, 0..100 | The watch's energy level (FIT `stress_level` field 3), already in the synced monitoring files | `fit` `MetricExtractor`; the Body `energy_level` card |
+
+## v1.4 additions (additive only; VO2 max)
+
+New cases only, so v1.3 code compiles unchanged (exhaustive `when`s over `MetricKind` need the new branches).
+Required for release 0.0.2 (VO2 max card and the per-sport trend layer).
+
+| Addition | Why | Used by |
+|---|---|---|
+| `MetricKind.VO2_MAX_RUNNING(12)`, `VO2_MAX_CYCLING(13)`, ml/kg/min ×10; `MetricKind.isVo2Max` | Garmin's VO2 max estimates (FIT `max_met_data` 229 in metrics files, `physiological_metrics` 140 in activity files), one kind per sport | `fit` `MetricExtractor` and `WorkoutDecoder.vo2Max`; `interop` Garmin export and Gadgetbridge imports; the Activity `vo2_max` card and the per-sport dashboard |
+
 ## Tests and definition of done
 
 - [ ] Every type compiles with no Android dependency (the module is `kotlin.jvm`).

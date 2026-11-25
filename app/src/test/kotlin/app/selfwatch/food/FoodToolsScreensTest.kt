@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food
 
+import app.selfwatch.me.MeTestSupport
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.Dialog
@@ -40,6 +41,7 @@ import app.selfwatch.model.food.RecipeKind
 import app.selfwatch.model.food.Serving
 import app.selfwatch.model.time.SystemClock
 import app.selfwatch.shell.AddSheet
+import app.selfwatch.shell.DisplayUnits
 import app.selfwatch.shell.MainActivity
 import app.selfwatch.shell.Tab
 import app.selfwatch.ui.components.EmptyState
@@ -76,11 +78,11 @@ class FoodToolsScreensTest {
     @Before
     fun setUp() {
         app = RuntimeEnvironment.getApplication() as SelfWatchApp
-        TestDb.resetShared(app)
+        TestDb.wipeShared(app)
     }
 
     @After
-    fun tearDown() = TestDb.resetShared(app)
+    fun tearDown() = MeTestSupport.resetDb()
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
@@ -287,7 +289,7 @@ class FoodToolsScreensTest {
             idle()
         }
         tap(AddSheet.Item.WATER)
-        waitFor("glass logged") { runBlocking { food.water.load(today).totalMl } == DiaryViewModel.GLASS_ML }
+        waitFor("glass logged") { runBlocking { food.water.load(today).totalMl } == WaterGlass.ml(DisplayUnits.of(runBlocking { app.graph.db.settings.profile().units })) }
         assertNoComingSoon()
         waitFor("water snackbar") { a.shows("Glass logged") }
 

@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food.source
 
+import app.selfwatch.model.food.DietInfo
 import app.selfwatch.model.food.Food
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
@@ -45,6 +46,8 @@ interface FoodSource {
  * @property dataYear year of the foods.db source data, if known.
  * @property kind foods.db kind (0 generic, 1 packaged, 2 restaurant), if known; recipes and custom
  *   foods report null.
+ * @property dietInfo diet flags and allergens, if the source knows them (foods.db schema 2).
+ * @property chain the chain name when the search ran in brand mode ("McDonald's menu"), else null.
  */
 data class FoodHit(
     val ref: FoodRef,
@@ -57,6 +60,8 @@ data class FoodHit(
     val kind: Int? = null,
     val sourceCode: Int? = null,
     val dataYear: Int? = null,
+    val dietInfo: DietInfo? = null,
+    val chain: String? = null,
 ) {
     /** Source tags. */
     companion object {

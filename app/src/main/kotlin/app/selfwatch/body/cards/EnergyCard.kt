@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -18,8 +19,10 @@ import app.selfwatch.body.EnergyWeek
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.charts.ChartPalette
 import app.selfwatch.ui.components.BarSeries
@@ -31,16 +34,51 @@ import app.selfwatch.ui.format.FmtLabels
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * C3 Energy: calories in vs out today, the 7-day bars and the 7-day energy balance (labelled an
  * estimate); opens the calorie explainer.
  */
-object EnergyCard : Card<EnergyWeek>("energy", CardTab.BODY, R.string.card_energy, R.string.card_energy_summary) {
+object EnergyCard : Card<EnergyWeek>("energy", CardTab.FOOD, R.string.card_energy, R.string.card_energy_summary) {
 
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.DIARY, Table.GOAL, Table.SETTING, Table.BODY)
 
     override suspend fun load(env: CardEnv): EnergyWeek = BodyLoader(env.db, env.clock).energy()
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: EnergyWeek): SmallFace? {
+        val e = data.energy
+        val kcal = ctx.getString(R.string.unit_kcal)
+        val eaten = e.inKcal
+        val burned = e.outKcal
+        val inOut = listOfNotNull(
+            eaten?.let { ctx.getString(R.string.body_in, Fmt.number(it.toLong())) },
+            burned?.let { ctx.getString(R.string.body_out, Fmt.number(it.toLong())) },
+        ).joinToString(" · ").ifEmpty { null }
+        val remaining = e.remainingKcal
+        val net = e.netKcal
+        return when {
+            remaining != null -> {
+                val budget = (e.goalKcal ?: 0) + (e.activeKcal ?: 0)
+                SmallFace(
+                    value = Fmt.number(abs(remaining).toLong()),
+                    label = ctx.getString(if (remaining >= 0) R.string.small_energy_left else R.string.small_energy_over),
+                    unit = kcal,
+                    note = inOut,
+                    progress = if (budget > 0) (eaten ?: 0).toFloat() / budget else null,
+                )
+            }
+            net != null -> {
+                val sign = if (net < 0) "−" else if (net > 0) "+" else ""
+                SmallFace(sign + Fmt.number(abs(net).toLong()), ctx.getString(R.string.small_energy_net), unit = kcal, note = inOut)
+            }
+            eaten != null -> SmallFace(Fmt.number(eaten.toLong()), ctx.getString(R.string.small_energy_eaten), unit = kcal)
+            burned != null -> SmallFace(Fmt.number(burned.toLong()), ctx.getString(R.string.small_energy_burned), unit = kcal)
+            else -> null
+        }
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<EnergyWeek> = Holder(host, parent)
 

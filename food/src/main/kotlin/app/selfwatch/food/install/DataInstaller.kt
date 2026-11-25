@@ -39,7 +39,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * What one installer installs: file name, `application_id`, the table that must not be empty, the
- * network feature and where the installed `data_version` is remembered.
+ * network feature, where the installed `data_version` is remembered and the schema version this app
+ * reads (`PRAGMA user_version`, `meta.schema_version`, manifest `schema_version`).
  */
 data class InstallSpec(
     val fileName: String,
@@ -47,6 +48,7 @@ data class InstallSpec(
     val rowTable: String,
     val feature: NetFeature,
     val versionStore: VersionStore,
+    val schemaVersion: Int,
 )
 
 /** Remembers the installed `data_version` (null: nothing installed). */
@@ -173,7 +175,7 @@ open class DataInstaller(
             is Outcome.Fail -> return p
             is Outcome.Ok -> p.value
         }
-        if (m.schemaVersion != FoodDbFormat.SCHEMA_VERSION || m.minAppVersion > appVersion) {
+        if (m.schemaVersion != spec.schemaVersion || m.minAppVersion > appVersion) {
             return Outcome.Ok(UpdateCheck.NeedsNewerApp(m.schemaVersion, m.minAppVersion))
         }
         val current = installedVersion()
@@ -185,7 +187,7 @@ open class DataInstaller(
      * during the download. Returns the installed data version.
      */
     suspend fun install(m: DataManifest, onProgress: (Long, Long?) -> Unit = { _, _ -> }): Outcome<Int> {
-        if (m.schemaVersion != FoodDbFormat.SCHEMA_VERSION) return Outcome.Fail(SwError.BadInput("unsupported schema ${m.schemaVersion}"))
+        if (m.schemaVersion != spec.schemaVersion) return Outcome.Fail(SwError.BadInput("unsupported schema ${m.schemaVersion}"))
         if (m.minAppVersion > appVersion) return Outcome.Fail(SwError.BadInput("needs app version ${m.minAppVersion}"))
         val gz = File(tmpDir, spec.fileName + ".gz")
         try {
@@ -296,13 +298,13 @@ open class DataInstaller(
         try {
             val appId = FoodDbFormat.applicationId(db)
             if (appId != spec.applicationId) return fail("application_id $appId")
-            if (db.version != FoodDbFormat.SCHEMA_VERSION) return fail("user_version ${db.version}")
+            if (db.version != spec.schemaVersion) return fail("user_version ${db.version}")
             val quick = db.rawQuery("PRAGMA quick_check", null).use { c -> if (c.moveToFirst()) c.getString(0) else null }
             if (quick != "ok") return fail("quick_check failed")
             val rows = db.rawQuery("SELECT COUNT(*) FROM ${spec.rowTable}", null).use { c -> if (c.moveToFirst()) c.getLong(0) else 0L }
             if (rows <= 0) return fail("no rows")
             val schema = metaValue(db, "schema_version")
-            if (schema != null && schema != FoodDbFormat.SCHEMA_VERSION.toString()) return fail("meta schema_version $schema")
+            if (schema != null && schema != spec.schemaVersion.toString()) return fail("meta schema_version $schema")
             return Outcome.Ok(metaValue(db, "data_version")?.toIntOrNull() ?: 0)
         } catch (e: SQLiteException) {
             SwLog.w(TAG, "${spec.fileName}: checks failed", e)
@@ -379,7 +381,7 @@ class FoodDbInstaller(
     handle: FoodsDbHandle?,
     io: CoroutineDispatcher = Dispatchers.IO,
 ) : DataInstaller(
-    InstallSpec(FoodDbFormat.FOODS_FILE, FoodDbFormat.FOODS_APPLICATION_ID, "food", NetFeature.FOOD_DATA, versionStore),
+    InstallSpec(FoodDbFormat.FOODS_FILE, FoodDbFormat.FOODS_APPLICATION_ID, "food", NetFeature.FOOD_DATA, versionStore, FoodDbFormat.SCHEMA_VERSION),
     http, dir, manifestUrl, appVersion, { handle?.close() }, io,
 ) {
     /** The app's installer: version in setting `food.db.installed_version`. */
@@ -397,7 +399,7 @@ class RecipeBookInstaller(
     beforeSwap: suspend () -> Unit = {},
     io: CoroutineDispatcher = Dispatchers.IO,
 ) : DataInstaller(
-    InstallSpec(FoodDbFormat.RECIPES_FILE, FoodDbFormat.RECIPES_APPLICATION_ID, "recipe", NetFeature.RECIPE_BOOK, versionStore),
+    InstallSpec(FoodDbFormat.RECIPES_FILE, FoodDbFormat.RECIPES_APPLICATION_ID, "recipe", NetFeature.RECIPE_BOOK, versionStore, FoodDbFormat.RECIPES_SCHEMA_VERSION),
     http, dir, manifestUrl, appVersion, beforeSwap, io,
 ) {
     /** The app's installer: version in setting [KEY_INSTALLED_VERSION]. */

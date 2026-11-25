@@ -28,6 +28,13 @@
         android:layout_marginTop="@dimen/sw_space_1"
         android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
 
+    <TextView
+        android:id="@+id/st_extras"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
     <app.selfwatch.ui.components.BarsView
         android:id="@+id/st_bars"
         android:layout_width="match_parent"

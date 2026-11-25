@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:background="?android:attr/colorBackground"
             app:itemIconTint="@color/tab_item"
-            app:itemTextColor="@color/tab_item"
+            app:itemTextColor="@color/tab_item_text"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_tabs" />
     </LinearLayout>

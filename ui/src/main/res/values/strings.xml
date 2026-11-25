@@ -18,6 +18,11 @@
     <string name="sw_unit_km">km</string>
     <string name="sw_unit_ft">ft</string>
     <string name="sw_unit_mi">mi</string>
+    <string name="sw_unit_ml">ml</string>
+    <string name="sw_unit_l">L</string>
+    <string name="sw_unit_fl_oz">fl oz</string>
+    <string name="sw_unit_celsius">°C</string>
+    <string name="sw_unit_fahrenheit">°F</string>
 
     <!-- Components -->
     <string name="sw_value_with_unit">%1$s %2$s</string>

@@ -13,11 +13,15 @@ import app.selfwatch.db.SyncFileState
 import app.selfwatch.db.Table
 import app.selfwatch.db.args
 import app.selfwatch.db.bindLongOrNull
+import app.selfwatch.db.queryList
 import app.selfwatch.db.queryOne
 import app.selfwatch.db.read
 import app.selfwatch.db.withStatement
 import app.selfwatch.db.write
 import app.selfwatch.model.watch.SyncFileKey
+
+/** [count] stored files of one [fileType] and [fileSubtype]. */
+public data class SyncFileCount(val fileType: Int, val fileSubtype: Int, val count: Int)
 
 /**
  * Which watch files were already handled (table `sync_file`), so a sync never stores a file twice.
@@ -39,6 +43,18 @@ public class SyncFileDao internal constructor(private val db: SelfWatchDb) {
     /** Records [state] for [key] at [doneSec] (replacing any earlier state). */
     public suspend fun mark(key: SyncFileKey, state: SyncFileState, doneSec: Long?) {
         db.write(setOf(Table.SYNC_FILE)) { markIn(it, key, state, doneSec) }
+    }
+
+    /**
+     * The files of [deviceId] stored ([SyncFileState.DONE]) with `done_sec` in [fromSec]..[toSec], as
+     * (file type, subtype) with how many of each. For "what the last sync brought".
+     */
+    public suspend fun doneBetween(deviceId: Long, fromSec: Long, toSec: Long): List<SyncFileCount> = db.read { d ->
+        d.queryList(
+            "SELECT file_type, file_subtype, COUNT(*) FROM sync_file WHERE device_id = ? AND state = ? AND done_sec BETWEEN ? AND ? " +
+                "GROUP BY file_type, file_subtype ORDER BY file_type, file_subtype",
+            args(deviceId, SyncFileState.DONE.code, fromSec, toSec),
+        ) { c -> SyncFileCount(c.getInt(0), c.getInt(1), c.getInt(2)) }
     }
 
     internal companion object {

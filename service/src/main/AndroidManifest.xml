@@ -79,7 +79,7 @@
             </intent-filter>
         </service>
 
-        <!-- B22: weather apps (Breezy Weather) send the Gadgetbridge-format broadcast; off by default. -->
+        <!-- B22: weather apps (Breezy Weather) send the Gadgetbridge-format broadcast; on by default (weather.enabled), no network. -->
         <receiver
             android:name=".relay.WeatherReceiver"
             android:exported="true"

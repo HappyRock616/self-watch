@@ -48,6 +48,9 @@ object FitMsg {
     /** monitoring_info. */
     const val MONITORING_INFO: Int = 103
 
+    /** physiological_metrics (training effect and the workout's VO2 max estimate, activity files). */
+    const val PHYSIOLOGICAL_METRICS: Int = 140
+
     /** field_description (developer fields). */
     const val FIELD_DESCRIPTION: Int = 206
 
@@ -56,6 +59,9 @@ object FitMsg {
 
     /** stress_level. */
     const val STRESS_LEVEL: Int = 227
+
+    /** max_met_data (VO2 max estimate, metrics files and some activity files). */
+    const val MAX_MET_DATA: Int = 229
 
     /** spo2_data. */
     const val SPO2_DATA: Int = 269

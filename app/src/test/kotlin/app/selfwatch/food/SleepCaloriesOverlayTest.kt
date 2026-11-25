@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food
 
+import app.selfwatch.cards.MainGoal
 import app.selfwatch.model.health.SleepSession
 import app.selfwatch.model.time.Day
 import org.junit.Assert.assertArrayEquals
@@ -88,10 +89,10 @@ class SleepCaloriesOverlayTest {
 
     @Test
     fun layerChoiceIsStoredAsHiddenIds() {
-        assertEquals(emptySet<String>(), SleepCaloriesLayers.decode(null))
-        assertEquals(setOf(SleepCaloriesLayers.KCAL), SleepCaloriesLayers.decode("kcal_in, nonsense"))
+        assertEquals(emptySet<String>(), SleepCaloriesLayers.decode(null, MainGoal.WEIGHT_LOSS))
+        assertEquals(setOf(SleepCaloriesLayers.KCAL), SleepCaloriesLayers.decode("kcal_in, nonsense", MainGoal.WEIGHT_LOSS))
         assertEquals("sleep,kcal_in", SleepCaloriesLayers.encode(setOf(SleepCaloriesLayers.KCAL, SleepCaloriesLayers.SLEEP)))
         assertEquals("", SleepCaloriesLayers.encode(emptySet()))
-        assertEquals(emptySet<String>(), SleepCaloriesLayers.decode(""))
+        assertEquals(emptySet<String>(), SleepCaloriesLayers.decode("", MainGoal.WEIGHT_LOSS))
     }
 }

@@ -580,6 +580,17 @@ class FeatureFlowsTest {
             val c = resp.credentialsService.gcOauthResponse.oauthCredentials
             assertEquals(35, c.consumerSecret.length)
             assertEquals(CredentialsProto.ServerLocation.PRODUCTION, resp.credentialsService.gcOauthResponse.location)
+            assertTrue(WatchEvent.GarminSignInRequested(answered = true) in r.events)
+        }
+    }
+
+    @Test
+    fun unansweredSignInRequestBecomesAnEvent() = runTest {
+        rig(setOf(GarminCapability.GNCS), config = GarminConfig(syncOnConnect = false)) { r ->
+            r.watch.sendProtobuf(GfdiId.PROTOBUF_REQUEST, 3, Smart.newBuilder().setCredentialsService(CredentialsProto.CredentialsService.newBuilder().setGcOauthRequest(CredentialsProto.OAuthRequest.getDefaultInstance())).build().toByteArray())
+            advanceUntilIdle()
+            assertTrue("no sign-in sent", r.watch.protobufFromPhone.none { Smart.parseFrom(it.third).hasCredentialsService() })
+            assertTrue(WatchEvent.GarminSignInRequested(answered = false) in r.events)
         }
     }
 

@@ -7,6 +7,7 @@
  */
 package app.selfwatch.activity.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityStatsLoader
@@ -19,6 +20,8 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
@@ -26,7 +29,7 @@ import app.selfwatch.ui.format.Fmt
 import kotlin.math.roundToInt
 
 /**
- * Weekly training load (C19) from heart-rate-zone minutes ([app.selfwatch.activity.HrZones.load]): this
+ * Weekly effort (C19, formerly "Training load") from heart-rate-zone minutes ([app.selfwatch.activity.HrZones.load]): this
  * week so far and the 5 weeks before as bars, read as steady progression. No acute:chronic ratio
  * (WP-15, C19). Opens the training-and-recovery overlay (O4).
  */
@@ -72,6 +75,25 @@ object TrainingLoadCard : Card<TrainingLoadCard.Data>("training_load", CardTab.A
             if (i >= 0) loads[i] += s.load
         }
         return Data(starts, loads.toList(), maxHr, any)
+    }
+
+    override val needs: Set<DataKind> = setOf(DataKind.WORKOUTS)
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        if (!data.hasData) return null
+        val avg = data.recentAverage
+        // The recent average is a reference, not a target: a bar, no status color.
+        return SmallFace(
+            value = Fmt.number(data.thisWeek.toLong()),
+            label = ctx.getString(R.string.tl_label),
+            note = avg?.let { ctx.getString(R.string.small_recent_avg, Fmt.number(it.toLong())) },
+            progress = avg?.takeIf { it > 0 }?.let { data.thisWeek.toFloat() / it },
+        )
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(TrainingDetailFragment())
+        return true
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)

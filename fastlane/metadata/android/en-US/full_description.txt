@@ -41,7 +41,7 @@ No account. No cloud. No ads. No analytics. No Google Play Services.
 • Optional Health Connect sync (Android 14+)
 
 <b>Privacy center</b>
-Every internet feature has its own switch, most start off, and every request is listed: when, where and how much.
+Every internet feature has its own switch, nothing goes out unless its switch is on, and every request is listed: when, where and how much.
 
 Tested with the vívoactive 5; other current Garmin watches are expected to work, and the app tells you when a model hasn't been verified yet.
 

@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
@@ -17,8 +18,11 @@ import app.selfwatch.body.SleepDetailFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
@@ -31,6 +35,23 @@ object RecoveryCard : Card<Recovery>("recovery", CardTab.BODY, R.string.card_rec
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.METRIC, Table.SLEEP_SESSION)
 
     override suspend fun load(env: CardEnv): Recovery = BodyLoader(env.db, env.clock).recovery()
+
+    override val needs: Set<DataKind> = setOf(DataKind.SLEEP, DataKind.HRV, DataKind.RESTING_HR)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: Recovery): SmallFace? {
+        if (data.sleepMin == null && data.restingHr == null && data.hrvMs == null) return null
+        val note = listOfNotNull(
+            data.restingHr?.let { ctx.getString(R.string.small_hr_resting, it.toString()) },
+            data.hrvMs?.let { ctx.getString(R.string.small_recovery_hrv, it.toString()) },
+        ).joinToString(" · ").ifEmpty { null }
+        return SmallFace(
+            value = data.sleepMin?.let { Fmt.duration(it * 60L, Locale.getDefault(), FmtLabels.from(ctx)) } ?: ctx.getString(R.string.dash),
+            label = ctx.getString(R.string.small_recovery_sleep),
+            note = note,
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Recovery> = Holder(host, parent)
 

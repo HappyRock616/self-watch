@@ -197,18 +197,30 @@
     <string name="goal_fat">Fat</string>
     <string name="goal_carb">Carbohydrate</string>
     <string name="goal_steps">Steps per day</string>
-    <string name="goal_active_min">Active minutes per day</string>
+    <string name="goal_active_min">Active minutes per week</string>
     <string name="goal_active_kcal">Active calories per day</string>
     <string name="goal_weight">Goal weight</string>
     <string name="goal_water">Water per day</string>
     <string name="goal_fast">Fasting window</string>
     <string name="goal_sleep">Sleep per night</string>
     <string name="goal_since">since %1$s</string>
+    <string name="goal_unit_kcal">kcal</string>
+    <string name="goal_unit_g">g</string>
+    <string name="goal_unit_min_week">min/week</string>
+    <string name="goal_unit_kg">kg</string>
+    <string name="goal_unit_lb">lb</string>
+    <string name="goal_unit_ml">ml</string>
+    <string name="goal_unit_fl_oz">fl oz</string>
+    <string name="goal_unit_h">h</string>
     <string name="goal_note">A changed goal applies from today. Earlier days keep the goal they had, so past streaks and charts stay true.</string>
     <string name="goal_saved">Goals saved</string>
 
     <!-- Profile -->
     <string name="profile_height">Height</string>
+    <string name="profile_height_inches">Height, inches</string>
+    <string name="profile_unit_cm">cm</string>
+    <string name="profile_unit_ft">ft</string>
+    <string name="profile_unit_in">in</string>
     <string name="profile_birth_year">Birth year</string>
     <string name="profile_sex">Sex (for the resting-calorie estimate)</string>
     <string name="profile_female">Female</string>
@@ -216,8 +228,8 @@
     <string name="profile_unspecified">Prefer not to say</string>
     <string name="profile_units">Units</string>
     <string name="profile_units_phone">Follow the phone</string>
-    <string name="profile_units_metric">Metric (kg, cm, km)</string>
-    <string name="profile_units_imperial">Imperial (lb, in, mi)</string>
+    <string name="profile_units_metric">Metric (kg, cm, ml, km)</string>
+    <string name="profile_units_imperial">Imperial (lb, ft/in, fl oz, mi)</string>
     <string name="profile_note">Height, age and sex estimate the calories you burn at rest when the watch doesn\'t say. They stay on this phone.</string>
     <string name="profile_saved">Profile saved</string>
 </resources>

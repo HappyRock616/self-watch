@@ -31,6 +31,7 @@ class SyntheticSamplesTest {
         "activity_compressed_bigendian.fit" to { Synth.activity(600, compressed = true, bigEndian = true) },
         "oddities_devfields.fit" to { Synth.oddities() },
         "weight.fit" to { Synth.weight() },
+        "metrics_vo2max.fit" to { Synth.metricsVo2Max() },
     )
 
     @Test
@@ -45,7 +46,7 @@ class SyntheticSamplesTest {
             assertTrue("missing $f; run with -Dfit.writeSamples=true", f.exists())
             assertArrayEquals("stale $name; run with -Dfit.writeSamples=true", fresh, f.readBytes())
             val ok = when {
-                name.startsWith("monitor") -> MonitoringDecoder.decode(f.inputStream(), 1)
+                name.startsWith("monitor") || name.startsWith("metrics") -> MonitoringDecoder.decode(f.inputStream(), 1)
                 name.startsWith("sleep") -> SleepDecoder.decode(f.inputStream(), 1)
                 name.startsWith("hrv") -> HrvDecoder.decode(f.inputStream(), 1)
                 name.startsWith("weight") -> WeightDecoder.decode(f.inputStream())

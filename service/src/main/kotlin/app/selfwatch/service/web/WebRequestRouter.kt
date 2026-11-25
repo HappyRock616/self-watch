@@ -75,10 +75,10 @@ public sealed interface WebRoute {
     /** To an app on this phone (`127.0.0.1` / `localhost`), feature [NetFeature.LOCAL_PHONE_APP]. */
     public data object LocalPhoneApp : WebRoute
 
-    /** To the internet, feature [NetFeature.WATCH_APP_WEB] (firewall off by default). */
+    /** To the internet, feature [NetFeature.WATCH_APP_WEB] (firewall on by default). */
     public data object Internet : WebRoute
 
-    /** The watch's GPS ephemeris download, feature [NetFeature.GPS_ASSIST] (firewall off by default). */
+    /** The watch's GPS ephemeris download, feature [NetFeature.GPS_ASSIST] (firewall on by default). */
     public data object GpsAssist : WebRoute
 
     /** Not sent; answered at once with [status]. */
@@ -96,7 +96,11 @@ public sealed interface WebRoute {
  * **Garmin servers are never contacted** (`*.garmin.com`, `*.garmin.cn`, `*.dciwx.com`): such requests
  * are answered [WebStatus.BLOCKED] and logged. The one exception is the watch's own GPS ephemeris
  * download, which the garmin driver marks with the header [EPHEMERIS_HEADER]: it goes out with
- * [NetFeature.GPS_ASSIST] (firewall off by default) and the marker header is removed first.
+ * [NetFeature.GPS_ASSIST] (firewall on by default) and the marker header is removed first.
+ *
+ * GPS help is fetched only when the watch asks, never polled. With an [ephemerisStore], a file under
+ * [EPHEMERIS_FRESH_SEC] old is answered from the phone with no network at all; an older one is
+ * revalidated with `If-None-Match` / `If-Modified-Since`, and a 304 answers from the phone too.
  */
 public class WebRequestRouter(
     private val http: Http,
@@ -105,6 +109,8 @@ public class WebRequestRouter(
     private val maxRequestBytes: Int = MAX_REQUEST_BYTES,
     private val timeoutMs: Int = TIMEOUT_MS,
     private val maxConcurrent: Int = MAX_CONCURRENT,
+    private val ephemerisStore: EphemerisStore? = null,
+    private val nowSec: () -> Long = { System.currentTimeMillis() / 1000L },
 ) : WebRequestHandler {
     private val pending = HashMap<Long, Job>()
 
@@ -140,18 +146,29 @@ public class WebRequestRouter(
         val ephemeris = req.headers.any { (k, v) -> k.equals(EPHEMERIS_HEADER, ignoreCase = true) && v == "1" }
         val feature = when (val r = route(req.url, ephemeris)) {
             is WebRoute.Refused -> {
-                if (r.status == WebStatus.BLOCKED) SwLog.i(TAG, "blocked a watch-app request to a Garmin server: ${safeHost(req.url)}")
+                SwLog.i(TAG, "web request refused (${r.status}): ${safeHost(req.url)}")
                 return error(req.requestId, r.status)
             }
             WebRoute.LocalPhoneApp -> NetFeature.LOCAL_PHONE_APP
             WebRoute.Internet -> NetFeature.WATCH_APP_WEB
             WebRoute.GpsAssist -> NetFeature.GPS_ASSIST
         }
+        val store = ephemerisStore.takeIf { feature == NetFeature.GPS_ASSIST && method == "GET" }
+        val cached = store?.load(req.url)
+        val now = nowSec()
+        if (cached != null && now - cached.checkedSec in 0 until EPHEMERIS_FRESH_SEC && cached.body.size <= maxResponseBytes) {
+            SwLog.i(TAG, "GPS assistance answered from the phone (${cached.body.size} bytes, no network)")
+            return WatchCommand.WebResponse(req.requestId, HTTP_OK, cached.body, cached.contentType)
+        }
+        val conditional = buildMap {
+            cached?.etag?.let { put("If-None-Match", it) }
+            cached?.lastModified?.let { put("If-Modified-Since", it) }
+        }
         val httpReq = HttpRequest(
             feature = feature,
             method = method,
             url = req.url,
-            headers = req.headers.filterKeys { !it.equals(EPHEMERIS_HEADER, ignoreCase = true) },
+            headers = req.headers.filterKeys { !it.equals(EPHEMERIS_HEADER, ignoreCase = true) } + conditional,
             body = req.body,
             timeoutMs = timeoutMs,
             maxBytes = maxResponseBytes.toLong(),
@@ -161,13 +178,27 @@ public class WebRequestRouter(
         return when (result) {
             is Outcome.Fail -> {
                 SwLog.i(TAG, "web request failed (${feature.name}): ${result.error}")
-                error(req.requestId, statusFor(result.error))
+                // GPS assist that is turned off answers "timed out", as Gadgetbridge does with no AGPS file.
+                val status = if (feature == NetFeature.GPS_ASSIST) WebStatus.NETWORK_ERROR else statusFor(result.error)
+                error(req.requestId, status)
             }
             is Outcome.Ok -> {
                 val r = result.value
+                if (store != null && cached != null && r.status == HTTP_NOT_MODIFIED) {
+                    store.save(req.url, cached.copy(checkedSec = now))
+                    SwLog.i(TAG, "GPS assistance unchanged (304), answered from the phone")
+                    return WatchCommand.WebResponse(req.requestId, HTTP_OK, cached.body, cached.contentType)
+                }
+                if (store != null && r.status == HTTP_OK && r.body.isNotEmpty() && r.body.size <= maxResponseBytes) {
+                    val fresh = CachedEphemeris(
+                        r.body, header(r.headers, "Content-Type"), header(r.headers, "ETag"), header(r.headers, "Last-Modified"), now,
+                    )
+                    store.save(req.url, fresh)
+                }
                 if (r.body.size > maxResponseBytes) {
                     error(req.requestId, WebStatus.TOO_LARGE)
                 } else {
+                    SwLog.i(TAG, "web request ${feature.name} ${safeHost(req.url)}: ${r.status}, ${r.body.size} bytes")
                     val type = r.headers.entries.firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }?.value?.firstOrNull()
                     WatchCommand.WebResponse(req.requestId, r.status, r.body, type)
                 }
@@ -176,6 +207,9 @@ public class WebRequestRouter(
     }
 
     private fun error(id: Int, status: Int) = WatchCommand.WebResponse(id, status, ByteArray(0), null)
+
+    private fun header(h: Map<String, List<String>>, name: String): String? =
+        h.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value?.firstOrNull()
 
     /** Limits and the routing rule. */
     public companion object {
@@ -197,6 +231,14 @@ public class WebRequestRouter(
         /** Garmin server domains: these hosts and every host below them are blocked. */
         public val BLOCKED_DOMAINS: List<String> = listOf("garmin.com", "garmin.cn", "dciwx.com")
 
+        /**
+         * A cached GPS assistance file younger than this (seconds) is answered from the phone without
+         * asking the server: 6 h, well inside the shortest coverage the watch asks for (one week).
+         */
+        public const val EPHEMERIS_FRESH_SEC: Long = 6 * 3600L
+
+        private const val HTTP_OK = 200
+        private const val HTTP_NOT_MODIFIED = 304
         private const val TIMEOUT_SLACK_MS = 2_000L
         private const val TAG = "WebRequestRouter"
         private val METHODS = setOf("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD")

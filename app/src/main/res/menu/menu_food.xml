@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_day_nutrition" android:title="@string/menu_day_nutrition" app:showAsAction="never" />
     <item android:id="@+id/menu_edit_cards" android:title="@string/menu_edit_cards" app:showAsAction="never" />
     <item android:id="@+id/menu_go_to_date" android:title="@string/menu_go_to_date" app:showAsAction="never" />
     <item android:id="@+id/menu_copy_day" android:title="@string/menu_copy_day" app:showAsAction="never" />

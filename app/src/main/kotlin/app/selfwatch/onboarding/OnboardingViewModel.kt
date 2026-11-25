@@ -17,12 +17,20 @@ import app.selfwatch.cards.CardStore
 import app.selfwatch.cards.MainGoal
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.db.SettingsStore
+import app.selfwatch.db.dao.BodyDao
 import app.selfwatch.db.dao.GoalDao
+import app.selfwatch.food.cards.BurnSource
+import app.selfwatch.food.cards.WeightGoalMath
+import app.selfwatch.me.GoalField
+import app.selfwatch.me.WeightLossPlanner
 import app.selfwatch.model.food.Goal
 import app.selfwatch.model.food.GoalKind
 import app.selfwatch.model.food.Profile
 import app.selfwatch.model.food.Sex
 import app.selfwatch.model.food.UnitSystem
+import app.selfwatch.model.health.BodyKind
+import app.selfwatch.model.health.BodyMeasure
+import app.selfwatch.model.health.DataSource
 import app.selfwatch.model.time.Day
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,9 +48,17 @@ enum class OnboardingStep {
 data class StarterGoals(
     val kcalIn: Int? = null,
     val steps: Int? = null,
+    /** Active minutes per week. */
+    val activeMinWeek: Int? = null,
     val weightKgX100: Int? = null,
     val waterMl: Int? = null,
     val proteinG: Int? = null,
+    /** Weight loss plan: today's weight (saved as a weigh-in), kg ×100. */
+    val currentWeightKgX100: Int? = null,
+    /** Weight loss plan: the goal date, `yyyymmdd`. */
+    val goalDate: Int? = null,
+    /** True when [kcalIn] is the worked-out value (not typed): it is worked out again with the profile. */
+    val kcalAuto: Boolean = false,
 )
 
 /** Onboarding state. */
@@ -53,8 +69,6 @@ data class OnboardingUiState(
     /** The main goal chosen on the goals step (saved with the goals). */
     val mainGoal: MainGoal = MainGoal.DEFAULT,
     val foodEnabled: Boolean = true,
-    /** The main goal stored before onboarding, when the user already had cards of their own (null otherwise). */
-    val ownCardsGoal: MainGoal? = null,
     /** True once onboarding is done (finished or skipped); the screen closes. */
     val finished: Boolean = false,
 ) {
@@ -73,6 +87,8 @@ data class OnboardingUiState(
 class OnboardingViewModel(
     private val settings: SettingsStore,
     private val goals: GoalDao,
+    private val body: BodyDao? = null,
+    private val nowSec: () -> Long = { System.currentTimeMillis() / 1000L },
     private val today: () -> LocalDate = { LocalDate.now() },
 ) : ViewModel() {
 
@@ -87,10 +103,9 @@ class OnboardingViewModel(
             val p = settings.profile()
             val food = settings.getBool(SettingKeys.FOOD_ENABLED, true)
             val main = cards.mainGoal()
-            val own = if (cards.anySaved()) main else null
             // A goal picked before this load finished wins.
             mutable.update {
-                it.copy(profile = p, foodEnabled = food, ownCardsGoal = own, mainGoal = if (it.mainGoal == MainGoal.DEFAULT) main else it.mainGoal)
+                it.copy(profile = p, foodEnabled = food, mainGoal = if (it.mainGoal == MainGoal.DEFAULT) main else it.mainGoal)
             }
         }
     }
@@ -119,8 +134,22 @@ class OnboardingViewModel(
         mutable.update { it.copy(profile = clean) }
         viewModelScope.launch {
             settings.setProfile(clean)
+            refineCalories(clean)
             next()
         }
+    }
+
+    /**
+     * The goals step comes before the profile, so a worked-out calorie goal used the default burn: with
+     * the profile known (sex for the safe minimum, height and age for the burn), it is worked out again.
+     * A calorie goal the user typed is left alone.
+     */
+    private suspend fun refineCalories(p: Profile) {
+        val g = mutable.value.goals
+        if (mutable.value.mainGoal != MainGoal.WEIGHT_LOSS || !g.kcalAuto) return
+        val kcal = calorieGoal(g, p, Day.of(today())) ?: return
+        goals.set(Goal(GoalKind.KCAL_IN, kcal, Day.of(today())))
+        mutable.update { it.copy(goals = it.goals.copy(kcalIn = kcal)) }
     }
 
     /** Chooses the main goal (saved by [saveGoals]). */
@@ -129,27 +158,25 @@ class OnboardingViewModel(
     }
 
     /**
-     * True when saving the chosen goal should first ask whether to switch the cards: the user already
-     * had cards of their own and picked a different goal. Otherwise the goal's cards are just applied.
-     */
-    val asksToSwitchCards: Boolean
-        get() = mutable.value.let { s -> s.ownCardsGoal != null && s.ownCardsGoal != s.mainGoal }
-
-    /**
-     * Saves the main goal (with [switchCards], every card tab switches to its set) and the goals that
+     * Saves the main goal (it no longer changes the cards: one default layout for everyone) and the goals that
      * are set (dated today), then moves on.
      */
-    fun saveGoals(g: StarterGoals, switchCards: Boolean = true) {
+    fun saveGoals(g: StarterGoals) {
         mutable.update { it.copy(goals = g) }
         val main = mutable.value.mainGoal
         viewModelScope.launch {
-            if (switchCards) cards.setMainGoalWithCards(main) else cards.setMainGoal(main)
+            cards.setMainGoal(main)
             val day = Day.of(today())
             g.proteinG?.takeIf { it in 10..1_000 }?.let { goals.set(Goal(GoalKind.PROTEIN_G, it, day)) }
             g.kcalIn?.takeIf { it in 500..10_000 }?.let { goals.set(Goal(GoalKind.KCAL_IN, it, day)) }
             g.steps?.takeIf { it in 100..100_000 }?.let { goals.set(Goal(GoalKind.STEPS, it, day)) }
+            g.activeMinWeek?.takeIf { it in 1..GoalField.MINUTES_PER_WEEK }?.let { goals.set(Goal(GoalKind.ACTIVE_MIN, it, day)) }
             g.weightKgX100?.takeIf { it in 2_000..40_000 }?.let { goals.set(Goal(GoalKind.WEIGHT_KG_X100, it, day)) }
             g.waterMl?.takeIf { it in 100..10_000 }?.let { goals.set(Goal(GoalKind.WATER_ML, it, day)) }
+            g.goalDate?.takeIf { it >= day.yyyymmdd }?.let { settings.setInt(WeightGoalMath.DATE_KEY, it) }
+            g.currentWeightKgX100?.takeIf { it in 2_000..40_000 }?.let {
+                body?.insert(BodyMeasure(0, nowSec(), BodyKind.WEIGHT, null, it, DataSource.MANUAL, null, null))
+            }
             next()
         }
     }
@@ -177,7 +204,16 @@ class OnboardingViewModel(
 
         /** Builds the view model from [graph]. */
         fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {
-            initializer { OnboardingViewModel(graph.settings, graph.db.goals) }
+            initializer { OnboardingViewModel(graph.settings, graph.db.goals, body = graph.db.body) }
+        }
+
+        /** The worked-out daily calorie goal for the weight loss plan in [g] with profile [p], or null when an input is missing. */
+        fun calorieGoal(g: StarterGoals, p: Profile, today: Day): Int? {
+            val current = g.currentWeightKgX100 ?: return null
+            val goal = g.weightKgX100 ?: return null
+            val date = g.goalDate ?: return null
+            val burn = WeightLossPlanner.estimatedBurn(current, p, today)
+            return WeightLossPlanner.advise(current, goal, today, Day(date), burn, BurnSource.ESTIMATED, p.sex).kcal
         }
 
         /** Whether onboarding should be shown (not done yet). */

@@ -45,6 +45,7 @@ class ActivityCardsSmokeTest {
 
     private val emptyIds = listOf(
         R.id.im_empty, R.id.st_empty, R.id.ak_empty, R.id.ss_empty, R.id.ad_empty, R.id.tl_empty, R.id.wv_empty, R.id.eh_empty,
+        R.id.tt_empty, R.id.rhr_empty, R.id.dt_empty, R.id.ct_empty,
     )
 
     private fun idle() {

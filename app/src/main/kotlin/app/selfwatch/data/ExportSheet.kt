@@ -16,10 +16,15 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import androidx.annotation.StringRes
 import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.lifecycleScope
 import app.selfwatch.R
 import app.selfwatch.food.FoodViews
+import app.selfwatch.graph
 import app.selfwatch.interop.api.WeightUnit
 import app.selfwatch.me.MeViews
+import app.selfwatch.shell.DisplayUnits
+import app.selfwatch.ui.format.Units
+import kotlinx.coroutines.launch
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import app.selfwatch.ui.R as UiR
 
@@ -60,6 +65,13 @@ class ExportSheet : BottomSheetDialogFragment() {
         formats.check(savedInstanceState?.getInt(KEY_FORMAT) ?: FORMAT_BASE)
         ranges.check(savedInstanceState?.getInt(KEY_RANGE) ?: RANGE_BASE)
         units.check(savedInstanceState?.getInt(KEY_UNIT) ?: UNIT_KG)
+        // The weight unit starts at the Units setting (pounds for US units).
+        if (savedInstanceState == null) {
+            lifecycleScope.launch {
+                val shown = DisplayUnits.of(ctx.graph.db.settings.profile().units)
+                units.check(if (shown == Units.IMPERIAL) UNIT_LB else UNIT_KG)
+            }
+        }
         fun syncUnits() {
             val body = DataViewModel.EXPORT_ORDER.getOrNull(formats.checkedRadioButtonId - FORMAT_BASE) == GARMIN_BODY
             unitLabel.visibility = if (body) View.VISIBLE else View.GONE

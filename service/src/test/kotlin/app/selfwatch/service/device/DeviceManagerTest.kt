@@ -10,6 +10,7 @@ package app.selfwatch.service.device
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.model.ble.BlePort
 import app.selfwatch.model.device.ConnectionState
+import app.selfwatch.model.device.DeviceKind
 import app.selfwatch.model.device.DeviceInfo
 import app.selfwatch.model.device.SyncReason
 import app.selfwatch.model.fake.FakeBlePort
@@ -112,18 +113,18 @@ class DeviceManagerTest : ServiceDbTest() {
     }
 
     @Test
-    fun failedConnectionsBackOffOneTwoFiveTenThirtySixtyThenFiveMinutes() = runTest {
+    fun failedConnectionsBackOffFiveTenThirtySixtyTwoMinutesThenFiveMinutes() = runTest {
         addDevice()
         val driver = FailingDriver({ testScheduler.currentTime })
         val ports = RecordingPorts()
         val dm = manager(driver, ports)
         assertEquals(StartResult.ALWAYS, dm.start())
 
-        advanceTimeBy(708_001)
+        advanceTimeBy(825_001)
         runCurrent()
 
-        // Gaps: 1, 2, 5, 10, 30, 60, 300, 300 s.
-        assertEquals(listOf(0L, 1_000, 3_000, 8_000, 18_000, 48_000, 108_000, 408_000, 708_000), driver.runTimes.toList())
+        // Gaps: 5, 10, 30, 60, 120, 300, 300 s.
+        assertEquals(listOf(0L, 5_000, 15_000, 45_000, 105_000, 225_000, 525_000, 825_000), driver.runTimes.toList())
         assertTrue("background reconnect", ports.created.all { it.second })
         assertEquals("every link released", ports.created.size, ports.released.size)
         val st = dm.devices.value.single().state
@@ -144,16 +145,202 @@ class DeviceManagerTest : ServiceDbTest() {
 
         repeat(3) {
             advanceTimeBy(60_000)
+            clock.advance(Backoff.STABLE_MS / 1000) // the link stayed up long enough
             driver.disconnect()
             runCurrent()
             assertTrue(dm.devices.value.single().state is ConnectionState.Failed)
-            advanceTimeBy(1_001) // always the first back-off step, since each connection was Ready
+            advanceTimeBy(5_001) // always the first back-off step, since each connection was Ready and stable
             runCurrent()
             assertEquals(it + 2, driver.runCount)
         }
         assertEquals(3, ports.released.size)
         dm.stop()
         assertEquals(4, ports.released.size)
+    }
+
+    @Test
+    fun linksThatDropSoonAfterReadyKeepBackingOff() = runTest {
+        addDevice()
+        val driver = FakeWatchDriver()
+        val dm = manager(driver, RecordingPorts())
+        dm.start()
+        runCurrent()
+        // Ready, then dropped within a minute: the waits grow 5, 10 s instead of resetting.
+        for ((i, wait) in listOf(5_000L, 10_000L).withIndex()) {
+            clock.advance(30)
+            driver.disconnect()
+            runCurrent()
+            advanceTimeBy(wait - 1)
+            runCurrent()
+            assertEquals("still waiting", i + 1, driver.runCount)
+            advanceTimeBy(2)
+            runCurrent()
+            assertEquals(i + 2, driver.runCount)
+        }
+        dm.stop()
+    }
+
+    /** A driver per device; each stays Connecting until [open] is called for its address. */
+    private class GatedDrivers {
+        val drivers = HashMap<String, GatedDriver>()
+        fun factory(): DriverFactory = DriverFactory { info -> drivers.getOrPut(info.address) { GatedDriver() } }
+    }
+
+    private class GatedDriver : WatchDriver {
+        val st = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
+        val opened = kotlinx.coroutines.CompletableDeferred<Unit>()
+        var runs = 0
+        override val info: StateFlow<DeviceInfo?> = MutableStateFlow(null)
+        override val state: StateFlow<ConnectionState> = st
+        override val events: Flow<WatchEvent> = emptyFlow()
+
+        override suspend fun run(port: BlePort, sink: HealthSink, files: FileStore) {
+            runs++
+            st.value = ConnectionState.Connecting
+            opened.await()
+            st.value = ConnectionState.Ready
+            awaitCancellation()
+        }
+
+        override suspend fun sync(reason: SyncReason): Outcome<SyncReport> = Outcome.Fail(SwError.NotConnected(0))
+        override suspend fun send(cmd: WatchCommand): Outcome<Unit> = Outcome.Fail(SwError.NotConnected(0))
+    }
+
+    private fun addKind(address: String, kind: DeviceKind, priority: Int): Long = runBlocking {
+        val id = db.devices.upsert(device(address).copy(kind = kind, name = kind.name), clock.nowSec())
+        db.devices.setPriority(id, priority)
+        id
+    }
+
+    @Test
+    fun onlyOneWatchConnectsAndSensorsJoinIt() = runTest {
+        // Higher priority comes first in the device order.
+        val w1 = addKind("AA:00:00:00:00:01", DeviceKind.GARMIN_WATCH, 3)
+        val w2 = addKind("AA:00:00:00:00:02", DeviceKind.GARMIN_WATCH, 2)
+        addKind("AA:00:00:00:00:03", DeviceKind.HEART_RATE_SENSOR, 1)
+        val g = GatedDrivers()
+        val ports = RecordingPorts()
+        val dm = DeviceManager(db, clock, ports, g.factory(), RecordingHealthSink(), FakeFileStore(), backgroundScope)
+        dm.start()
+        runCurrent()
+        // Links open one at a time: the first watch is connecting, the strap waits its turn.
+        assertEquals(listOf("AA:00:00:00:00:01"), ports.created.map { it.first })
+        g.drivers.getValue("AA:00:00:00:00:01").opened.complete(Unit)
+        runCurrent()
+        assertEquals(listOf("AA:00:00:00:00:01", "AA:00:00:00:00:03"), ports.created.map { it.first })
+        assertTrue("the second watch stays off", g.drivers["AA:00:00:00:00:02"]?.runs ?: 0 == 0)
+        dm.stop()
+
+        // Choosing the other watch swaps them.
+        runBlocking { db.settings.set(DeviceManager.ACTIVE_WATCH_KEY, w2.toString()) }
+        val ports2 = RecordingPorts()
+        val dm2 = DeviceManager(db, clock, ports2, GatedDrivers().factory(), RecordingHealthSink(), FakeFileStore(), backgroundScope)
+        dm2.start()
+        runCurrent()
+        assertEquals(listOf("AA:00:00:00:00:02"), ports2.created.map { it.first })
+        dm2.stop()
+        assertEquals(w1, DeviceManager.pickActiveWatchId(listOf(w1, w2), 999))
+    }
+
+    @Test
+    fun aDeviceStuckConnectingFreesTheGateAfterThirtySeconds() = runTest {
+        addKind("AA:00:00:00:00:01", DeviceKind.GARMIN_WATCH, 2)
+        addKind("AA:00:00:00:00:03", DeviceKind.WEIGHT_SCALE, 1)
+        val ports = RecordingPorts()
+        val dm = DeviceManager(db, clock, ports, GatedDrivers().factory(), RecordingHealthSink(), FakeFileStore(), backgroundScope)
+        dm.start()
+        runCurrent()
+        assertEquals(1, ports.created.size)
+        advanceTimeBy(DeviceManager.CONNECT_GATE_MS + 1)
+        runCurrent()
+        assertEquals(2, ports.created.size)
+        dm.stop()
+    }
+
+    @Test
+    fun aWatchTakenByAnotherPhoneIsLeftAloneUntilSyncNow() = runTest {
+        val id = addDevice()
+        val driver = FakeWatchDriver()
+        val dm = manager(driver, RecordingPorts())
+        dm.start()
+        runCurrent()
+        advanceTimeBy(30_000)
+        // Three links that drop 30 s after READY: the third makes it "contested".
+        for (wait in listOf(5_001L, 10_001L)) {
+            clock.advance(30)
+            driver.disconnect()
+            runCurrent()
+            advanceTimeBy(wait)
+            runCurrent()
+        }
+        assertEquals(3, driver.runCount)
+        clock.advance(30)
+        driver.disconnect()
+        runCurrent()
+        val st = dm.devices.value.single().state as ConnectionState.Failed
+        assertEquals(ContestDetector.CHECK_EVERY_SEC, st.retryInSec)
+        assertEquals(SwError.Io(ContestDetector.REASON_OTHER_PHONE), st.error)
+        advanceTimeBy(30 * 60_000L)
+        runCurrent()
+        assertEquals("no fighting for half an hour", 3, driver.runCount)
+        // Sync now = "use this phone": reconnects at once.
+        dm.syncNow(id)
+        runCurrent()
+        assertEquals(4, driver.runCount)
+        dm.stop()
+    }
+
+    @Test
+    fun anExclusiveWatchKeepsItsNormalBackOffWhenTakenAway() = runTest {
+        val id = addDevice()
+        runBlocking { db.settings.setBool(SettingKeys.deviceExclusive(id), true) }
+        val driver = FakeWatchDriver()
+        val dm = manager(driver, RecordingPorts())
+        dm.start()
+        runCurrent()
+        advanceTimeBy(30_000)
+        for (wait in listOf(5_001L, 10_001L)) {
+            clock.advance(30)
+            driver.disconnect()
+            runCurrent()
+            advanceTimeBy(wait)
+            runCurrent()
+        }
+        clock.advance(30)
+        driver.disconnect()
+        runCurrent()
+        val st = dm.devices.value.single().state as ConnectionState.Failed
+        assertEquals("no hour-long pause", Backoff.delaySec(2), st.retryInSec)
+        advanceTimeBy(30_001)
+        runCurrent()
+        assertEquals(4, driver.runCount)
+        dm.stop()
+    }
+
+    @Test
+    fun aDeviceTurnedOffStaysOffUntilTurnedOn() = runTest {
+        val w = addKind("AA:00:00:00:00:01", DeviceKind.GARMIN_WATCH, 2)
+        val strap = addKind("AA:00:00:00:00:03", DeviceKind.HEART_RATE_SENSOR, 1)
+        runBlocking { db.settings.setBool(SettingKeys.deviceOff(w), true) }
+        val g = GatedDrivers()
+        val ports = RecordingPorts()
+        val dm = DeviceManager(db, clock, ports, g.factory(), RecordingHealthSink(), FakeFileStore(), backgroundScope)
+        dm.start()
+        runCurrent()
+        // The watch is off; the strap connects by itself.
+        assertEquals(listOf("AA:00:00:00:00:03"), ports.created.map { it.first })
+        g.drivers.getValue("AA:00:00:00:00:03").opened.complete(Unit)
+        runCurrent()
+        // Turning the strap off and the watch on: the strap's link ends, the watch connects.
+        runBlocking {
+            db.settings.setBool(SettingKeys.deviceOff(strap), true)
+            db.settings.setBool(SettingKeys.deviceOff(w), false)
+        }
+        dm.start()
+        runCurrent()
+        assertEquals(listOf("AA:00:00:00:00:03", "AA:00:00:00:00:01"), ports.created.map { it.first })
+        assertEquals(1, ports.released.size)
+        dm.stop()
     }
 
     @Test
@@ -293,6 +480,37 @@ class DeviceManagerTest : ServiceDbTest() {
             Thread.sleep(20)
         }
         assertEquals(clock.nowSec(), stored)
+        dm.stop()
+    }
+
+    @Test
+    fun unansweredGarminSignInIsNotedForTheHint() = runTest {
+        val id = addDevice()
+        val driver = FakeWatchDriver()
+        val dm = manager(driver)
+        dm.start()
+        runCurrent()
+        val key = SettingKeys.deviceSignInAsked(id)
+
+        assertTrue(driver.emit(WatchEvent.GarminSignInRequested(answered = false)))
+        // The database write runs on the IO dispatcher; wait for it in real time.
+        var asked: String? = null
+        for (i in 0 until 100) {
+            runCurrent()
+            asked = runBlocking { db.settings.get(key) }
+            if (asked != null) break
+            Thread.sleep(20)
+        }
+        assertEquals(clock.nowSec().toString(), asked)
+
+        assertTrue(driver.emit(WatchEvent.GarminSignInRequested(answered = true)))
+        for (i in 0 until 100) {
+            runCurrent()
+            asked = runBlocking { db.settings.get(key) }
+            if (asked == null) break
+            Thread.sleep(20)
+        }
+        assertEquals("answered: the hint goes away", null, asked)
         dm.stop()
     }
 }

@@ -9,7 +9,11 @@ package app.selfwatch.food
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.selfwatch.food.nutrition.DietConflict
+import app.selfwatch.food.nutrition.DietPrefs
 import app.selfwatch.food.nutrition.NutrientMath
+import app.selfwatch.food.nutrition.NutrientTargets
+import app.selfwatch.food.nutrition.Target
 import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.model.food.Food
 import app.selfwatch.model.food.FoodRef
@@ -55,7 +59,14 @@ data class FoodDetailState(
     val favourite: Boolean = false,
     /** True when the food could not be found. */
     val missing: Boolean = false,
+    /** The user's diets and allergens. */
+    val prefs: DietPrefs = DietPrefs.NONE,
+    /** Daily targets for the "% of your day" bars and the nutrition facts. */
+    val targets: Map<Nutrients.Field, Target> = emptyMap(),
 ) {
+    /** The food's known clashes with the user's diet. */
+    val conflicts: List<DietConflict> get() = prefs.conflicts(food?.dietInfo)
+
     /** The chosen serving. */
     val serving: Serving? get() = servings.getOrNull(servingIndex)
 
@@ -103,10 +114,12 @@ class FoodDetailViewModel(
 
     private suspend fun load(): FoodDetailState {
         val slots = backend.mealSlots()
+        val prefs = backend.dietPrefs()
+        val units = backend.displayUnits()
         return when (target) {
             is FoodDetailTarget.Add -> {
                 val food = backend.food(target.ref) ?: return FoodDetailState(loading = false, missing = true, slots = slots)
-                val options = FoodRows.servingOptions(food).toMutableList()
+                val options = FoodRows.detailServingOptions(food, units).toMutableList()
                 val (serving, amount) = FoodRows.quickServing(food, backend.lastServing(target.ref))
                 var index = options.indexOf(serving)
                 if (index < 0) {
@@ -126,6 +139,8 @@ class FoodDetailViewModel(
                         slotId = slot,
                         day = day,
                         favourite = backend.isFavourite(target.ref),
+                        prefs = prefs,
+                        targets = NutrientTargets.of(backend.targetInputs(day)),
                     ),
                 )
             }
@@ -136,7 +151,7 @@ class FoodDetailViewModel(
                     NutrientMath.clampInt(NutrientMath.mulDivRound(it.toLong(), 100L, entry.amountX100.toLong().coerceAtLeast(1)))
                 }
                 val logged = Serving(-1, entry.servingLabel, perServing)
-                val options = if (food != null) FoodRows.servingOptions(food).toMutableList() else mutableListOf(logged)
+                val options = if (food != null) FoodRows.detailServingOptions(food, units).toMutableList() else mutableListOf(logged)
                 var index = options.indexOfFirst { it.label == entry.servingLabel }
                 if (index < 0) {
                     options.add(0, logged)
@@ -154,6 +169,8 @@ class FoodDetailViewModel(
                         slotId = entry.mealSlotId,
                         day = entry.day,
                         favourite = entry.food?.let { backend.isFavourite(it) } ?: false,
+                        prefs = prefs,
+                        targets = NutrientTargets.of(backend.targetInputs(entry.day)),
                     ),
                 )
             }

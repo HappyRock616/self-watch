@@ -42,7 +42,14 @@ class ExportersTest {
 
     private val diary = listOf(
         DiaryRow(Day(20260301), "Breakfast", 7 * 3600 + 30 * 60, "Porridge, with \"honey\"", null, 150, "cup", null, Nutrients(2405, 81, 52, 10, 410, 120, 50, 95, 5)),
-        DiaryRow(Day(20260301), "Lunch", null, "Tomato soup", null, 100, "bowl", null, Nutrients(1800, 40, 60, null, 250, 150, 30, 700, null)),
+        DiaryRow(
+            Day(20260301), "Lunch", null, "Tomato soup", null, 100, "bowl", null,
+            Nutrients(
+                1800, 40, 60, null, 250, 150, 30, 700, null,
+                transfatX10 = 1, monofatX10 = 20, polyfatX10 = 10, addsugarX10 = 50, potassiumMg = 400, calciumMg = 30,
+                ironX10 = 12, vitaUg = 80, vitcX10 = 150, vitdX10 = 5,
+            ),
+        ),
         DiaryRow(Day(20260302), "Dinner", 19 * 3600, "Rice", null, 20000, "g", 2000, Nutrients(2600, 54, 6, 1, 564, 1, 8, 2, 0)),
     )
     private val body = listOf(
@@ -64,8 +71,16 @@ class ExportersTest {
         val files = Zips.readAll(sink.bytes()).associate { it.name to String(it.bytes, Charsets.UTF_8) }
         assertEquals(setOf("servings.csv", "dailySummary.csv", "exercises.csv", "biometrics.csv", "notes.csv"), files.keys)
         assertTrue(files.getValue("servings.csv").startsWith(0xFEFF.toChar() + "Day,Time,Group,Food Name,Amount,Energy (kcal),Carbs (g)"))
-        assertTrue(files.getValue("servings.csv").contains("2026-03-01,07:30,Breakfast,\"Porridge, with \"\"honey\"\"\",1.50 cup,240.5,41,5,12,5.2,5,1,95,8.1"))
-        assertTrue(files.getValue("dailySummary.csv").contains("2026-03-01,420.5,66,8,27,11.2,5,1,795,12.1"))
+        // The v2 nutrients follow Cronometer's names, each with its unit.
+        assertTrue(
+            files.getValue("servings.csv").contains(
+                "Sugars (g),Added Sugars (g),Fat (g),Cholesterol (mg),Monounsaturated (g),Polyunsaturated (g),Saturated (g),Trans-Fats (g)," +
+                    "Sodium (mg),Potassium (mg),Calcium (mg),Iron (mg),Vitamin A (µg),Vitamin C (mg),Vitamin D (µg),Protein (g)",
+            ),
+        )
+        assertTrue(files.getValue("servings.csv").contains("2026-03-01,07:30,Breakfast,\"Porridge, with \"\"honey\"\"\",1.50 cup,240.5,41,5,12,,5.2,5,,,1,,95,,,,,,,8.1"))
+        assertTrue(files.getValue("servings.csv").contains("Tomato soup,1.00 bowl,180,25,3,15,5,6,,2,1,,0.1,700,400,30,1.2,80,15,0.5,4"))
+        assertTrue(files.getValue("dailySummary.csv").contains("2026-03-01,420.5,66,8,27,5,11.2,5,2,1,1,0.1,795,400,30,1.2,80,15,0.5,12.1"))
 
         val plan = TestSupport.plan(CronometerImporter(zone = zone), "cronometer.zip", sink.bytes())
         val back = TestSupport.data(plan)
@@ -112,6 +127,10 @@ class ExportersTest {
         assertEquals(20260301L, first["day"]?.asLong)
         assertEquals(2405L, first["nutrients"]?.get("kcalX10")?.asLong)
         assertEquals(JsonValue.Null, files.getValue("diary.json")[1]!!["nutrients"]!!["satfatX10"])
+        assertEquals(400L, files.getValue("diary.json")[1]!!["nutrients"]!!["potassiumMg"]?.asLong)
+        assertEquals(12L, files.getValue("diary.json")[1]!!["nutrients"]!!["ironMgX10"]?.asLong)
+        assertEquals(5L, files.getValue("diary.json")[1]!!["nutrients"]!!["vitdUgX10"]?.asLong)
+        assertEquals(JsonValue.Null, files.getValue("diary.json")[0]!!["nutrients"]!!["vitaUg"])
         assertEquals("WEIGHT", files.getValue("body.json")[0]!!["kind"]?.asString)
         assertEquals(600L, files.getValue("workouts.json")[0]!!["durationSec"]?.asLong)
     }
@@ -143,5 +162,25 @@ class ExportersTest {
         assertEquals(95, importer.sniff("foods.csv", sink.bytes()))
         val back = TestSupport.data(TestSupport.plan(importer, "foods.csv", sink.bytes())).foods
         assertEquals(foods, back)
+    }
+
+    @Test
+    fun foodListKeepsTheV2Nutrients() = runBlocking {
+        val n = Nutrients(
+            3650, 120, 60, 10, 650, 20, 70, 300, 0,
+            transfatX10 = 1, monofatX10 = 25, polyfatX10 = 20, addsugarX10 = 5, potassiumMg = 360, calciumMg = 50,
+            ironX10 = 42, vitaUg = 3, vitcX10 = 0, vitdX10 = 15,
+        )
+        val oats = app.selfwatch.model.food.Food(
+            app.selfwatch.model.food.FoodRef(app.selfwatch.model.food.FoodOrigin.MY_FOOD, 0), "Oats", null, 0, Basis.PER_100G, n,
+            listOf(app.selfwatch.model.food.Serving(1, "1 cup", 800)), null, "Imported", null,
+        )
+        val sink = MemorySink()
+        FoodListExporter(TestSupport.FakeSource(foods = listOf(oats))).export(req, sink)
+        val text = String(sink.bytes(), Charsets.UTF_8)
+        assertTrue(text.contains("Potassium (mg),Calcium (mg),Iron (mg),Vitamin A (µg),Vitamin C (mg),Vitamin D (µg)"))
+        assertTrue(text.contains(",0.1,2.5,2,0.5,360,50,4.2,3,0,1.5"))
+        val back = TestSupport.data(TestSupport.plan(FoodListImporter(), "foods.csv", sink.bytes())).foods
+        assertEquals(n, back.single().per)
     }
 }

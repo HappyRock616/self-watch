@@ -15,6 +15,7 @@ import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.MealSlot
 import app.selfwatch.model.food.Nutrients
 import app.selfwatch.model.food.Serving
+import app.selfwatch.ui.format.Units
 
 /** Pure helpers shared by the food screens: rows, servings, calories and the meal guess. */
 object FoodRows {
@@ -41,7 +42,7 @@ object FoodRows {
         val (serving, amount) = defaultServing(food)
         val kcal = NutrientMath.forServing(food, serving, amount)?.kcalX10
         val label = if (serving == NutrientMath.GRAM) "100 g" else serving.label
-        return FoodHit(food.ref, food.name, food.brand, kcal, label, tag, rank, food.kind)
+        return FoodHit(food.ref, food.name, food.brand, kcal, label, tag, rank, food.kind, dietInfo = food.dietInfo.takeUnless { it.isUnknown })
     }
 
     /**
@@ -56,6 +57,29 @@ object FoodRows {
                 out.add(NutrientMath.GRAM)
             }
             Basis.PER_ITEM -> if (out.isEmpty()) out.add(Serving(0, ONE_SERVING, null))
+        }
+        return out
+    }
+
+    /** "100 g" as a serving (one of it is 100 g). */
+    val HUNDRED_G: Serving = Serving(seq = -2, label = "100 g", gramsX10 = 1000)
+
+    /** One ounce (28.35 g) as a serving. */
+    val OUNCE: Serving = Serving(seq = -3, label = "oz", gramsX10 = 283)
+
+    /**
+     * The food detail's serving list (FOOD_UI_PLAN §4.1): the food's named servings, then for foods
+     * measured by weight or volume "100 g" and "g", and "oz" for US [units] only. A per-item food without
+     * servings gets "1 serving".
+     */
+    fun detailServingOptions(food: Food, units: Units): List<Serving> {
+        val out = ArrayList(servingOptions(food))
+        if (food.basis != Basis.PER_ITEM) {
+            out.remove(NutrientMath.GRAM)
+            out.removeAll { it.label == HUNDRED_G.label && it.gramsX10 == HUNDRED_G.gramsX10 }
+            out.add(HUNDRED_G)
+            out.add(NutrientMath.GRAM)
+            if (units == Units.IMPERIAL) out.add(OUNCE)
         }
         return out
     }

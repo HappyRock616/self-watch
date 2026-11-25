@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
@@ -132,6 +133,12 @@ public class LinkRouter(
 
     private val registrations = ConcurrentHashMap<UUID, Registration>()
     private val waiting = ConcurrentHashMap<Pair<String, UUID>, Waiting>()
+
+    /**
+     * One [dropRevoked] at a time: a run that read the permission table before a change must not
+     * remove a registration that a later run (which saw the change) just made.
+     */
+    private val revokeLock = kotlinx.coroutines.sync.Mutex()
     private val inbox = HashMap<UUID, ArrayDeque<Pending>>()
     private val queue = SendQueue(scope, { id, cmd -> watches()?.send(id, cmd) ?: Outcome.Fail(SwError.NotConnected(id)) })
 
@@ -189,7 +196,9 @@ public class LinkRouter(
      * Follows the `link_permission` table: removes every registration whose row is gone or denied (a
      * revoke), and registers waiting callbacks whose app was just allowed ([registerWhenApproved]).
      */
-    public suspend fun dropRevoked() {
+    public suspend fun dropRevoked(): Unit = revokeLock.withLock { dropRevokedLocked() }
+
+    private suspend fun dropRevokedLocked() {
         val rows = db.links.list()
         val allowed = rows.filter { it.allowed }.mapTo(HashSet()) { it.packageName to it.appUuid }
         for (reg in registrations.values) {

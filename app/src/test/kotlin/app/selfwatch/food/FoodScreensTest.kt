@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food
 
+import app.selfwatch.me.MeTestSupport
 import android.app.Activity
 import android.os.Looper
 import android.view.View
@@ -53,11 +54,11 @@ class FoodScreensTest {
     @Before
     fun setUp() {
         app = RuntimeEnvironment.getApplication() as SelfWatchApp
-        TestDb.resetShared(app)
+        TestDb.wipeShared(app)
     }
 
     @After
-    fun tearDown() = TestDb.resetShared(app)
+    fun tearDown() = MeTestSupport.resetDb()
 
     private fun waitFor(what: String, dump: () -> String = { "" }, cond: () -> Boolean) {
         val end = System.currentTimeMillis() + TIMEOUT_MS
@@ -114,20 +115,22 @@ class FoodScreensTest {
     fun diaryEmpty() {
         val a = openFoodTab()
         waitFor("meal cards") { a.shows("Breakfast") && a.shows("Snacks") && a.shows("Water") }
-        assertTrue(a.shows("Calories left"))
+        assertTrue(a.shows("Daily balance"))
     }
 
     @Test
     fun diaryWithEntries() {
         seed()
         val a = openFoodTab()
-        waitFor("entries", { texts(a.window.decorView).toString() }) { a.shows("Crisp apple") && a.shows("Office cake") && a.shows("250 ") }
+        waitFor("entries", { texts(a.window.decorView).toString() }) { a.shows("Crisp apple") && a.shows("Office cake") && a.shows("of 8 glasses") }
     }
 
     @Test
     fun addFoodEmptyAndWithFoods() {
         val empty = Robolectric.buildActivity(AddFoodActivity::class.java, AddFoodActivity.intent(app, null, 1)).setup().get()
         waitFor("empty recent") { empty.shows("Foods you log show up here") }
+        // foods.db is missing and food data is allowed: the automatic download is queued (Robolectric has no Wi-Fi).
+        waitFor("food database queued for Wi-Fi") { empty.shows("The food database will download by itself on Wi-Fi") }
         seed()
         val a = Robolectric.buildActivity(AddFoodActivity::class.java, AddFoodActivity.intent(app, null, 1)).setup().get()
         waitFor("recent row") { a.shows("Crisp apple") }

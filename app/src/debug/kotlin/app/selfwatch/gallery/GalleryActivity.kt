@@ -181,6 +181,7 @@ class GalleryActivity : SwActivity() {
         componentHost.removeAllViews()
         val ctx = scaledContext(fontScaleChoice)
         val host = componentHost
+        tabCardSection(ctx, host)
         chartSection(ctx, host)
         typeSection(ctx, host)
         colorSection(ctx, host)
@@ -571,6 +572,32 @@ class GalleryActivity : SwActivity() {
         val card = SwCard(ctx)
         lines.forEach { card.addView(text(ctx, UiR.style.TextAppearance_SelfWatch_Body_Number, it)) }
         host.addView(card, matchWrap())
+    }
+
+    /**
+     * The cards added with the card framework (goal cards, Daily balance, Weight goal, the catalog), each
+     * small (two to a row, as on a tab) and large, with sample data ([CardSamples]).
+     */
+    private fun tabCardSection(ctx: Context, host: LinearLayout) {
+        section(ctx, host, R.string.gallery_sec_tab_cards)
+        val cardHost = CardSamples.Host(ctx)
+        val gap = dp(ctx, 16)
+        val samples = CardSamples.all()
+        for (pair in samples.chunked(2)) {
+            val (a, aData) = pair[0]
+            val b = pair.getOrNull(1)
+            val row = CardSamples.pair(
+                ctx,
+                CardSamples.small(a, aData, cardHost, host),
+                b?.let { (card, data) -> CardSamples.small(card, data, cardHost, host) },
+                gap,
+            )
+            host.addView(row, matchWrap().apply { topMargin = gap })
+        }
+        for ((card, data) in samples) {
+            host.addView(label(getString(card.title)))
+            host.addView(CardSamples.large(card, data, cardHost, host), matchWrap())
+        }
     }
 
     // ---- Helpers ----

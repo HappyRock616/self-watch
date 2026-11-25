@@ -143,6 +143,13 @@ public sealed interface WatchCommand {
 
     /** Set the watch clock from the phone. */
     public data object SyncTime : WatchCommand
+
+    /**
+     * Start ([enable]) or stop the watch's live heart-rate and step readings ([WatchEvent.LiveHeartRate],
+     * [WatchEvent.LiveSteps]). Live readings cost watch battery: callers turn them on only while a screen
+     * shows them. Added in core-model v1.3.
+     */
+    public data class LiveData(val enable: Boolean) : WatchCommand
 }
 
 /** Things the watch tells or asks the phone. */
@@ -194,6 +201,25 @@ public sealed interface WatchEvent {
      * (COMPATIBILITY R2); sent once per connection. Added in core-model v1.1.
      */
     public data object SecurePairingRequired : WatchEvent
+
+    /**
+     * The watch asked to sign in to Garmin Connect (COMPATIBILITY R1), which it does when its Garmin
+     * sign-in has run out; weather and GPS help stop working until it gets one. [answered] is true when
+     * the phone answered with a made-up sign-in (the per-watch setting is on). Added in core-model v1.4.
+     */
+    public data class GarminSignInRequested(val answered: Boolean) : WatchEvent
+
+    /**
+     * A live heart-rate reading ([bpm]) while [WatchCommand.LiveData] is on, with the watch's resting heart
+     * rate for today when it sent one. Added in core-model v1.3.
+     */
+    public data class LiveHeartRate(val bpm: Int, val restingBpm: Int?) : WatchEvent
+
+    /**
+     * The watch's step count for today ([steps]) and its step goal ([goal], null when unknown) while
+     * [WatchCommand.LiveData] is on. Added in core-model v1.3.
+     */
+    public data class LiveSteps(val steps: Int, val goal: Int?) : WatchEvent
 }
 
 /** Connect IQ (Monkey C) value as it travels in app messages and settings. */

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: live or latest heart rate, today's low, high and resting, last 24 hours (HeartRateNowCard). -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/heart_rate_now_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_heart_rate_now">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/hrn_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swValue="@string/dash" />
+
+    <TextView
+        android:id="@+id/hrn_today"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
+
+    <app.selfwatch.ui.components.Sparkline
+        android:id="@+id/hrn_spark"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/body_spark_height"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/hrn_spark_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_half"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
+
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/hrn_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/hrn_empty" />
+</app.selfwatch.ui.components.SwCard>

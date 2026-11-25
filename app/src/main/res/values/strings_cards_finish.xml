@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Day clock, the device cards (D1–D4), Live and Weather (CARDS_PLAN.md). -->
+<resources>
+    <string name="card_home_devices">Device cards</string>
+    <string name="card_line_pair_plain">%1$s %2$s</string>
+    <string name="ago_min">min ago</string>
+    <string name="ago_hours">h ago</string>
+    <string name="ago_days">d ago</string>
+
+    <!-- Day clock -->
+    <string name="card_day_clock">Day clock</string>
+    <string name="card_day_clock_summary">Your day as a 24-hour circle of sleep, rest and activity</string>
+    <plurals name="day_clock_active_hours">
+        <item quantity="one">active hour</item>
+        <item quantity="other">active hours</item>
+    </plurals>
+    <plurals name="day_clock_active_hours_count">
+        <item quantity="one">%d active hour</item>
+        <item quantity="other">%d active hours</item>
+    </plurals>
+    <string name="day_clock_sleep_note">Sleep %1$s</string>
+    <string name="day_clock_active">Active %1$s</string>
+    <string name="day_clock_light">Light movement %1$s</string>
+    <string name="day_clock_rest">Rest %1$s</string>
+    <string name="day_clock_sleep">Sleep %1$s</string>
+    <string name="day_clock_empty">Your day shows up here once your watch has synced today\'s steps or sleep.</string>
+    <string name="day_clock_description">Day clock. %1$s. Active %2$s, light movement %3$s, rest %4$s, sleep %5$s.</string>
+
+    <!-- Device cards -->
+    <string name="card_battery">Battery</string>
+    <string name="card_battery_summary">Battery level and history for each device</string>
+    <string name="battery_pct">%1$d%%</string>
+    <string name="battery_drain">About %1$d%% a day</string>
+    <string name="battery_lowest_of">Lowest of %1$d devices</string>
+    <string name="battery_empty">No battery level yet. It shows up after your device connects.</string>
+    <string name="card_solar">Solar charging</string>
+    <string name="card_solar_summary">Solar intake on solar watches</string>
+    <string name="card_room_climate">Room climate</string>
+    <string name="card_room_climate_summary">Temperature and humidity from a Bluetooth thermometer</string>
+    <string name="card_last_sync">Last sync</string>
+    <string name="card_last_sync_summary">When each device last sent data, and what</string>
+    <string name="last_sync_empty">No devices yet. Pair one in Devices.</string>
+    <string name="last_sync_never">Not synced yet</string>
+    <string name="last_sync_nothing">No new data</string>
+    <string name="synced_count">%1$s %2$d</string>
+    <string name="synced_workouts">Workouts</string>
+    <string name="synced_activity">Activity</string>
+    <string name="synced_sleep">Sleep</string>
+    <string name="synced_metrics">Fitness metrics</string>
+    <string name="synced_hrv">HRV</string>
+    <string name="synced_weight">Weight</string>
+    <string name="synced_measurements">Measurements</string>
+    <string name="synced_other">Other</string>
+
+    <!-- Live -->
+    <string name="live_heart_rate">Heart rate</string>
+    <string name="live_steps_today">Steps today</string>
+    <string name="live_steps_note">%1$s steps today</string>
+    <string name="live_from_strap">Live heart rate from %1$s</string>
+    <string name="live_from_device">Live from %1$s</string>
+    <string name="live_stored">Not live: %1$s. Live readings start while your watch is connected and this card is on screen.</string>
+    <string name="live_empty">No heart rate or steps yet. Connect your watch to see them live.</string>
+    <string name="live_description">Live. %1$s. %2$s. %3$s</string>
+
+    <!-- Weather -->
+    <string name="unit_fahrenheit">°F</string>
+    <string name="weather_high_low">High %1$s° · Low %2$s°</string>
+    <string name="weather_rain_chance">Rain %1$d%%</string>
+    <string name="weather_updated_now">Updated just now</string>
+    <string name="weather_updated">Updated %1$s</string>
+    <string name="weather_old">Old forecast, from %1$s</string>
+    <string name="weather_waiting">No forecast yet. It shows up when your weather app sends the next one.</string>
+    <string name="weather_off">No forecast yet. Turn on weather in Devices → Weather and pick a weather app such as Breezy Weather; Self Watch itself doesn\'t go online for it.</string>
+    <string name="weather_clear">Clear</string>
+    <string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_showers">Showers</string>
+    <string name="weather_thunder">Thunderstorms</string>
+    <string name="weather_snow">Snow</string>
+    <string name="weather_sleet">Sleet</string>
+    <string name="weather_fog">Fog</string>
+    <string name="weather_windy">Windy</string>
+    <string name="weather_haze">Haze</string>
+    <string name="weather_unknown">Weather</string>
+</resources>

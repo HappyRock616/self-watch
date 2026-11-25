@@ -17,7 +17,8 @@ import app.selfwatch.model.watch.IngestBatch
 public data class IngestResult(val workoutId: Long?)
 
 /**
- * Stores a whole [IngestBatch] in one transaction, for `service.HealthIngest`: activity, metrics,
+ * Stores a whole [IngestBatch] in one transaction, for `service.HealthIngest`: activity, metrics (heart
+ * rate with sensor priority, [MetricDao.sensorPriorityIn]),
  * sleep, workout and body rows, and (if the batch has a key) the `sync_file` row marked done. Either
  * all of it commits or none of it.
  */
@@ -35,7 +36,8 @@ public class HealthWriteDao internal constructor(private val db: SelfWatchDb) {
         if (batch.key != null) tables += Table.SYNC_FILE
         return db.write(tables) { d ->
             ActivityDao.insertIn(d, batch.activity)
-            MetricDao.insertIn(d, batch.metrics)
+            // A strap's or sensor's heart rate always wins over the watch's (Devices, sensor priority).
+            MetricDao.insertIn(d, MetricDao.sensorPriorityIn(d, batch.metrics))
             SleepDao.insertStagesIn(d, batch.sleepStages)
             for (s in batch.sleepSessions) SleepDao.insertSessionIn(d, s)
             val workoutId = batch.workout?.let { WorkoutDao.insertIn(d, it, null) }

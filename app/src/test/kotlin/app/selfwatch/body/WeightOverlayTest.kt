@@ -10,6 +10,9 @@
 package app.selfwatch.body
 
 import android.app.Application
+import app.selfwatch.cards.ChartDefaults
+import app.selfwatch.cards.ChartId
+import app.selfwatch.cards.MainGoal
 import app.selfwatch.model.fake.FakeClock
 import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.model.food.Nutrients
@@ -169,13 +172,15 @@ class WeightOverlayBuildTest {
 
     @Test
     fun layerChoiceEncoding() {
-        assertEquals(WeightLayers.DEFAULT_HIDDEN, WeightLayers.decode(null))
-        assertEquals(emptySet<String>(), WeightLayers.decode(""))
+        val goal = MainGoal.WEIGHT_LOSS
+        val defaults = ChartDefaults.hidden(goal, ChartId.WEIGHT)
+        assertEquals(defaults, WeightLayers.decode(null, goal))
+        assertEquals(emptySet<String>(), WeightLayers.decode("", goal))
         // Unknown ids and the always-on weight are dropped.
-        assertEquals(setOf(WeightLayers.KCAL_IN, WeightLayers.STEPS), WeightLayers.decode("steps, bogus,weight,kcal_in"))
+        assertEquals(setOf(WeightLayers.KCAL_IN, WeightLayers.STEPS), WeightLayers.decode("steps, bogus,weight,kcal_in", goal))
         assertEquals("kcal_in,steps", WeightLayers.encode(setOf(WeightLayers.STEPS, WeightLayers.KCAL_IN, "bogus")))
-        for (set in listOf(emptySet(), WeightLayers.DEFAULT_HIDDEN, WeightLayers.TOGGLEABLE.toSet())) {
-            assertEquals(set, WeightLayers.decode(WeightLayers.encode(set)))
+        for (set in listOf(emptySet(), defaults, WeightLayers.TOGGLEABLE.toSet())) {
+            assertEquals(set, WeightLayers.decode(WeightLayers.encode(set), goal))
         }
     }
 }
@@ -256,7 +261,7 @@ class WeightOverlayLoadTest {
     @Test
     fun layerChoiceRoundTripsThroughSettings() = runBlocking {
         val db = TestDb.fresh(ctx)
-        assertEquals(WeightLayers.DEFAULT_HIDDEN, WeightLayers.load(db))
+        assertEquals(ChartDefaults.hidden(MainGoal.DEFAULT, ChartId.WEIGHT), WeightLayers.load(db))
         WeightLayers.save(db, emptySet())
         assertEquals(emptySet<String>(), WeightLayers.load(db))
         assertEquals("", db.settings.get(WeightLayers.KEY))

@@ -79,6 +79,61 @@ data class HeldPermission(
 /** The permissions the Privacy center lists (only those this app declares and this Android has). */
 enum class PermissionKind {
     NEARBY_DEVICES, NOTIFICATIONS, NOTIFICATION_ACCESS, CAMERA, PHONE, CALL_LOG, CONTACTS, ANSWER_CALLS, HEALTH_CONNECT,
+
+    /** Not a permission but a special access: exempt from battery optimization (granted = exempt). */
+    BATTERY_OPTIMIZATION,
+    ;
+
+    /** True for a normal runtime permission (asked with the system dialog). */
+    val isRuntime: Boolean get() = this !in SPECIAL
+
+    private companion object {
+        val SPECIAL = setOf(NOTIFICATION_ACCESS, HEALTH_CONNECT, BATTERY_OPTIMIZATION)
+    }
+}
+
+/** What tapping a permission row in the Privacy center does. */
+enum class PermissionAction {
+    /** Show the system permission dialog. */
+    REQUEST,
+
+    /** Android's app details page (Permissions is one tap away). */
+    APP_DETAILS,
+
+    /** Android's notification settings for this app. */
+    APP_NOTIFICATIONS,
+
+    /** Android's notification access (listener) page. */
+    NOTIFICATION_LISTENER,
+
+    /** Android's battery optimization list. */
+    BATTERY_OPTIMIZATION,
+
+    /** Ask for the Health Connect permissions. */
+    HEALTH_CONNECT_REQUEST,
+
+    /** Health Connect's own permission page for this app. */
+    HEALTH_CONNECT_SETTINGS,
+    ;
+
+    /** Rules. */
+    companion object {
+        /**
+         * Every row is the master control for its permission: not granted and still askable ([askedBefore]
+         * false, or Android would show the dialog again: [showRationale]) asks; denied for good, granted,
+         * or a special access opens the matching Android page, where it can be allowed or taken back.
+         */
+        fun of(p: HeldPermission, askedBefore: Boolean, showRationale: Boolean): PermissionAction = when (p.kind) {
+            PermissionKind.NOTIFICATION_ACCESS -> NOTIFICATION_LISTENER
+            PermissionKind.BATTERY_OPTIMIZATION -> BATTERY_OPTIMIZATION
+            PermissionKind.HEALTH_CONNECT -> if (!p.granted && !askedBefore) HEALTH_CONNECT_REQUEST else HEALTH_CONNECT_SETTINGS
+            else -> when {
+                !p.granted && (!askedBefore || showRationale) -> REQUEST
+                p.kind == PermissionKind.NOTIFICATIONS -> APP_NOTIFICATIONS
+                else -> APP_DETAILS
+            }
+        }
+    }
 }
 
 /** Privacy center state. */
@@ -199,14 +254,13 @@ data class SettingsUiState(
     val units: String = SettingsViewModel.UNITS_PHONE,
     val appearance: Appearance = Appearance(),
     val bleCapture: Boolean = false,
-    val fakeAuth: Boolean = false,
     val debuggable: Boolean = false,
 )
 
 /**
  * Settings (C20): connection mode (always connected or sync only, with hours), food tracking,
- * units, light/dark and color theme, Bluetooth capture (debug builds) and the fake Garmin sign-in (off by
- * default; the screen shows the COMPATIBILITY R1 warning before turning it on).
+ * units, light/dark and color theme; in debug builds only, Bluetooth capture. (The Garmin sign-in answer is
+ * a per-watch setting on Watch settings.)
  */
 class SettingsViewModel(
     private val settings: SettingsStore,
@@ -222,7 +276,7 @@ class SettingsViewModel(
     init {
         val keys = listOf(
             SettingKeys.CONNECTION_MODE, SettingKeys.CONNECTION_SYNC_ONLY_HOURS, SettingKeys.FOOD_ENABLED, SettingKeys.UNITS,
-            SettingKeys.THEME, SettingKeys.ACCENT, WatchSettings.BLE_CAPTURE, SettingKeys.GARMIN_FAKE_AUTH,
+            SettingKeys.THEME, SettingKeys.ACCENT, WatchSettings.BLE_CAPTURE,
         )
         viewModelScope.launch {
             combine(keys.map { settings.observe(it) }) { it }.collect { v ->
@@ -235,7 +289,6 @@ class SettingsViewModel(
                         units = v[3] ?: UNITS_PHONE,
                         appearance = Appearance.parse(v[4], v[5]),
                         bleCapture = WatchSettings.bleCaptureOn(v[6], debuggable),
-                        fakeAuth = v[7]?.toBooleanStrictOrNull() ?: false,
                     )
                 }
             }
@@ -268,9 +321,6 @@ class SettingsViewModel(
 
     /** Bluetooth capture (debug builds only). */
     fun setBleCapture(on: Boolean) = save { if (debuggable) settings.setBool(WatchSettings.BLE_CAPTURE, on) }
-
-    /** The fake Garmin sign-in (call only after the user accepted the warning). */
-    fun setFakeAuth(on: Boolean) = save { settings.setBool(SettingKeys.GARMIN_FAKE_AUTH, on) }
 
     private fun save(block: suspend () -> Unit) {
         viewModelScope.launch { block() }

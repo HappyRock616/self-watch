@@ -23,7 +23,7 @@ object DeviceFixtures {
     /** Path of the run FIT file on the "old phone", as Gadgetbridge records it. */
     const val GB_FIT_PATH: String = "/storage/emulated/0/Android/data/nodomain.freeyourgadget.gadgetbridge/files/AA_BB_CC_DD_EE_01/ACTIVITY/2026/run.fit"
 
-    /** The Gadgetbridge database file. Expected: 10 minutes, 20 metrics, 4 stages, 1 night, 2 weights, 2 workouts. */
+    /** The Gadgetbridge database file. Expected: 10 minutes, 22 metrics (2 of them VO2 max), 4 stages, 1 night, 2 weights, 2 workouts. */
     fun gadgetbridgeDb(dir: File): File {
         val f = File(dir, "gb-fixture-${System.nanoTime()}.db")
         SQLiteDatabase.openOrCreateDatabase(f, null).use { d ->
@@ -38,6 +38,7 @@ object DeviceFixtures {
             }
             d.execSQL("CREATE TABLE BASE_ACTIVITY_SUMMARY (_id INTEGER PRIMARY KEY, NAME TEXT, START_TIME INTEGER NOT NULL, END_TIME INTEGER NOT NULL, OVERRIDE_ACTIVITY_KIND INTEGER, ACTIVITY_KIND INTEGER NOT NULL, GPX_TRACK TEXT, RAW_DETAILS_PATH TEXT, DEVICE_ID INTEGER NOT NULL, USER_ID INTEGER NOT NULL, SUMMARY_DATA TEXT, RAW_SUMMARY_DATA BLOB)")
             d.execSQL("CREATE TABLE MI_BAND_ACTIVITY_SAMPLE (TIMESTAMP INTEGER, DEVICE_ID INTEGER, STEPS INTEGER)")
+            d.execSQL("CREATE TABLE GENERIC_METRIC_SAMPLE (TIMESTAMP INTEGER NOT NULL, DEVICE_ID INTEGER NOT NULL, USER_ID INTEGER NOT NULL, METRIC_TYPE INTEGER NOT NULL, METRIC_SCORE REAL NOT NULL, METRIC_EXTRA INTEGER, PRIMARY KEY (TIMESTAMP, DEVICE_ID, METRIC_TYPE))")
 
             d.execSQL("INSERT INTO DEVICE (_id, NAME, MANUFACTURER, IDENTIFIER, TYPE, TYPE_NAME, MODEL) VALUES (1, 'Forerunner 255', 'Garmin', 'AA:BB:CC:DD:EE:01', 0, 'GARMIN_FORERUNNER_255', '255')")
             for (i in 0 until 10) {
@@ -55,6 +56,9 @@ object DeviceFixtures {
             val night = (T0 + 12 * 3600) * 1000
             d.execSQL("INSERT INTO GARMIN_SLEEP_STAGE_SAMPLE VALUES ($night, 1, 1, 2), (${night + 1_800_000}, 1, 1, 3), (${night + 3_600_000}, 1, 1, 4), (${night + 5_400_000}, 1, 1, 1)")
             d.execSQL("INSERT INTO GARMIN_SLEEP_STATS_SAMPLE VALUES (${night + 5_460_000}, 1, 1, 80, 2)")
+            // VO2 max (metric type 6, extra = max_met_category): running 48.3, cycling 51.0 a second later;
+            // a workout estimate (type 12, skipped) and a placeholder 0 (dropped).
+            d.execSQL("INSERT INTO GENERIC_METRIC_SAMPLE VALUES ($ms, 1, 1, 6, 48.3, 0), (${ms + 1000}, 1, 1, 6, 51.0, 1), ($ms, 1, 1, 12, 47.9, NULL), (${ms + 2000}, 1, 1, 6, 0.0, 0)")
             d.execSQL("INSERT INTO GENERIC_WEIGHT_SAMPLE VALUES (${ms - 86_400_000}, 1, 1, 75.4, NULL), (${ms + 86_400_000}, 1, 1, 75.1, 500)")
             d.execSQL("INSERT INTO BASE_ACTIVITY_SUMMARY (_id, NAME, START_TIME, END_TIME, OVERRIDE_ACTIVITY_KIND, ACTIVITY_KIND, RAW_DETAILS_PATH, DEVICE_ID, USER_ID) VALUES (1, 'Morning run', ${ms - 7_200_000}, ${ms - 5_400_000}, 0, 16, '$GB_FIT_PATH', 1, 1)")
             d.execSQL("INSERT INTO BASE_ACTIVITY_SUMMARY (_id, NAME, START_TIME, END_TIME, OVERRIDE_ACTIVITY_KIND, ACTIVITY_KIND, RAW_DETAILS_PATH, DEVICE_ID, USER_ID) VALUES (2, 'Walk', ${ms + 7_200_000}, ${ms + 9_000_000}, 0, 1, NULL, 1, 1)")
@@ -91,6 +95,7 @@ object DeviceFixtures {
             "sleep_night.fit" to TestSupport.bytes("fit/synthetic/sleep_night.fit"),
             "hrv_status.fit" to TestSupport.bytes("fit/synthetic/hrv_status.fit"),
             "weight.fit" to TestSupport.bytes("fit/synthetic/weight.fit"),
+            "metrics_vo2max.fit" to TestSupport.bytes("fit/synthetic/metrics_vo2max.fit"),
             "broken.fit" to byteArrayOf(14, 16, 1, 2, 3),
         )
         return TestSupport.zipOf(

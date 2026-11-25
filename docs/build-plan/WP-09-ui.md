@@ -35,18 +35,22 @@ never single colors, and it colors every screen and every chart. Light / Dark / 
 | Turquoise | `#19D3C5` | `#FFD84D` | `#04342C` | `#412402` |
 | Purple | `#BD93F9` | `#7CC8FF` | `#26215C` | `#042C53` |
 | **Orange** (default) | `#FF8A1F` | `#4DABF7` | `#412402` | `#042C53` |
-| Yellow | `#F5B841` | `#2E9E5B` | `#412402` | `#092012` (watch: `#E8F5EC`) |
-| Forest | `#2E9E5B` | `#F5B841` | `#092012` (watch: `#E8F5EC`) | `#412402` |
+| Yellow | `#F5B841` | `#2E9E5B` | `#412402` | `#E8F5EC` |
+| Forest | `#2E9E5B` | `#F5B841` | `#E8F5EC` | `#412402` |
 
 Red `#FF453A` is reserved for destructive, alarm and error states in every theme. Neutrals follow Just Go 5K
 (background `#0B0B0B`, text `#F1EFE8`, muted `#B4B2A9`, track `#3A3A38`); the card surface stays navy.
 
-- `ThemeColors` works out every role from the two theme colors (one algorithm, JVM-tested): fills are the theme
-  color mixed towards black (light look) or white (dark look) only until they reach 3:1 on the surface and the
-  background, so the dark look uses the exact Just Go 5K colors; text on a fill is the watch's text color when it
-  reaches 4.5:1, otherwise a dark shade of the fill's hue (Forest and Yellow's green: the watch's light text is
-  3.1:1, too low for phone text sizes); `swColorAccentText` is the primary as small text (4.5:1 on background,
-  surface and surface variant).
+- **Exact colors in both looks (owner's decision).** Primary, secondary and the two text-on colors are exactly the
+  table above in the light and the dark palette. They are never darkened or lightened for contrast: fills, bars and
+  rings in a brand color do not need 3:1 on white. (Forest's and Yellow's light text on green is 3.0:1, used as
+  large bold button text.)
+- `ThemeColors` works out the text roles (one algorithm, JVM-tested). Small text in a theme color is never a
+  darkened (brownish or olive) theme color: on a light background it is the theme color when that reaches 4.5:1,
+  else the theme's own text-on color from Theme.mc when that does, else the normal text color (`#16202A`). On a dark
+  background it is the theme color, lightened towards white only as far as 4.5:1 needs. This gives
+  `swColorAccentText` (background, surface, surface variant), `secondaryText` and `colorPrimaryInverse` (snackbar
+  action on the inverse surface). The bottom tab icon is the exact primary; its label uses `swColorAccentText`.
 - `themes.xml` has one overlay per theme (`ThemeOverlay.SelfWatch.Theme.*`) setting `colorPrimary`,
   `colorOnPrimary`, `colorSecondary`, `colorOnSecondary`, `colorTertiary` (= secondary), `colorPrimaryInverse`,
   `swColorAccentText` and `swThemeId` (the enum ordinal). The `sw_theme_*` colors in `colors.xml` are generated
@@ -61,16 +65,18 @@ Red `#FF453A` is reserved for destructive, alarm and error states in every theme
 The one place charts, rings, bars, sparklines, toggle chips, tags and card accents get colors. `ChartPalette.of(context)`
 reads the context's theme overlay (`swThemeId`) and night mode; `ChartPalette.of(theme, night)` for tests.
 
-- Series 1 = primary, series 2 = secondary. Series 3 / 4 = tints of primary / secondary (dark: 45% towards white;
-  light: 35% towards black). Series 5 / 6 = shades (dark: 35% towards black, pulled back to 3:1; light: 60% towards
-  black). Then the list repeats. Every series reaches 3:1 on surface and background, and series are at least 24 apart
-  in RGB distance (tested for every theme and look).
+- Series 1 = exactly the primary, series 2 = exactly the secondary, in both looks. Series 3 / 4 are derived from
+  primary / secondary, always as tints (dark: 45% towards white, pulled to 3:1 on the navy surface; light: 30%
+  towards white, left pale: pulling them to 3:1 on white would darken them again). Series 5 / 6 are neutral gray
+  steps (dark `#B4B2A9`, `#8A8983`; light `#5F5E5A`, `#8A8983`), at least 3:1. Nothing is ever shaded towards black:
+  a darkened yellow or orange reads as brown or olive (owner's decision, tested). Then the list repeats. Series
+  are at least 24 apart in RGB distance (tested for every theme and look).
 - Assignment: a card or chart's main metric is series 1, a second metric series 2, then in chip order. "On target"
   is primary, "not yet" secondary, "over a limit" red. Toggle chips take their layer's color (text: black or white).
-- Sleep stages: REM = primary; deep = the darker secondary, light = the lighter secondary (dark look: secondary and a
-  45% white tint; light look: secondary 45% towards black and secondary); awake = neutral gray; unmeasured = track.
+- Sleep stages: REM = primary; deep = the darker secondary, light = the lighter secondary (both looks: deep = the exact
+  secondary, light = a secondary tint; never a darkened secondary); awake = neutral gray; unmeasured = track.
 - Neutrals: `text`, `muted` (axis labels, usual bands, weight dots, goal lines), `track`. `alarm` = red, never a
-  series. `primaryText` / `secondaryText` for labels in a series color. Tags: database = neutral pill, mine and
+  series. `primaryText` / `secondaryText` for labels in a series color (the readable-text rule above). Tags: database = neutral pill, mine and
   meals = primary tint, chain = secondary tint.
 - No chart or card code holds a fixed series color; `R.color.sw_series_*` and `sw_stage_*` no longer exist.
 

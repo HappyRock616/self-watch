@@ -119,6 +119,41 @@ class FoodToolsTest {
     }
 
     @Test
+    fun exportDayIncludesTheV2NutrientsWithUnits() = test {
+        fake.entries += app.selfwatch.model.food.DiaryEntry(
+            500, today, 1, 0, null, "Lentil soup", null, 100, "bowl", null,
+            app.selfwatch.model.food.Nutrients(
+                2300, 120, 40, 5, 350, 40, 80, 600, 0,
+                transfatX10 = 0, monofatX10 = 15, polyfatX10 = 12, addsugarX10 = 10, potassiumMg = 730, calciumMg = 45,
+                ironX10 = 33, vitaUg = 20, vitcX10 = 45, vitdX10 = null,
+            ),
+            null,
+        )
+        val (vm, _) = diary()
+        val sink = MemorySink("day.csv")
+        vm.exportDay(today, sink, ZoneOffset.UTC)
+        val lines = sink.bytes().toString(Charsets.UTF_8).removePrefix(BOM).trim().lines()
+        val header = lines[0].split(",")
+        val cells = lines[1].split(",")
+        fun cell(name: String): String {
+            val i = header.indexOf(name)
+            assertTrue("missing column $name in $header", i >= 0)
+            return cells[i]
+        }
+        assertEquals("0", cell("Trans-Fats (g)"))
+        assertEquals("1.5", cell("Monounsaturated (g)"))
+        assertEquals("1.2", cell("Polyunsaturated (g)"))
+        assertEquals("1", cell("Added Sugars (g)"))
+        assertEquals("730", cell("Potassium (mg)"))
+        assertEquals("45", cell("Calcium (mg)"))
+        assertEquals("3.3", cell("Iron (mg)"))
+        assertEquals("20", cell("Vitamin A (µg)"))
+        assertEquals("4.5", cell("Vitamin C (mg)"))
+        assertEquals("", cell("Vitamin D (µg)")) // unknown stays blank, never 0
+        assertEquals("230", cell("Energy (kcal)"))
+    }
+
+    @Test
     fun exportOfAnEmptyDayWritesNothing() = test {
         val (vm, events) = diary()
         val sink = MemorySink()
@@ -172,8 +207,8 @@ class FoodToolsTest {
 
     @Test
     fun quickLogAddsAGlassAndTogglesTheFast() = test {
-        val w = QuickLog.water(fake)
-        assertEquals(DiaryViewModel.GLASS_ML, w.totalMl)
+        val w = QuickLog.water(fake, WaterGlass.US_ML)
+        assertEquals(355, w.totalMl)
         assertEquals(2000, w.goalMl)
         QuickLog.undoWater(fake)
         assertEquals(0, fake.water)

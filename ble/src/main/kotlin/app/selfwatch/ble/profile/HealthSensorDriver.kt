@@ -206,6 +206,8 @@ public class HealthSensorDriver(
         val m = HeartRateMeasurement.parse(bytes) ?: return malformed(HealthProfile.HEART_RATE)
         if (m.bpm !in MIN_BPM..MAX_BPM || m.contact == false) return
         hrLock.withLock { hrBuffer += MetricSample(deviceId, MetricKind.HEART_RATE, clock.nowSec(), m.bpm) }
+        // Live display: the strap's value replaces the watch's while it is connected (the service's LiveRelay).
+        mutableEvents.tryEmit(WatchEvent.LiveHeartRate(m.bpm, null))
     }
 
     private suspend fun flushHeartRate(sink: HealthSink) {
@@ -308,6 +310,7 @@ public class HealthSensorDriver(
         is WatchCommand.WriteAppSettings -> Feature.WATCH_APP_SETTINGS
         is WatchCommand.WebResponse -> Feature.WATCH_APP_WEB
         WatchCommand.SyncTime -> Feature.TIME_SYNC
+        is WatchCommand.LiveData -> Feature.REALTIME_HR
     }
 
     /** Defaults. */

@@ -13,6 +13,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.selfwatch.AppGraph
+import app.selfwatch.cards.ChartChoice
+import app.selfwatch.cards.ChartId
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.db.dao.SleepNight
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 
@@ -106,7 +109,48 @@ data class SleepUiState(
     val night: SleepNightData? = null,
     val days: List<SleepDay> = emptyList(),
     val loading: Boolean = true,
+    /** Chart layers switched off for this view ([SleepLayers.NIGHT_CHOICE] or [SleepLayers.PERIOD_CHOICE]). */
+    val hidden: Set<String> = emptySet(),
 )
+
+/** The Sleep chart's layer ids, per view, and the stored choices. */
+object SleepLayers {
+    /** Night view: the hypnogram. */
+    const val STAGES: String = "stages"
+
+    /** Night view: heart rate. */
+    const val HR: String = "hr"
+
+    /** Night and period views: HRV. */
+    const val HRV: String = "hrv"
+
+    /** Night view: breathing rate. */
+    const val BREATHING: String = "breathing"
+
+    /** Night view: blood oxygen. */
+    const val SPO2: String = "spo2"
+
+    /** Night view: skin temperature change. */
+    const val TEMP: String = "temp"
+
+    /** Period views: sleep time per night. */
+    const val SLEEP: String = "sleep"
+
+    /** Period views: resting heart rate. */
+    const val RESTING_HR: String = "rhr"
+
+    /** Night view layers, in chip order. */
+    val NIGHT: List<String> = listOf(STAGES, HR, HRV, BREATHING, SPO2, TEMP)
+
+    /** Week and month view layers, in chip order. */
+    val PERIOD: List<String> = listOf(SLEEP, RESTING_HR, HRV)
+
+    /** The night view's stored choice. */
+    val NIGHT_CHOICE: ChartChoice by lazy { ChartChoice(ChartId.SLEEP_NIGHT) }
+
+    /** The week and month views' stored choice. */
+    val PERIOD_CHOICE: ChartChoice by lazy { ChartChoice(ChartId.SLEEP_PERIOD) }
+}
 
 /** Pure sleep arithmetic. */
 object SleepNights {
@@ -225,7 +269,7 @@ class SleepViewModel(db: SelfWatchDb, clock: Clock) :
                 val metrics = SleepNights.NIGHT_KINDS.associateWith { db.metrics.series(it, r, n.session.deviceId) }
                 SleepNights.assemble(day, n, metrics)
             }
-            return SleepUiState(range, day, canGoNext, data, emptyList(), loading = false)
+            return SleepUiState(range, day, canGoNext, data, emptyList(), loading = false, hidden = SleepLayers.NIGHT_CHOICE.load(db))
         }
         val today = clock.today()
         val first = today.plusDays(1 - range.days)
@@ -234,10 +278,16 @@ class SleepViewModel(db: SelfWatchDb, clock: Clock) :
             val s = byDay[d]
             SleepDay(d, s?.sleepMin, s?.restingHr, s?.hrvAvgMs)
         }
-        return SleepUiState(range, day, canGoNext, null, days, loading = false)
+        return SleepUiState(range, day, canGoNext, null, days, loading = false, hidden = SleepLayers.PERIOD_CHOICE.load(db))
     }
 
     override fun failed(range: PeriodRange, day: Day): SleepUiState = SleepUiState(range, day, loading = false)
+
+    /** Saves the layers switched off on the night view ([night]) or the week and month views. */
+    fun saveHidden(night: Boolean, hidden: Set<String>) {
+        val choice = if (night) SleepLayers.NIGHT_CHOICE else SleepLayers.PERIOD_CHOICE
+        viewModelScope.launch { choice.save(db, hidden) }
+    }
 
     /** Factory. */
     companion object {

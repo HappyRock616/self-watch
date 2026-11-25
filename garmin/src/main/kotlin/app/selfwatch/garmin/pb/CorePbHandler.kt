@@ -27,8 +27,9 @@ import java.util.UUID
  *   may pass one in).
  * - Battery status response: becomes [WatchEvent.Battery].
  * - Sign-in (OAuth) request: answered with fake credentials only when the session's auth policy allows it
- *   (`garmin.fake_auth`); otherwise left unhandled, which the service reports as "unknown request",
- *   exactly as the reference does with fake OAuth off.
+ *   (the per-watch setting `devices.<id>.fake_auth`); otherwise left unhandled, which the service reports
+ *   as "unknown request", exactly as the reference does with fake OAuth off. Either way the request
+ *   becomes [WatchEvent.GarminSignInRequested], so the app can point the user to the setting.
  *
  * Ref: Gadgetbridge 160beab41 service/devices/garmin/ProtocolBufferHandler.java (processProtobufCoreRequest,
  * processProtobufDeviceStatusResponse, the gc_oauth_request branch)
@@ -53,10 +54,12 @@ public class CorePbHandler : PbHandler {
         }
         if (smart.hasCredentialsService() && smart.credentialsService.hasGcOauthRequest()) {
             if (!session.auth.allowFakeOAuth) {
-                SwLog.w(TAG, "watch asked for Garmin Connect sign-in; fake sign-in is off (garmin.fake_auth)")
+                SwLog.w(TAG, "watch asked for Garmin Connect sign-in; answering it is off for this watch")
+                session.emit(WatchEvent.GarminSignInRequested(answered = false))
                 return null
             }
-            SwLog.w(TAG, "answering Garmin Connect sign-in with fake credentials (garmin.fake_auth is on)")
+            SwLog.w(TAG, "answering Garmin Connect sign-in with made-up credentials (on for this watch)")
+            session.emit(WatchEvent.GarminSignInRequested(answered = true))
             val creds = CredentialsProto.OAuthCredentials.newBuilder()
                 .setConsumerKey(UUID.randomUUID().toString())
                 .setConsumerSecret(randomText(35))

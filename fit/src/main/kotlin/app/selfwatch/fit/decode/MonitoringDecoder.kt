@@ -56,6 +56,7 @@ class MonitoringCarry {
  * - Resting metabolic rate (`monitoring_info` field 5, kcal per day): one
  *   [app.selfwatch.model.health.MetricKind.RESTING_KCAL] sample per local day, stamped at the start of
  *   the day the `monitoring_info` message falls on.
+ * - VO2 max (`max_met_data`, mostly in metrics files): running or cycling, see [Vo2Max].
  * - Local midnight comes from [zone] if given, otherwise from the file's own local time offset
  *   (`monitoring_info.local_timestamp` − `timestamp`), otherwise UTC.
  */

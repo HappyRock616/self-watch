@@ -42,20 +42,34 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
-/** Pure profile-form rules. */
+/** Pure profile-form rules. Height is stored in centimetres and shown as cm, or feet and inches. */
 object ProfileForm {
     private const val CM_PER_INCH = 2.54
+    private const val INCHES_PER_FOOT = 12
 
-    /** Height typed in [units] (cm, or inches when imperial) to centimetres, or null when not plausible. */
-    fun heightCm(text: String, units: Units): Int? {
-        val x100 = Fmt.parseX100(text) ?: return null
-        val cm = if (units == Units.METRIC) x100 / 100.0 else x100 / 100.0 * CM_PER_INCH
+    /**
+     * Height typed in [units] to centimetres, or null when not plausible. Metric: [main] is centimetres
+     * ([inches] is ignored). Imperial: [main] is feet and [inches] inches (either may be empty, not both).
+     */
+    fun heightCm(main: String, inches: String, units: Units): Int? {
+        val cm = if (units == Units.METRIC) {
+            (Fmt.parseX100(main) ?: return null) / 100.0
+        } else {
+            if (main.isBlank() && inches.isBlank()) return null
+            val ft = if (main.isBlank()) 0L else Fmt.parseX100(main) ?: return null
+            val inch = if (inches.isBlank()) 0L else Fmt.parseX100(inches) ?: return null
+            if (ft < 0 || inch < 0) return null
+            (ft / 100.0 * INCHES_PER_FOOT + inch / 100.0) * CM_PER_INCH
+        }
         return cm.roundToInt().takeIf { it in 50..272 }
     }
 
-    /** Centimetres as the text shown in [units]. */
-    fun heightText(cm: Int, units: Units): String =
-        if (units == Units.METRIC) cm.toString() else Fmt.number(cm / CM_PER_INCH, 1)
+    /** Centimetres as the texts shown in [units]: (cm, "") or (feet, whole inches). */
+    fun heightFields(cm: Int, units: Units): Pair<String, String> {
+        if (units == Units.METRIC) return cm.toString() to ""
+        val totalIn = (cm / CM_PER_INCH).roundToInt()
+        return (totalIn / INCHES_PER_FOOT).toString() to (totalIn % INCHES_PER_FOOT).toString()
+    }
 
     /** A plausible birth year (age 5 to 120 in [thisYear]), or null. */
     fun birthYear(text: String, thisYear: Int): Int? = text.trim().toIntOrNull()?.takeIf { it in thisYear - 120..thisYear - 5 }
@@ -103,13 +117,29 @@ class ProfileFragment : DetailFragment() {
     override fun onContent(column: LinearLayout, savedInstanceState: Bundle?) {
         val ctx = requireContext()
         val card = Views.card(column, null, first = true)
+        // Height: one field in cm, or two (feet and inches) in imperial units.
+        val heightRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
         val heightLayout = TextInputLayout(ctx).apply { hint = getString(R.string.profile_height) }
         val height = TextInputEditText(ctx).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
             id = View.generateViewId()
         }
         heightLayout.addView(height)
-        card.addView(heightLayout, Views.matchWrap(ctx))
+        val inchLayout = TextInputLayout(ctx).apply { suffixText = getString(R.string.profile_unit_in) }
+        val inches = TextInputEditText(ctx).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            id = View.generateViewId()
+            contentDescription = getString(R.string.profile_height_inches)
+        }
+        inchLayout.addView(inches)
+        heightRow.addView(heightLayout, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        heightRow.addView(
+            inchLayout,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = (8 * ctx.resources.displayMetrics.density).roundToInt()
+            },
+        )
+        card.addView(heightRow, Views.matchWrap(ctx))
         val yearLayout = TextInputLayout(ctx).apply { hint = getString(R.string.profile_birth_year) }
         val year = TextInputEditText(ctx).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
@@ -168,9 +198,13 @@ class ProfileFragment : DetailFragment() {
         collectWhileStarted(vm.state) { s ->
             val p = s.profile ?: return@collectWhileStarted
             shownUnits = DisplayUnits.of(p.units)
-            heightLayout.suffixText = if (shownUnits == Units.METRIC) "cm" else "in"
+            val metric = shownUnits == Units.METRIC
+            heightLayout.suffixText = getString(if (metric) R.string.profile_unit_cm else R.string.profile_unit_ft)
+            inchLayout.visibility = if (metric) View.GONE else View.VISIBLE
             if (!filled) {
-                height.setText(p.heightCm?.let { ProfileForm.heightText(it, shownUnits) } ?: "")
+                val texts = p.heightCm?.let { ProfileForm.heightFields(it, shownUnits) }
+                height.setText(texts?.first ?: "")
+                inches.setText(texts?.second ?: "")
                 year.setText(p.birthYear?.toString() ?: "")
                 sexGroup.check(sexIds.getValue(p.sex))
                 unitGroup.check(unitIds.getValue(p.units))
@@ -179,10 +213,12 @@ class ProfileFragment : DetailFragment() {
         }
         save.setOnClickListener {
             val hText = height.text?.toString().orEmpty().trim()
+            val inText = if (shownUnits == Units.METRIC) "" else inches.text?.toString().orEmpty().trim()
             val yText = year.text?.toString().orEmpty().trim()
-            val h = if (hText.isEmpty()) null else ProfileForm.heightCm(hText, shownUnits)
+            val hasHeight = hText.isNotEmpty() || inText.isNotEmpty()
+            val h = if (!hasHeight) null else ProfileForm.heightCm(hText, inText, shownUnits)
             val y = if (yText.isEmpty()) null else ProfileForm.birthYear(yText, LocalDate.now().year)
-            heightLayout.error = if (hText.isNotEmpty() && h == null) getString(R.string.measure_invalid) else null
+            heightLayout.error = if (hasHeight && h == null) getString(R.string.measure_invalid) else null
             yearLayout.error = if (yText.isNotEmpty() && y == null) getString(R.string.measure_invalid) else null
             if (heightLayout.error != null || yearLayout.error != null) return@setOnClickListener
             val sex = sexIds.entries.firstOrNull { it.value == sexGroup.checkedRadioButtonId }?.key ?: Sex.UNSPECIFIED

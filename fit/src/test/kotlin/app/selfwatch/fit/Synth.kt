@@ -231,6 +231,30 @@ object Synth {
         }
     }
 
+    /** `update_time` of the VO2 max estimates in [metricsVo2Max]: the evening run's save, 2026-11-20 16:05 UTC. */
+    val VO2_UPDATE: Long = T0 + 16 * 3600 + 5 * 60
+
+    /**
+     * A metrics file (type 44) as a multisport watch writes it after a run: `max_met_data` for running
+     * (48.3 ml/kg/min) and for cycling (51.0), both stamped with [VO2_UPDATE], the running one written
+     * twice (the watch repeats it in every day's file), plus a record with a placeholder value.
+     */
+    fun metricsVo2Max(): ByteArray = fit {
+        fileId(this, FitFileType.METRICS, VO2_UPDATE)
+        val fields = listOf(
+            FieldDef(253, 4, UINT32), FieldDef(0, 4, UINT32), FieldDef(1, 4, SINT32), FieldDef(2, 2, UINT16),
+            FieldDef(3, 1, SINT8), FieldDef(5, 1, ENUM), FieldDef(6, 1, ENUM), FieldDef(8, 1, ENUM), FieldDef(9, 1, ENUM),
+        )
+        define(1, FitMsg.MAX_MET_DATA, fields)
+        val now = ft(T0 + 23 * 3600)
+        // met_max is METs ×65536: 48.3 / 3.5 = 13.8 METs.
+        data(1, listOf(now, ft(VO2_UPDATE), (48.3 / 3.5 * 65536).toLong(), 483, 38, 1, 0, 0, 1))
+        data(1, listOf(now, ft(VO2_UPDATE), (51.0 / 3.5 * 65536).toLong(), 510, 36, 2, 0, 1, 1))
+        data(1, listOf(now + 60, ft(VO2_UPDATE), (48.3 / 3.5 * 65536).toLong(), 483, 38, 1, 0, 0, 1))
+        // 0 is not a VO2 max (the watch writes it before its first estimate).
+        data(1, listOf(now + 60, ft(VO2_UPDATE - 86_400), 0L, 0, null, 1, 0, 0, 0))
+    }
+
     /** A file using everything awkward: big-endian definitions, developer fields, strings and arrays. */
     fun oddities(): ByteArray = fit {
         fileId(this, FitFileType.ACTIVITY, T0)

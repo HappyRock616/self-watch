@@ -13,12 +13,16 @@ import app.selfwatch.db.bindIntOrNull
 import app.selfwatch.db.intOrNull
 import app.selfwatch.model.food.Nutrients
 
-/** The nine nutrient columns shared by `custom_food`, `diary_entry` and `recipe`, in [Nutrients] order. */
+/**
+ * The nutrient columns shared by `custom_food`, `diary_entry` and `recipe`, in [Nutrients] order: the
+ * nine of schema 1 and the ten food database v2 columns added by schema 2.
+ */
 internal object NutrientCols {
     const val NAMES: String =
-        "kcal_x10, protein_x10, fat_x10, satfat_x10, carb_x10, sugar_x10, fibre_x10, sodium_mg, cholesterol_mg"
+        "kcal_x10, protein_x10, fat_x10, satfat_x10, carb_x10, sugar_x10, fibre_x10, sodium_mg, cholesterol_mg, " +
+            "transfat_x10, monofat_x10, polyfat_x10, addsugar_x10, potassium_mg, calcium_mg, iron_x10, vita_ug, vitc_x10, vitd_x10"
 
-    const val COUNT: Int = 9
+    const val COUNT: Int = 19
 
     /** `SUM(kcal_x10), …` for totals (SUM of only NULLs is NULL, matching the [Nutrients.plus] rule). */
     val SUMS: String = NAMES.split(", ").joinToString(", ") { "SUM($it)" }
@@ -26,32 +30,15 @@ internal object NutrientCols {
     /** `kcal_x10 = ?, …` for UPDATE statements. */
     val SETS: String = NAMES.split(", ").joinToString(", ") { "$it = ?" }
 
-    /** Binds [n] to parameters [from] … [from] + 8. */
+    /** Binds [n] to parameters [from] … [from] + [COUNT] − 1. */
     fun bind(st: SQLiteStatement, from: Int, n: Nutrients?) {
-        st.bindIntOrNull(from, n?.kcalX10)
-        st.bindIntOrNull(from + 1, n?.proteinX10)
-        st.bindIntOrNull(from + 2, n?.fatX10)
-        st.bindIntOrNull(from + 3, n?.satfatX10)
-        st.bindIntOrNull(from + 4, n?.carbX10)
-        st.bindIntOrNull(from + 5, n?.sugarX10)
-        st.bindIntOrNull(from + 6, n?.fibreX10)
-        st.bindIntOrNull(from + 7, n?.sodiumMg)
-        st.bindIntOrNull(from + 8, n?.cholesterolMg)
+        val values = (n ?: Nutrients.UNKNOWN).toList()
+        for (i in 0 until COUNT) st.bindIntOrNull(from + i, values[i])
     }
 
-    /** Reads nine columns starting at [from]. */
-    fun read(c: Cursor, from: Int): Nutrients = Nutrients(
-        kcalX10 = c.intOrNull(from),
-        proteinX10 = c.intOrNull(from + 1),
-        fatX10 = c.intOrNull(from + 2),
-        satfatX10 = c.intOrNull(from + 3),
-        carbX10 = c.intOrNull(from + 4),
-        sugarX10 = c.intOrNull(from + 5),
-        fibreX10 = c.intOrNull(from + 6),
-        sodiumMg = c.intOrNull(from + 7),
-        cholesterolMg = c.intOrNull(from + 8),
-    )
+    /** Reads [COUNT] columns starting at [from]. */
+    fun read(c: Cursor, from: Int): Nutrients = Nutrients.fromList(List(COUNT) { c.intOrNull(from + it) })
 
-    /** Reads nine columns, or null when every one is NULL. */
+    /** Reads [COUNT] columns, or null when every one is NULL. */
     fun readOrNull(c: Cursor, from: Int): Nutrients? = read(c, from).takeIf { it != Nutrients.UNKNOWN }
 }

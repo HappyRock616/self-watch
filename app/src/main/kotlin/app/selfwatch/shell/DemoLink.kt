@@ -12,7 +12,7 @@ import android.content.Intent
 
 /**
  * The link to the debug-only demo data screen (`src/debug`, class [CLASS_NAME]). Release builds have
- * no such class and hide the menu items (`R.bool.demo_data_enabled` is false), so this is never used
+ * no such class and hide the menu items (`DebugTools.ENABLED` is false), so this is never used
  * there. The same intent works from adb:
  * `adb shell am start -n app.selfwatch.debug/app.selfwatch.demo.DemoActivity --es action load`.
  */

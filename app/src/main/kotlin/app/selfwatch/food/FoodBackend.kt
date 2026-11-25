@@ -9,11 +9,17 @@ package app.selfwatch.food
 
 import app.selfwatch.FoodGraph
 import app.selfwatch.db.CustomFoodOrigin
+import app.selfwatch.db.SettingKeys
 import app.selfwatch.db.dao.CustomFood
 import app.selfwatch.food.budget.Budget
 import app.selfwatch.food.diary.DiaryDay
 import app.selfwatch.food.diary.FastStatus
 import app.selfwatch.food.diary.WaterDay
+import app.selfwatch.food.nutrition.DietPrefs
+import app.selfwatch.food.nutrition.FoodCategories
+import app.selfwatch.food.nutrition.TargetInputs
+import app.selfwatch.food.nutrition.TargetOverrides
+import app.selfwatch.model.food.FoodCategory
 import app.selfwatch.food.recipes.RecipeNutrition
 import app.selfwatch.food.recipes.RecipeSummary
 import app.selfwatch.food.source.BarcodeLookup
@@ -22,12 +28,17 @@ import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.model.food.Food
 import app.selfwatch.model.food.FoodOrigin
 import app.selfwatch.model.food.FoodRef
+import app.selfwatch.model.food.GoalKind
 import app.selfwatch.model.food.MealSlot
 import app.selfwatch.model.food.Nutrients
 import app.selfwatch.model.food.Recipe
 import app.selfwatch.model.food.Serving
+import app.selfwatch.shell.DisplayUnits
+import app.selfwatch.ui.format.Units
+import app.selfwatch.model.health.BodyKind
 import app.selfwatch.model.time.Clock
 import app.selfwatch.model.time.Day
+import app.selfwatch.model.time.DayRange
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -173,6 +184,42 @@ interface FoodBackend {
 
     /** [r] with line [seq] skipped (not saved). */
     fun skipMatch(r: Recipe, seq: Int): Recipe
+
+    /** The user's diets and the allergens they avoid (Me → Goals → Diet). */
+    suspend fun dietPrefs(): DietPrefs = DietPrefs.NONE
+
+    /** The display units from the Units setting (Me → Settings). */
+    suspend fun displayUnits(): Units = Units.METRIC
+
+    /** Saves the user's diets and allergens. */
+    suspend fun setDietPrefs(prefs: DietPrefs) {}
+
+    /** What the nutrient targets for [day] are worked out from (profile, weight, goals, diet). */
+    suspend fun targetInputs(day: Day): TargetInputs = TargetInputs(prefs = dietPrefs(), overrides = targetOverrides())
+
+    /** Nutrient targets the user typed by hand (stored units), by field. */
+    suspend fun targetOverrides(): Map<Nutrients.Field, Int> = emptyMap()
+
+    /** Saves the hand-typed targets (an empty map goes back to the recommended ones). */
+    suspend fun setTargetOverrides(overrides: Map<Nutrients.Field, Int>) {}
+
+    /** The food categories for the custom food editor (foods.db's table, else the built-in list). */
+    suspend fun foodCategories(): List<FoodCategory> = FoodCategories.ALL
+
+    /**
+     * The category ids of the foods logged on each day from [from] to [to] that has entries (null for a
+     * food whose category is unknown, quick adds and recipes included), oldest day first.
+     */
+    suspend fun loggedCategories(from: Day, to: Day): List<List<Int?>> = emptyList()
+
+    /** Every diary entry from [from] to [to] (inclusive), by day; for the Food tab's "Recent for <meal>". */
+    suspend fun entriesBetween(from: Day, to: Day): List<DiaryEntry> = emptyList()
+
+    /** True once the "Set vegetarian?" offer was answered. */
+    suspend fun vegHintDone(): Boolean = true
+
+    /** Records that the "Set vegetarian?" offer was answered, so it never shows again. */
+    suspend fun setVegHintDone() {}
 }
 
 /** The real [FoodBackend] over the app's [FoodGraph]. */
@@ -282,4 +329,69 @@ class GraphFoodBackend(private val g: FoodGraph) : FoodBackend {
     override suspend fun suggestMatches(r: Recipe): Recipe = g.recipes.suggestMatches(r)
     override fun confirmMatch(r: Recipe, seq: Int, food: Food): Recipe = g.recipes.confirm(r, seq, food)
     override fun skipMatch(r: Recipe, seq: Int): Recipe = g.recipes.skip(r, seq)
+
+    override suspend fun dietPrefs(): DietPrefs =
+        DietPrefs.of(g.db.settings.getList(SettingKeys.FOOD_DIETS), g.db.settings.getList(SettingKeys.FOOD_ALLERGENS))
+
+    override suspend fun displayUnits(): Units = DisplayUnits.of(g.db.settings.profile().units)
+
+    override suspend fun setDietPrefs(prefs: DietPrefs) {
+        g.db.settings.setList(SettingKeys.FOOD_DIETS, DietPrefs.dietIds(prefs))
+        g.db.settings.setList(SettingKeys.FOOD_ALLERGENS, DietPrefs.allergenIds(prefs))
+    }
+
+    override suspend fun targetInputs(day: Day): TargetInputs {
+        val profile = g.db.settings.profile()
+        val zone = g.clock.zone()
+        val weight = g.db.body.series(BodyKind.WEIGHT, DayRange(day.plusDays(-WEIGHT_LOOKBACK_DAYS), day), zone).lastOrNull()?.valueX100
+            ?: g.db.body.latest(BodyKind.WEIGHT)?.valueX100
+        val kcal = g.db.goals.goalOn(GoalKind.KCAL_IN, day)?.value
+            ?: runCatching { g.budget.forDay(day).goalKcal }.getOrNull()?.takeIf { it > 0 }
+        return TargetInputs(
+            age = profile.birthYear?.let { day.toLocalDate().year - it }?.takeIf { it in 1..120 },
+            sex = profile.sex,
+            weightKgX100 = weight,
+            kcalGoal = kcal,
+            proteinGoalG = g.db.goals.goalOn(GoalKind.PROTEIN_G, day)?.value,
+            fatGoalG = g.db.goals.goalOn(GoalKind.FAT_G, day)?.value,
+            carbGoalG = g.db.goals.goalOn(GoalKind.CARB_G, day)?.value,
+            prefs = dietPrefs(),
+            overrides = targetOverrides(),
+        )
+    }
+
+    override suspend fun targetOverrides(): Map<Nutrients.Field, Int> =
+        TargetOverrides.decode(g.db.settings.getList(SettingKeys.FOOD_TARGET_OVERRIDES))
+
+    override suspend fun setTargetOverrides(overrides: Map<Nutrients.Field, Int>) {
+        val items = TargetOverrides.encode(overrides)
+        g.db.settings.set(SettingKeys.FOOD_TARGET_OVERRIDES, if (items.isEmpty()) null else items.joinToString(","))
+    }
+
+    override suspend fun foodCategories(): List<FoodCategory> =
+        runCatching { g.foodsDb.categories() }.getOrNull()?.takeIf { it.isNotEmpty() } ?: FoodCategories.ALL
+
+    override suspend fun entriesBetween(from: Day, to: Day): List<DiaryEntry> = g.db.diary.range(DayRange(from, to))
+
+    override suspend fun loggedCategories(from: Day, to: Day): List<List<Int?>> {
+        val cache = HashMap<FoodRef, Int?>()
+        val byDay = g.db.diary.range(DayRange(from, to)).groupBy { it.day }.toSortedMap()
+        return byDay.values.map { entries ->
+            entries.map { e ->
+                val ref = e.food ?: return@map null
+                if (ref.origin == FoodOrigin.RECIPE) return@map null
+                cache.getOrPut(ref) { runCatching { food(ref)?.category?.id }.getOrNull() }
+            }
+        }
+    }
+
+    override suspend fun vegHintDone(): Boolean = g.db.settings.getBool(SettingKeys.FOOD_VEG_HINT_DONE)
+
+    override suspend fun setVegHintDone() {
+        g.db.settings.setBool(SettingKeys.FOOD_VEG_HINT_DONE, true)
+    }
+
+    private companion object {
+        const val WEIGHT_LOOKBACK_DAYS = 90
+    }
 }

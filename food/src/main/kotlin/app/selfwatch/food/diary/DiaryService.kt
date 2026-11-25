@@ -68,6 +68,7 @@ class DiaryService(
                 gramsX10 = NutrientMath.gramsX10(serving, amountX100),
                 nutrients = nutrients,
                 importId = null,
+                categoryId = food.category?.id,
             ),
         )
         refresher.refresh(setOf(day))

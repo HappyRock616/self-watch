@@ -7,13 +7,16 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 
@@ -26,6 +29,29 @@ object SodiumCard : Card<SodiumDay>("sodium", CardTab.FOOD, R.string.card_sodium
     override val tables: Set<Table> = setOf(Table.DIARY)
 
     override suspend fun load(env: CardEnv): SodiumDay = FoodCardLoader(env.db, env.clock).sodium(env.day)
+
+    override fun small(ctx: Context, data: SodiumDay): SmallFace? {
+        val c = data.coverage
+        if (c.entries == 0) return null
+        val total = c.sum ?: return null
+        val limit = data.limitMg
+        // A limit, not a goal: under it is on track, near it close, over it off.
+        val status = when {
+            total > limit -> CardStatus.OFF
+            total >= limit * NEAR_LIMIT -> CardStatus.CLOSE
+            else -> CardStatus.GOOD
+        }
+        return SmallFace(
+            value = Fmt.number(total),
+            label = ctx.getString(R.string.small_limit_mg, Fmt.number(limit.toLong())),
+            unit = ctx.getString(R.string.food_card_unit_mg),
+            status = status,
+            note = if (total > limit) ctx.getString(R.string.small_sodium_over) else ctx.getString(R.string.small_mg_left, Fmt.number(limit - total)),
+            progress = if (limit > 0) total.toFloat() / limit else null,
+        )
+    }
+
+    private const val NEAR_LIMIT = 0.9
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<SodiumDay> = Holder(parent)
 

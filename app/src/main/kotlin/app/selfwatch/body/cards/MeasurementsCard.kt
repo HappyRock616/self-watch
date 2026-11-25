@@ -7,17 +7,22 @@
  */
 package app.selfwatch.body.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.body.BodyLoader
 import app.selfwatch.body.BodyUnits
+import app.selfwatch.body.MeasureEditor
 import app.selfwatch.body.MeasureTile
 import app.selfwatch.body.MeasurementsFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.health.BodyKind
 import app.selfwatch.ui.components.StatTile
@@ -39,6 +44,34 @@ object MeasurementsCard : Card<MeasurementsCard.Data>(
     override val tables: Set<Table> = setOf(Table.BODY)
 
     override suspend fun load(env: CardEnv): Data = Data(BodyLoader(env.db, env.clock).measures(), env.units)
+
+    override val needs: Set<DataKind> = setOf(DataKind.MEASUREMENTS)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: Data): SmallFace? {
+        // The waist leads; without one, the first measurement that has a value.
+        val t = data.tiles.firstOrNull { it.kind == BodyKind.WAIST && it.valueX100 != null }
+            ?: data.tiles.firstOrNull { it.valueX100 != null }
+            ?: return null
+        val v = t.valueX100 ?: return null
+        val value = if (BodyUnits.dim(t.kind) == BodyUnits.Dim.LENGTH) {
+            Fmt.number(BodyUnits.toDisplay(t.kind, v, data.units), 0)
+        } else {
+            BodyUnits.number(t.kind, v, data.units)
+        }
+        val unit = BodyUnits.unit(t.kind, data.units)
+        val note = t.changeX100?.takeIf { it != 0 }?.let { c ->
+            val sign = if (c < 0) "−" else "+"
+            ctx.getString(R.string.small_change_30, sign + Fmt.number(BodyUnits.toDisplay(t.kind, abs(c), data.units), 1) + " " + unit)
+        }
+        return SmallFace(value = value, label = MeasureEditor.kindLabel(ctx, t.kind), unit = unit, note = note)
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(MeasurementsFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 

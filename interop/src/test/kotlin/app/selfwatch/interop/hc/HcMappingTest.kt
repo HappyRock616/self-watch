@@ -103,6 +103,29 @@ class HcMappingTest {
     }
 
     @Test
+    fun nutritionV2UnitsRoundTrip() {
+        val n = Nutrients(
+            5255, 123, 87, 15, 650, 120, 80, 450, 12,
+            transfatX10 = 2, monofatX10 = 31, polyfatX10 = 18, addsugarX10 = 40, potassiumMg = 520, calciumMg = 210,
+            ironX10 = 34, vitaUg = 150, vitcX10 = 125, vitdX10 = 25,
+        )
+        val e = DiaryEntry(6, Day(20260601), 1, t, null, "Porridge", null, 100, "bowl", null, n, null)
+        val r = HcMapping.nutrition(DiaryOut(e, "Breakfast"), v, zone)!!
+        assertEquals(0.2, r.transFat!!.inGrams, 1e-9)
+        assertEquals(3.1, r.monounsaturatedFat!!.inGrams, 1e-9)
+        assertEquals(1.8, r.polyunsaturatedFat!!.inGrams, 1e-9)
+        assertEquals(520.0, r.potassium!!.inGrams * 1000, 1e-9)
+        assertEquals(210.0, r.calcium!!.inGrams * 1000, 1e-9)
+        assertEquals(3.4, r.iron!!.inGrams * 1000, 1e-9)
+        assertEquals(150.0, r.vitaminA!!.inGrams * 1_000_000, 1e-6)
+        assertEquals(12.5, r.vitaminC!!.inGrams * 1000, 1e-9)
+        assertEquals(2.5, r.vitaminD!!.inGrams * 1_000_000, 1e-6)
+        val back = HcMapping.diaryFrom(r, MealSlots(listOf(MealSlot(1, "Breakfast", 1, false))), ZoneId.of("UTC"), null).nutrients
+        // Health Connect has no added-sugar field; everything else comes back.
+        assertEquals(n.copy(addsugarX10 = null), back)
+    }
+
+    @Test
     fun waterActivityAndMetricUnits() {
         assertEquals(250.0, HcMapping.hydration(WaterOut(1, t, 250), v, zone)!!.volume.inLiters * 1000, 1e-9)
         val h = ActivityHour(2, 3600, 3600, 3600 + 600, 1234, 98_765, 456)

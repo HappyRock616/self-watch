@@ -37,6 +37,7 @@ import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.components.SwSnackbar
 import app.selfwatch.ui.format.Fmt
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
@@ -74,7 +75,7 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
         diary = view.findViewById(R.id.food_diary)
         header = view.findViewById(R.id.food_header)
         val main = view.findViewById<View>(R.id.food_main)
-        val stack = CardStack(this, CardTab.FOOD, view.findViewById(R.id.food_cards), requireContext().graph.db, leadingGap = true)
+        val stack = CardStack(this, CardTab.FOOD, view.findViewById(R.id.food_cards), requireContext().graph.db)
         cards = stack
         stack.start(vm.state.map { it.day }.filterNotNull())
         val off = view.findViewById<EmptyState>(R.id.food_off)
@@ -93,12 +94,23 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
             FoodViews.show(main, enabled)
             FoodViews.show(switcher, enabled && s.day != null)
             FoodViews.show(off, !enabled)
-            if (enabled && s.day != null) render(s)
+            if (enabled && s.day != null) {
+                vm.checkVegHint()
+                render(s)
+            }
+        }
+        collectWhileStarted(vm.vegHint) {
+            val s = lastState
+            if ((s.enabled ?: true) && s.day != null) render(s)
         }
         collectWhileStarted(vm.events) { e ->
             when (e) {
                 is DiaryEvent.Deleted -> SwSnackbar.undo(requireView(), getString(R.string.food_deleted, e.entry.name), anchor()) {
                     vm.undoDelete(e.entry)
+                }
+                is DiaryEvent.Logged -> {
+                    val meal = lastState.meals.firstOrNull { it.slot.id == e.slot }?.slot?.name?.ifBlank { null } ?: getString(R.string.food_other_meal)
+                    SwSnackbar.undo(requireView(), getString(R.string.food_recent_logged, e.name, meal), anchor()) { vm.undoLog(e.id) }
                 }
                 is DiaryEvent.Copied -> SwSnackbar.show(
                     requireView(),
@@ -134,6 +146,10 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
     override fun onMenuItem(item: MenuItem): Boolean = when (item.itemId) {
         R.id.menu_edit_cards -> {
             Nav.open(this, EditCardsFragment.newInstance(CardTab.FOOD))
+            true
+        }
+        R.id.menu_day_nutrition -> {
+            Nav.open(this, DayNutritionFragment.newInstance(lastState.day ?: SystemClock.today()))
             true
         }
         R.id.menu_recipe_book -> {
@@ -248,7 +264,9 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
 
         diary.removeAllViews()
         header.removeAllViews()
-        header.addView(energyCard(s), cardParams(first = true))
+        // The calories-left header is now the Daily balance card (first in the card strip by default).
+        header.visibility = View.GONE
+        if (vm.vegHint.value) diary.addView(vegHintCard(), cardParams())
         for (m in s.meals) diary.addView(mealCard(day, m), cardParams())
         diary.addView(fastCard(s.fast), cardParams())
     }
@@ -257,47 +275,25 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
         topMargin = if (first) 0 else resources.getDimensionPixelSize(UiR.dimen.sw_space_2)
     }
 
-    private fun energyCard(s: DiaryUiState): View {
+
+    /** The one-time "Set vegetarian?" offer: yes sets the diet, no thanks dismisses it for good. */
+    private fun vegHintCard(): View {
         val ctx = requireContext()
-        val card = SwCard(ctx)
-        val header = FoodViews.row(ctx)
-        header.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_BodyLarge, getString(R.string.food_energy)).also {
-            ViewCompat.setAccessibilityHeading(it, true)
-        }, FoodViews.weight())
-        val b = s.budget
-        val info = FoodViews.iconButton(ctx, R.drawable.ic_info, getString(R.string.food_energy_info)) {
-            MaterialAlertDialogBuilder(ctx)
-                .setTitle(R.string.food_energy_formula_title)
-                .setMessage(R.string.food_energy_formula)
-                .setPositiveButton(android.R.string.ok, null)
-                .setNeutralButton(R.string.sleep_calories_link) { _, _ -> Nav.open(this@FoodFragment, SleepCaloriesFragment()) }
-                .show()
-        }
-        TooltipCompat.setTooltipText(info, getString(R.string.food_energy_formula_short))
-        header.addView(info)
-        card.addView(header)
-        if (b == null) {
-            card.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, FoodViews.kcalText(ctx, s.eatenKcal)))
-            return card
-        }
-        val remaining = FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Headline_Number, Fmt.number(b.remainingKcal.toLong()))
-        val remainingLabel = FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, getString(R.string.food_remaining))
-        card.addView(remaining)
-        card.addView(remainingLabel)
-        val line = getString(
-            R.string.food_energy_line,
-            Fmt.number(b.goalKcal.toLong()),
-            Fmt.number(b.eatenKcal.toLong()),
-            Fmt.number(b.activeKcal.toLong()),
+        val card = SwCard(ctx).apply { tag = "veg_hint" }
+        card.title = getString(R.string.veg_hint_title)
+        card.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Body, getString(R.string.veg_hint_text)), FoodViews.matchWrap())
+        val actions = FoodViews.row(ctx).apply { gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL }
+        actions.addView(FoodViews.textButton(ctx, getString(R.string.veg_hint_no)) { vm.answerVegHint(false) }.apply { tag = "veg_hint_no" })
+        actions.addView(
+            FoodViews.filledButton(ctx, getString(R.string.veg_hint_yes)) {
+                vm.answerVegHint(true)
+                SwSnackbar.show(requireView(), getString(R.string.veg_hint_done), anchor = anchor())
+            }.apply { tag = "veg_hint_yes" },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginStart = resources.getDimensionPixelSize(UiR.dimen.sw_space_1)
+            },
         )
-        card.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Body, line))
-        card.contentDescription = getString(
-            R.string.food_energy_description,
-            FoodViews.kcalText(ctx, b.goalKcal),
-            FoodViews.kcalText(ctx, b.eatenKcal),
-            FoodViews.kcalText(ctx, b.activeKcal),
-            FoodViews.kcalText(ctx, b.remainingKcal),
-        )
+        card.addView(actions, FoodViews.matchWrap())
         return card
     }
 
@@ -310,9 +306,36 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
             ViewCompat.setAccessibilityHeading(it, true)
         }, FoodViews.weight())
         header.addView(FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Body_Number, if (m.entries.isEmpty()) getString(R.string.dash) else Fmt.number(m.kcal.toLong())))
-        header.contentDescription = getString(R.string.food_meal_description, name, FoodViews.kcalText(ctx, m.kcal))
+        // Tap the header: the meal's nutrition summary (the chevron says it opens something).
+        val chevron = android.widget.ImageView(ctx).apply {
+            setImageResource(UiR.drawable.sw_ic_chevron_end)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+        val chevronSize = FoodViews.dp(ctx, CHEVRON_DP)
+        header.addView(chevron, LinearLayout.LayoutParams(chevronSize, chevronSize).apply { marginStart = resources.getDimensionPixelSize(UiR.dimen.sw_space_1) })
+        header.contentDescription = getString(R.string.meal_summary_open, getString(R.string.food_meal_description, name, FoodViews.kcalText(ctx, m.kcal)))
         header.minimumHeight = resources.getDimensionPixelSize(UiR.dimen.sw_touch_target)
+        header.tag = "meal_header_${m.slot.id}"
+        header.isClickable = true
+        header.isFocusable = true
+        val ripple = android.util.TypedValue()
+        ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
+        header.setBackgroundResource(ripple.resourceId)
+        header.setOnClickListener { Nav.open(this, MealSummaryFragment.newInstance(day, m.slot.id, m.slot.name)) }
         card.addView(header)
+        if (m.entries.isNotEmpty() && (m.totals.carbX10 != null || m.totals.fatX10 != null || m.totals.proteinX10 != null)) {
+            val t = m.totals
+            val c = macroGrams(t.carbX10)
+            val f = macroGrams(t.fatX10)
+            val p = macroGrams(t.proteinX10)
+            card.addView(
+                FoodViews.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption, getString(R.string.meal_macros, c, f, p)).apply {
+                    tag = "macros_${m.slot.id}"
+                    contentDescription = getString(R.string.meal_macros_description, c, f, p)
+                },
+                FoodViews.matchWrap(),
+            )
+        }
         for (e in m.entries) card.addView(entryRow(e), FoodViews.matchWrap())
         val actions = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -332,18 +355,39 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
             actions.addView(copy, FoodViews.weight().apply { marginStart = resources.getDimensionPixelSize(UiR.dimen.sw_space_1) })
         }
         card.addView(actions, FoodViews.matchWrap())
+        if (m.recents.isNotEmpty()) {
+            card.addView(RecentStrip.build(childFragmentManager, ctx, day, m.slot.id, name, m.recents) { vm.logRecent(m.slot.id, it) }, FoodViews.matchWrap())
+        }
         return card
     }
 
+    /** Whole grams of a meal's macro (×10), "0" when no entry reports it. */
+    private fun macroGrams(x10: Int?): String = Fmt.number(((x10 ?: 0) + 5L) / 10)
+
+    /** One food: tap opens the entry editor; swipe sideways or the (−) removes it (with Undo). */
+    @android.annotation.SuppressLint("ClickableViewAccessibility") // the swipe is an extra; the (−) and a TalkBack action do the same
     private fun entryRow(e: DiaryEntry): View {
         val ctx = requireContext()
+        val remove = { vm.delete(e) }
         return ListRow(ctx).apply {
+            tag = "entry_${e.id}"
             title = e.name
             subtitle = amountText(ctx, e)
             trailing = Fmt.number(FoodRows.kcal(e.nutrients).toLong())
             showChevron = false
             onClick = { FoodDetailSheet.forEntry(e.id).show(childFragmentManager, FoodDetailSheet.TAG) }
             contentDescription = getString(R.string.food_entry_description, e.name, subtitle, FoodViews.kcalText(ctx, FoodRows.kcal(e.nutrients)))
+            val label = getString(R.string.food_remove_entry, e.name)
+            val minus = FoodViews.iconButton(ctx, UiR.drawable.sw_ic_minus, label) { remove() }.apply {
+                tag = "remove_${e.id}"
+                iconTint = android.content.res.ColorStateList.valueOf(MaterialColors.getColor(this, com.google.android.material.R.attr.colorSecondary))
+            }
+            addView(minus, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            setOnTouchListener(SwipeToDelete(remove))
+            ViewCompat.addAccessibilityAction(this, label) { _, _ ->
+                remove()
+                true
+            }
         }
     }
 
@@ -378,6 +422,7 @@ class FoodFragment : TabFragment(R.layout.fragment_food, R.menu.menu_food), Entr
         private const val FAST_TICK_MS = 30_000L
         private const val KEY_EXPORT_DAY = "export_day"
         private const val DISABLED_ALPHA = 0.38f
+        private const val CHEVRON_DP = 20f
 
         /** "14:20" from seconds. */
         fun hm(sec: Long): String {

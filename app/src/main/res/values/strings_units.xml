@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Units: water glasses and per-weight units that follow the Units setting. -->
+<resources>
+    <!-- Water, counted in glasses (12 fl oz or 350 ml) -->
+    <plurals name="water_glasses_of">
+        <item quantity="one">%1$d of %2$d glass</item>
+        <item quantity="other">%1$d of %2$d glasses</item>
+    </plurals>
+    <plurals name="water_glasses_unit">
+        <item quantity="one">of %1$d glass</item>
+        <item quantity="other">of %1$d glasses</item>
+    </plurals>
+    <string name="water_amount_of">%1$s of %2$s %3$s</string>
+    <string name="water_glasses_with_amount">%1$s (%2$s)</string>
+    <string name="water_glass_empty">Glass %1$d of %2$d. Tap to add %3$s</string>
+    <string name="water_logged_today">Glass logged. %1$s today</string>
+
+    <!-- Per body weight, in the user's units (g/kg values shown per lb) -->
+    <string name="unit_g_per_lb">g/lb</string>
+    <string name="unit_kcal_per_lb">kcal/lb</string>
+    <string name="per_weight_value">%1$s %2$s</string>
+    <string name="per_weight_range">%1$s–%2$s %3$s</string>
+</resources>

@@ -11,6 +11,7 @@ import android.content.Context
 import app.selfwatch.db.DbChanges
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.SettingsStore
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.devices.AndroidPermissionChecker
 import app.selfwatch.devices.AppCatalog
 import app.selfwatch.devices.AppDeviceActions
@@ -26,7 +27,6 @@ import app.selfwatch.devices.DeviceActions
 import app.selfwatch.devices.DevicesSource
 import app.selfwatch.garmin.models.GarminModels
 import app.selfwatch.model.result.valueOrNull
-import app.selfwatch.watch.WatchSettings
 import app.selfwatch.model.net.Http
 import app.selfwatch.net.Firewall
 import app.selfwatch.net.NetClient
@@ -65,7 +65,7 @@ class AppGraph(ctx: Context) {
     val garminModels: GarminModels? by lazy { GarminModels.load().valueOrNull() }
 
     /** What the Devices screen reads: the paired watch, its published state, data counts. */
-    val devicesSource: DevicesSource by lazy { DbDevicesSource(db, { garminModels }, WatchSettings.isDebuggable(app)) }
+    val devicesSource: DevicesSource by lazy { DbDevicesSource(db, { garminModels }, DebugTools.ENABLED) }
 
     /** What the Devices screen does: save a pairing, sync, forget. */
     val deviceActions: DeviceActions by lazy { AppDeviceActions(app, db, service, { garminModels }) }

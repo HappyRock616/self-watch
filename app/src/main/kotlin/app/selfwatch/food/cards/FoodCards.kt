@@ -7,20 +7,26 @@
  */
 package app.selfwatch.food.cards
 
+import app.selfwatch.body.cards.EnergyCard
 import app.selfwatch.cards.Card
 
 /**
- * Every card the Food tab can show, in the strip between the calories-left header and the meals. The
- * header, the day switcher and the meals are not cards. A new Food card is one more entry here (and in
- * `CardPresets`); its loader gets the diary day shown as `CardEnv.day`.
+ * Every card whose home is Food (food, water, calories in vs out). On Food they sit above the meals;
+ * any of them can be added to Body or Activity too. Loaders get the diary day shown as `CardEnv.day`
+ * (today on the other tabs). A new Food card is one more entry here (and in `CardPresets` when it is a
+ * default).
  */
 object FoodCards {
-    /** All Food cards; hidden ones are listed in this order in Edit cards. */
+    /** All Food cards, in Edit cards order. */
     val ALL: List<Card<*>> = listOf(
-        MacrosTodayCard,
+        DailyBalanceCard,
+        WeightGoalCard,
         WaterCard,
-        ProteinPerKgCard,
         ProteinPerMealCard,
+        EnergyCard,
+        MacrosTodayCard,
+        FoodGroupsCard,
+        ProteinPerKgCard,
         CarbsPerKgCard,
         WorkoutFuelCard,
         FuelBalanceCard,

@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.selfwatch.R
 import app.selfwatch.body.cards.BodySignalsCard
+import app.selfwatch.cards.ChartChoice
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.graph
@@ -28,7 +29,9 @@ import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.SystemClock
 import app.selfwatch.model.time.TimeRange
+import app.selfwatch.food.cards.FoodCardText
 import app.selfwatch.shell.DetailFragment
+import app.selfwatch.shell.DisplayUnits
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.charts.Axis
 import app.selfwatch.ui.charts.BandLayer
@@ -41,6 +44,8 @@ import app.selfwatch.ui.charts.OverlayChartView
 import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.components.ToggleChipGroup
+import app.selfwatch.ui.format.Fmt
+import app.selfwatch.ui.format.Units
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +59,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToInt
 import app.selfwatch.ui.R as UiR
 
 /** An overlay's data (null until loaded or when loading failed) and the layers the user switched off. */
@@ -66,7 +72,7 @@ data class OverlayState<T>(val data: T? = null, val hidden: Set<String> = emptyS
 class OverlayViewModel<T : Any>(
     private val db: SelfWatchDb,
     tables: Set<Table>,
-    private val choice: LayerChoice,
+    private val choice: ChartChoice,
     private val loader: suspend () -> T,
 ) : ViewModel() {
 
@@ -96,14 +102,14 @@ class OverlayViewModel<T : Any>(
         private const val STOP_MS = 5_000L
 
         /** A factory for an overlay loaded by [loader] from the database. */
-        fun <T : Any> factory(db: SelfWatchDb, tables: Set<Table>, choice: LayerChoice, loader: suspend (SelfWatchDb) -> T): ViewModelProvider.Factory =
+        fun <T : Any> factory(db: SelfWatchDb, tables: Set<Table>, choice: ChartChoice, loader: suspend (SelfWatchDb) -> T): ViewModelProvider.Factory =
             viewModelFactory { initializer { OverlayViewModel(db, tables, choice, { loader(db) }) } }
     }
 }
 
 /**
- * A card with an overlay chart, its toggle chips (every layer on by default, the choice remembered in
- * settings), a read-out line for the finger, a caption, and an empty state shown instead when there is no
+ * A card with an overlay chart, its toggle chips (the main goal's defaults until the user picks, the
+ * choice remembered in settings), a read-out line for the finger, a caption, and an empty state shown instead when there is no
  * data.
  */
 class OverlayCard(parent: LinearLayout, title: CharSequence?, chartId: Int, caption: CharSequence, emptyMessage: CharSequence) {
@@ -191,17 +197,23 @@ object BodyOverlayLayers {
     private const val WEEK_SEC = 7 * DAY_SEC
     private const val STRENGTH_HEIGHT = 0.3f
 
-    /** O3: weekly protein g/kg with its 1.6 line (right axis) and strength sessions as low bars. */
-    fun protein(ctx: Context, o: ProteinOverlay, zone: ZoneId): List<ChartLayer> {
+    /**
+     * O3: weekly protein g/kg (g/lb for US units) with its 1.6 g/kg line (right axis) and strength
+     * sessions as low bars.
+     */
+    fun protein(ctx: Context, o: ProteinOverlay, zone: ZoneId, units: Units): List<ChartLayer> {
         val out = ArrayList<ChartLayer>()
         val idx = (0 until o.weeks).filter { o.proteinPerKgX10[it] != ProteinOverlay.MISSING }
         val mid = { i: Int -> o.weekStart(i).startSec(zone) + WEEK_SEC / 2 }
         if (idx.isNotEmpty()) {
-            val values = IntArray(idx.size) { o.proteinPerKgX10[idx[it]] }
+            // Per kg ×10, or per lb ×100 (0.73 g/lb needs two decimals).
+            val shown = { x10: Int -> if (units == Units.METRIC) x10 else (x10 * 10 * Fmt.KG_PER_POUND).roundToInt() }
+            val values = IntArray(idx.size) { shown(o.proteinPerKgX10[idx[it]]) }
+            val unit = FoodCardText.gramsUnit(ctx, units)
             out += DotTrendLayer(
-                BodyCompLayers.PROTEIN, ctx.getString(R.string.body_comp_layer_protein), ChartScreens.series(ctx, 1), Axis.RIGHT,
-                LongArray(idx.size) { mid(idx[it]) }, values, trend = values, goal = ProteinOverlay.REFERENCE_X10,
-                scale = 10, gapSec = WEEK_SEC * 2, unit = ctx.getString(R.string.unit_g_per_kg),
+                BodyCompLayers.PROTEIN, ctx.getString(R.string.body_comp_layer_protein, unit), ChartScreens.series(ctx, 1), Axis.RIGHT,
+                LongArray(idx.size) { mid(idx[it]) }, values, trend = values, goal = shown(ProteinOverlay.REFERENCE_X10),
+                scale = if (units == Units.METRIC) 10 else 100, gapSec = WEEK_SEC * 2, unit = unit,
             )
         }
         if (o.strength.any { it > 0 }) {
@@ -260,7 +272,7 @@ object BodyOverlayLayers {
     }
 
     /** "Nov 20 · Skin temperature +0.3 °C · Resting heart rate −1 bpm" at [tSec], from the raw deviations. */
-    fun signalsReadout(ctx: Context, o: SignalsOverlay, tSec: Long, visible: (String) -> Boolean): String {
+    fun signalsReadout(ctx: Context, o: SignalsOverlay, tSec: Long, units: Units, visible: (String) -> Boolean): String {
         val day = Day.of(tSec, ZoneId.systemDefault())
         val i = o.days.indexOf(day)
         val parts = if (i < 0) {
@@ -269,7 +281,7 @@ object BodyOverlayLayers {
             SignalKind.entries.mapNotNull { kind ->
                 val d = o.deviation[kind]?.get(i)?.takeIf { it != BodySignalsMath.MISSING } ?: return@mapNotNull null
                 if (!visible(SignalsOverlay.layerId(kind))) return@mapNotNull null
-                ctx.getString(R.string.signals_row, ctx.getString(BodySignalsCard.label(kind)), BodySignalsCard.deviation(ctx, kind, d))
+                ctx.getString(R.string.signals_row, ctx.getString(BodySignalsCard.label(kind)), BodySignalsCard.deviation(ctx, kind, d, units))
             }
         }
         val date = OverlayText.date(tSec)
@@ -293,6 +305,8 @@ class BodySignalsDetailFragment : DetailFragment() {
     override fun onContent(column: LinearLayout, savedInstanceState: Bundle?) {
         val ctx = requireContext()
         val card = OverlayCard(column, getString(R.string.signals_chart_title), R.id.body_signals_chart, getString(R.string.signals_caption), getString(R.string.signals_empty))
+        var units = Units.METRIC
+        collectWhileStarted(DisplayUnits.observe(ctx.graph.db)) { units = it }
         collectWhileStarted(vm.state) { s ->
             val o = s.data
             if (s.loading) return@collectWhileStarted
@@ -303,7 +317,7 @@ class BodySignalsDetailFragment : DetailFragment() {
             }
             val range = TimeRange(o.days.first().startSec(zone), o.days.last().plusDays(1).startSec(zone))
             card.bind(range, BodyOverlayLayers.signals(ctx, o, zone), s.hidden, SignalsOverlay.LAYERS.toggleable, hasData = true, onSave = vm::saveHidden) { t, _ ->
-                BodyOverlayLayers.signalsReadout(ctx, o, t) { card.chart.isLayerVisible(it) }
+                BodyOverlayLayers.signalsReadout(ctx, o, t, units) { card.chart.isLayerVisible(it) }
             }
         }
     }
@@ -321,7 +335,7 @@ class BodyCompChart(private val card: SwCard, private val chart: OverlayChartVie
     private val ctx: Context = card.context
     private val chips = ToggleChipGroup(ctx)
     private val readout = Views.caption(ctx, ctx.getString(R.string.chart_scrub_hint))
-    private val caption = Views.caption(ctx, ctx.getString(R.string.body_comp_caption))
+    private val caption = Views.caption(ctx, "")
     private var savedApplied = false
 
     /** The latest overlay state. */
@@ -349,7 +363,8 @@ class BodyCompChart(private val card: SwCard, private val chart: OverlayChartVie
             scale = DISPLAY_SCALE, gapSec = WEEK_SEC * 2, unit = BodyUnits.unit(kind, s.units), lockedOn = true,
         )
         val o = overlay.data
-        if (o != null) layers += BodyOverlayLayers.protein(ctx, o, zone)
+        if (o != null) layers += BodyOverlayLayers.protein(ctx, o, zone, s.units)
+        caption.text = ctx.getString(R.string.body_comp_caption, FoodCardText.grams(ctx, ProteinOverlay.REFERENCE_X10 / 10.0, s.units))
         var start = entries.first().tSec
         var end = entries.last().tSec + DAY_SEC
         if (o != null && o.hasData) {

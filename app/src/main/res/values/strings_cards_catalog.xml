@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The goal cards, Daily balance, Weight goal and the optional card catalog (CARDS_PLAN.md). -->
+<resources>
+    <item name="body_today_card" type="id" />
+    <item name="activity_goals_card" type="id" />
+    <item name="daily_balance_card" type="id" />
+    <item name="weight_goal_card" type="id" />
+    <item name="weight_goal_chart" type="id" />
+    <item name="workout_list_sports" type="id" />
+
+    <dimen name="trend_card_spark">40dp</dimen>
+    <dimen name="trend_card_bars">96dp</dimen>
+    <dimen name="daily_balance_ring">112dp</dimen>
+    <dimen name="weight_goal_chart">180dp</dimen>
+
+    <!-- Goal lines (Body today, Activity goals) -->
+    <string name="card_body_today">Body today</string>
+    <string name="card_body_today_summary">Your goals at a glance: calories, water, energy, sleep, weight</string>
+    <string name="card_activity_goals">Activity goals</string>
+    <string name="card_activity_goals_summary">Steps, active minutes, workouts, active days and distance against your goals</string>
+    <string name="goal_line_kcal_eaten">Calories eaten</string>
+    <string name="goal_line_kcal_burned">Calories burned</string>
+    <string name="goal_line_water">Water</string>
+    <string name="goal_line_energy">Energy level now</string>
+    <string name="goal_line_sleep">Sleep last night</string>
+    <string name="goal_line_weight">Weight</string>
+    <string name="goal_line_steps">Steps today</string>
+    <string name="goal_line_active_min">Active minutes this week</string>
+    <string name="goal_line_active_kcal">Active calories today</string>
+    <string name="goal_line_workouts">Workouts this week</string>
+    <string name="goal_line_active_days">Active days this week</string>
+    <string name="goal_line_distance">Distance today</string>
+    <string name="goal_line_floors">Floors today</string>
+    <string name="goal_line_unit_min">min</string>
+    <string name="goal_line_of">%1$s / %2$s</string>
+    <string name="goal_lines_edit">Goals</string>
+    <string name="goal_lines_label">goals on track</string>
+    <string name="goal_lines_of_count">of %1$d</string>
+    <plurals name="goal_lines_on_track">
+        <item quantity="one">%1$d of %2$d goal on track. Keep going!</item>
+        <item quantity="other">%1$d of %2$d goals on track. Keep going!</item>
+    </plurals>
+    <string name="body_today_empty">Set your goals to see them here.</string>
+    <string name="activity_goals_empty">Your activity goals show up here once your watch syncs.</string>
+
+    <!-- Simple number cards -->
+    <string name="trend_empty">No readings yet.</string>
+    <string name="trend_label_latest">latest</string>
+    <string name="trend_note_steady">Steady over 30 days</string>
+    <string name="trend_note_up">Up %1$s over 30 days</string>
+    <string name="trend_note_down">Down %1$s over 30 days</string>
+    <string name="unit_mmhg">mmHg</string>
+    <string name="unit_fahrenheit_delta">°F</string>
+    <string name="unit_m">m</string>
+
+    <!-- Body catalog -->
+    <string name="card_sleep_score">Sleep score</string>
+    <string name="card_sleep_score_summary">Last night\'s score from your device and 30 nights</string>
+    <string name="sleep_score_unit">of 100</string>
+    <string name="sleep_score_label">last night</string>
+    <string name="card_readiness">Readiness</string>
+    <string name="card_readiness_summary">Ready to train today: sleep, HRV, resting heart rate and load</string>
+    <string name="readiness_unit">of 100</string>
+    <string name="readiness_ready">Ready to train</string>
+    <string name="readiness_steady">Take it steady</string>
+    <string name="readiness_rest">Rest and recover</string>
+    <string name="readiness_note_good">Sleep and recovery look good</string>
+    <string name="readiness_note_sleep">Short sleep is holding you back</string>
+    <string name="readiness_note_hrv">HRV is below your usual</string>
+    <string name="readiness_note_rhr">Resting heart rate is up</string>
+    <string name="readiness_note_load">A big training week so far</string>
+    <string name="readiness_empty">Readiness needs a night of sleep or HRV from your watch.</string>
+    <string name="card_temperature">Temperature</string>
+    <string name="card_temperature_summary">Skin temperature overnight against your usual</string>
+    <string name="temperature_label">vs your usual, last night</string>
+    <string name="card_muscle_mass">Muscle mass</string>
+    <string name="card_muscle_mass_summary">Muscle trend from your scale</string>
+    <string name="card_lean_mass">Lean mass</string>
+    <string name="card_lean_mass_summary">Fat-free mass from weight and body fat</string>
+    <string name="lean_mass_empty">Log body fat with a weight to see your lean mass.</string>
+    <string name="card_body_water">Body water</string>
+    <string name="card_body_water_summary">Body water trend from your scale</string>
+    <string name="card_bone_mass">Bone mass</string>
+    <string name="card_bone_mass_summary">Bone mass trend from your scale</string>
+    <string name="card_bmi">BMI</string>
+    <string name="card_bmi_summary">From your weight and height</string>
+    <string name="bmi_note">18.5 to 24.9 is the usual healthy range. It says little about muscle.</string>
+    <string name="bmi_empty">Add your height in Me › Profile and log a weight to see your BMI.</string>
+    <string name="card_bmr">Resting calories</string>
+    <string name="card_bmr_summary">Calories your body uses at rest (BMR)</string>
+    <string name="bmr_label_measured">a day, measured</string>
+    <string name="bmr_label_estimated">a day, estimated</string>
+    <string name="bmr_empty">Add your height, birth year and a weight to estimate this.</string>
+    <string name="card_blood_pressure">Blood pressure</string>
+    <string name="card_blood_pressure_summary">Latest reading and trend from a monitor</string>
+    <string name="bp_label">systolic</string>
+    <string name="bp_label_diastolic">over %1$s, latest</string>
+    <string name="card_naps">Naps</string>
+    <string name="card_naps_summary">Today\'s naps</string>
+    <string name="naps_label">napped today</string>
+    <string name="card_morning_summary">Morning summary</string>
+    <string name="card_morning_summary_summary">Sleep, HRV and energy level in one line</string>
+    <string name="morning_label">slept last night</string>
+    <string name="morning_hrv">HRV %1$s ms</string>
+    <string name="morning_energy">Energy %1$s</string>
+    <string name="card_sleep_need">Sleep need</string>
+    <string name="card_sleep_need_summary">Tonight\'s suggested sleep</string>
+    <string name="card_health_check">Health check</string>
+    <string name="card_health_check_summary">Your last 2-minute check: heart rate, HRV, oxygen, breathing</string>
+    <string name="card_fitness_age">Fitness age</string>
+    <string name="card_fitness_age_summary">Body age from your fitness</string>
+    <string name="card_ecg">ECG</string>
+    <string name="card_ecg_summary">Your last ECG recording</string>
+    <string name="card_cycle_tracking">Cycle tracking</string>
+    <string name="card_cycle_tracking_summary">Period and cycle phase</string>
+    <string name="card_jet_lag">Jet lag</string>
+    <string name="card_jet_lag_summary">Body clock vs destination time</string>
+    <string name="card_blood_glucose">Blood glucose</string>
+    <string name="card_blood_glucose_summary">Readings from a glucose meter</string>
+
+    <!-- Activity catalog -->
+    <string name="activity_all_activities">All activities</string>
+    <string name="workout_list_all">All</string>
+    <string name="card_active_time">Active time</string>
+    <string name="card_active_time_summary">Minutes moving today</string>
+    <string name="active_time_label">moving today</string>
+    <string name="active_time_above">More than your recent days</string>
+    <string name="active_time_below">A little less than your recent days</string>
+    <string name="card_streaks">Streaks</string>
+    <string name="card_streaks_summary">Days in a row at your step goal</string>
+    <string name="streaks_unit">days</string>
+    <string name="streaks_label">in a row at your step goal</string>
+    <string name="streaks_note_going">Keep it going!</string>
+    <string name="streaks_note_start">Reach your step goal today to start one.</string>
+    <string name="card_weekly_review">Weekly review</string>
+    <string name="card_weekly_review_summary">Last week against the week before</string>
+    <string name="weekly_review_label">steps a day last week</string>
+    <string name="weekly_review_up">%1$s more than the week before</string>
+    <string name="weekly_review_down">%1$s less than the week before</string>
+    <string name="card_last_activity">Last activity</string>
+    <string name="card_last_activity_summary">Your latest workout</string>
+    <string name="card_personal_records">Personal records</string>
+    <string name="card_personal_records_summary">Your longest, fastest and biggest efforts</string>
+    <string name="record_longest_distance">Longest distance</string>
+    <string name="record_longest_time">Longest workout</string>
+    <string name="record_fastest_run">Fastest run (5K or more)</string>
+    <string name="record_biggest_climb">Biggest climb</string>
+    <string name="records_empty">Your records show up after your first workouts.</string>
+    <plurals name="records_count">
+        <item quantity="one">%1$d record</item>
+        <item quantity="other">%1$d records</item>
+    </plurals>
+    <string name="card_sport_progress">Sport progress</string>
+    <string name="card_sport_progress_summary">One sport over 12 weeks: pace, sessions, heart rate at the same pace</string>
+    <string name="sport_progress_per_week">a week</string>
+    <string name="sport_progress_pace_label">average, last 4 weeks</string>
+    <string name="sport_progress_sessions_label">sessions a week</string>
+    <string name="sport_progress_sessions_week">Sessions a week</string>
+    <string name="sport_progress_distance">Distance, 12 weeks</string>
+    <string name="sport_progress_longest">Longest</string>
+    <string name="sport_progress_fastest">Fastest</string>
+    <string name="sport_progress_hr_title">Heart rate at your usual pace</string>
+    <string name="sport_progress_hr">%1$d → %2$d bpm at the same pace</string>
+    <string name="card_vo2_max">VO2 max</string>
+    <string name="card_vo2_max_summary">Running and cycling VO2 max</string>
+    <string name="vo2_max_running">Running</string>
+    <string name="vo2_max_cycling">Cycling</string>
+    <string name="vo2_max_cycling_note">Cycling %1$s</string>
+    <string name="vo2_max_empty">Your watch updates VO2 max after outdoor runs or rides with heart rate.</string>
+    <string name="card_training_status">Training status</string>
+    <string name="card_training_status_summary">Productive, maintaining or overreaching</string>
+    <string name="card_recovery_time">Recovery time</string>
+    <string name="card_recovery_time_summary">Hours until recovered</string>
+    <string name="card_floors">Floors climbed</string>
+    <string name="card_floors_summary">Today against your goal</string>
+    <string name="card_pai">PAI</string>
+    <string name="card_pai_summary">Weekly activity score</string>
+    <string name="card_race_times">Race times</string>
+    <string name="card_race_times_summary">Predicted 5K, 10K, half and marathon</string>
+    <string name="card_endurance">Endurance</string>
+    <string name="card_endurance_summary">Endurance fitness score</string>
+    <string name="card_hill_fitness">Hill fitness</string>
+    <string name="card_hill_fitness_summary">Climbing strength and endurance</string>
+    <string name="card_lactate_threshold">Lactate threshold</string>
+    <string name="card_lactate_threshold_summary">Threshold pace and heart rate</string>
+    <string name="card_cycling_power">Cycling power</string>
+    <string name="card_cycling_power_summary">FTP and power curve</string>
+    <string name="card_heat_altitude">Heat and altitude</string>
+    <string name="card_heat_altitude_summary">Acclimation</string>
+    <string name="card_speed_zones">Speed zones</string>
+    <string name="card_speed_zones_summary">Time in each speed zone</string>
+    <string name="card_cycling">Cycling</string>
+    <string name="card_cycling_summary">Speed, cadence and distance from a bike sensor</string>
+    <string name="card_elevation">Elevation</string>
+    <string name="card_elevation_summary">Altitude and climb today</string>
+    <string name="card_live">Live</string>
+    <string name="card_live_summary">Heart rate and steps right now</string>
+    <string name="card_weather">Weather</string>
+    <string name="card_weather_summary">Today\'s weather for planning a workout</string>
+    <string name="card_suggested_workout">Suggested workout</string>
+    <string name="card_suggested_workout_summary">Today\'s workout from a training plan</string>
+    <string name="card_achievements">Achievements</string>
+    <string name="card_achievements_summary">Badges for milestones</string>
+
+    <!-- Daily balance -->
+    <string name="card_daily_balance">Daily balance</string>
+    <string name="card_daily_balance_summary">Calories eaten, burned and left; protein, carbs, fat, fiber and limits</string>
+    <string name="balance_how">How it works</string>
+    <string name="balance_left">kcal left</string>
+    <string name="balance_over">kcal over</string>
+    <string name="balance_eaten">Eaten %1$s kcal</string>
+    <string name="balance_burned">Burned %1$s kcal (%2$s active)</string>
+    <string name="balance_goal">Goal %1$s kcal</string>
+    <string name="balance_small_left">left</string>
+    <string name="balance_small_over">over</string>
+    <string name="weight_goal_small_label">a day</string>
+    <string name="balance_small_note">In %1$s · out %2$s</string>
+    <string name="balance_protein">Protein</string>
+    <string name="balance_carbs">Carbs</string>
+    <string name="balance_fat">Fat</string>
+    <string name="balance_sat_fat">Saturated fat</string>
+    <string name="balance_trans_fat">Trans fat</string>
+    <string name="balance_mono_fat">Monounsaturated fat</string>
+    <string name="balance_poly_fat">Polyunsaturated fat</string>
+    <string name="balance_fiber">Fiber</string>
+    <string name="balance_sodium">Sodium</string>
+    <string name="balance_added_sugar">Added sugar</string>
+    <string name="balance_sugar">Total sugar</string>
+    <string name="balance_unit_g">g</string>
+    <string name="balance_unit_mg">mg</string>
+    <string name="balance_of_target">%1$s / %2$s %3$s</string>
+    <string name="balance_of_limit">%1$s / %2$s %3$s limit</string>
+    <string name="balance_share_ok">%1$d%% of calories, in the balanced %2$d–%3$d%%</string>
+    <string name="balance_share_off">%1$d%% of calories (balanced: %2$d–%3$d%%)</string>
+    <string name="balance_tap_foods">Double tap for the foods behind it</string>
+    <string name="balance_foods_title">%1$s today</string>
+    <string name="balance_no_foods">Nothing logged with this yet.</string>
+
+    <!-- Weight goal -->
+    <string name="card_weight_goal">Weight goal</string>
+    <string name="card_weight_goal_summary">Calories a day to reach your goal weight by your date</string>
+    <string name="weight_goal_a_day">a day to reach your goal</string>
+    <string name="weight_goal_keep">Keep around %1$s</string>
+    <string name="weight_goal_lose">Lose %1$s a week</string>
+    <string name="weight_goal_gain">Gain %1$s a week</string>
+    <string name="weight_goal_reach">%1$s by %2$s</string>
+    <string name="weight_goal_source_adaptive">Based on what you ate and your weight trend (burn about %1$s kcal a day); updated each Monday.</string>
+    <string name="weight_goal_source_measured">Based on the calories your devices measured (about %1$s kcal a day).</string>
+    <string name="weight_goal_source_estimated">Estimated from your profile (about %1$s kcal a day) until there is device or food data.</string>
+    <string name="weight_goal_capped">Your date needs more than 1% of your weight a week, so this uses the safe rate.</string>
+    <string name="weight_goal_floor">Raised to the safe minimum for a day.</string>
+    <string name="weight_goal_trend">Weight trend</string>
+    <string name="weight_goal_projection">Projection</string>
+    <string name="weight_goal_history">Daily target by week</string>
+    <string name="weight_goal_bmi">BMI %1$s now · %2$s at your goal</string>
+    <string name="weight_goal_bmi_now">BMI %1$s now</string>
+    <string name="weight_goal_set">Set a goal</string>
+    <string name="weight_goal_need_goal">Set a goal weight and a date in Goals to get your daily calories.</string>
+    <string name="weight_goal_need_weight">Log your weight to get your daily calories.</string>
+
+    <!-- Food groups -->
+    <string name="card_food_groups">Food groups</string>
+    <string name="card_food_groups_summary">Fruits, vegetables, grains, protein foods and dairy against a balanced plate</string>
+    <string name="food_group_fruits">Fruits</string>
+    <string name="food_group_vegetables">Vegetables</string>
+    <string name="food_group_grains">Grains</string>
+    <string name="food_group_protein">Protein foods</string>
+    <string name="food_group_dairy">Dairy</string>
+    <string name="food_groups_label">groups covered</string>
+    <string name="food_groups_waiting">None of today\'s foods are fruits, vegetables, grains, protein foods or dairy yet. Foods logged from the food database count; quick adds don\'t.</string>
+    <string name="food_groups_empty">Log a meal to see your food groups.</string>
+
+    <!-- Goals screen: the goals the goal cards show -->
+    <string name="goal_workouts_week">Workouts per week</string>
+    <string name="goal_active_days_week">Active days per week</string>
+    <string name="goal_distance_day">Distance per day</string>
+    <string name="goal_floors_day">Floors per day</string>
+    <string name="goal_weight_date">Goal date</string>
+    <string name="goal_weight_date_help">When you want to reach your goal weight</string>
+    <string name="goal_unit_per_week">a week</string>
+    <string name="goal_unit_days_week">days a week</string>
+    <string name="goal_unit_km">km</string>
+    <string name="goal_unit_mi">mi</string>
+    <string name="goal_section_food">Food</string>
+    <string name="goal_section_activity">Activity</string>
+    <string name="goal_section_body">Body</string>
+</resources>

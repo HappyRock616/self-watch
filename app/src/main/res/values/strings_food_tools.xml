@@ -42,8 +42,6 @@
     <string name="meals_restore_description">Bring back %1$s</string>
 
     <!-- + sheet: water and fasting -->
-    <string name="add_water_logged">Glass logged. %1$s ml today</string>
-    <string name="add_water_logged_goal">Glass logged. %1$s of %2$s ml today</string>
     <string name="add_fast_started">Fast started. Goal %1$s. You\'ve got this</string>
     <string name="add_fast_ended">Fast ended at %1$s. Well done</string>
 

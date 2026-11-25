@@ -39,6 +39,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -51,6 +53,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -116,8 +120,17 @@ class DevicesFullViewModelsTest {
         for (t in listOf("setting", "device", "watch_app", "watch_app_settings", "link_permission")) raw.execSQL("DELETE FROM $t")
     }
 
+    /** View models made by the current test; their coroutines are stopped before Main is reset. */
+    private val vms = ArrayList<ViewModel>()
+
+    private fun <V : ViewModel> V.tracked(): V = also { vms += it }
+
     @After
     fun tearDown() {
+        // A view model's coroutines (database flows resuming on other threads) must finish before
+        // Dispatchers.Main is reset, or resetMain races them: "Dispatchers.Main is used concurrently".
+        runBlocking { vms.forEach { it.viewModelScope.coroutineContext[Job]?.cancelAndJoin() } }
+        vms.clear()
         Dispatchers.resetMain()
     }
 
@@ -140,7 +153,7 @@ class DevicesFullViewModelsTest {
         val files = SideloadStore(tmp.newFolder("watchapps"))
         val cmds = FakeCommands()
         var n = 0
-        val vm = WatchAppsViewModel(db, cmds, files, newRequestId = { "r${++n}" })
+        val vm = WatchAppsViewModel(db, cmds, files, newRequestId = { "r${++n}" }).tracked()
         val job = watch(vm.state)
         withTimeout(5_000) { vm.state.first { it.watch?.id == id } }
 
@@ -200,7 +213,7 @@ class DevicesFullViewModelsTest {
         // The answer timer needs real time (the test dispatcher's virtual clock never moves here).
         Dispatchers.setMain(Dispatchers.Unconfined)
         addWatch()
-        val vm = WatchAppsViewModel(db, FakeCommands(), SideloadStore(tmp.newFolder("w")), answerTimeoutMs = 50)
+        val vm = WatchAppsViewModel(db, FakeCommands(), SideloadStore(tmp.newFolder("w")), answerTimeoutMs = 50).tracked()
         val job = watch(vm.state)
         withTimeout(5_000) { vm.state.first { it.watch != null } }
         vm.refresh()
@@ -243,7 +256,7 @@ class DevicesFullViewModelsTest {
         val form = (SettingsDefinitionParser.parse(SETTINGS_JSON) as Outcome.Ok).value
         val cmds = FakeCommands()
         var n = 0
-        val vm = AppSettingsViewModel(db, cmds, { form }, id, app, newRequestId = { "s${++n}" })
+        val vm = AppSettingsViewModel(db, cmds, { form }, id, app, newRequestId = { "s${++n}" }).tracked()
         assertEquals(WatchAppOp.READ_SETTINGS, cmds.requests.single().op)
         assertEquals(WatchAppOp.READ_SETTINGS, vm.state.value.busy)
 
@@ -292,7 +305,7 @@ class DevicesFullViewModelsTest {
         val id = addWatch()
         val app = UUID.randomUUID()
         db.watchApps.saveSettings(WatchAppSettings(app, 100, """{"speed":2,"label":"go"}""", null))
-        val vm = AppSettingsViewModel(db, FakeCommands(), { SettingsForm.fromValues(emptyMap()) }, id, app)
+        val vm = AppSettingsViewModel(db, FakeCommands(), { SettingsForm.fromValues(emptyMap()) }, id, app).tracked()
         val s = withTimeout(5_000) { vm.state.first { it.form.fields.size == 2 } }
         assertFalse(s.form.fromDefinition)
         assertEquals(EditorKind.STEPPER, SettingsEditor.kindOf(s.form.field("speed")!!))
@@ -308,7 +321,7 @@ class DevicesFullViewModelsTest {
         db.watchApps.upsert(WatchAppRow(id, app, "Run field", 1, 4, true, 1))
         db.links.set(LinkPermission("com.example.run", app, "cert", true, 10, 20))
         db.links.set(LinkPermission("com.example.gone", app, "cert", false, 10, null))
-        val vm = LinkedAppsViewModel(db, FakeCatalog())
+        val vm = LinkedAppsViewModel(db, FakeCatalog()).tracked()
         val s = vm.load()
         assertTrue(s.enabled)
         assertEquals(listOf("com.example.gone", "Run app"), s.rows.map { it.label })
@@ -334,7 +347,7 @@ class DevicesFullViewModelsTest {
     @Test
     fun callsAskForPermissionsWhenTurnedOn() = runBlocking {
         val perms = FakePerms()
-        val vm = CallSettingsViewModel(db, perms)
+        val vm = CallSettingsViewModel(db, perms).tracked()
         assertFalse("stored on by default, but no permission", vm.load().calls)
 
         val missing = vm.prepare(CallOption.CALLS, true)
@@ -365,7 +378,7 @@ class DevicesFullViewModelsTest {
     fun notificationsNeedAccessAndKeepADenyList() = runBlocking {
         val perms = FakePerms()
         val cmds = FakeCommands()
-        val vm = NotificationSettingsViewModel(db, perms, FakeCatalog(), cmds)
+        val vm = NotificationSettingsViewModel(db, perms, FakeCatalog(), cmds).tracked()
         assertTrue("needs access", vm.setEnabled(true))
         val s = withTimeout(5_000) { vm.state.first { !it.loading } }
         assertTrue(s.wanted)
@@ -408,7 +421,7 @@ class DevicesFullViewModelsTest {
     @Test
     fun alarmsAreKeptPerWatchAndSent() = runBlocking {
         val cmds = FakeCommands()
-        val vm = AlarmsViewModel(db, cmds)
+        val vm = AlarmsViewModel(db, cmds).tracked()
         assertFalse(vm.save(Alarm(0, 7, 0, emptySet(), true, null)))
         val id = addWatch(features = setOf(Feature.NOTIFICATIONS), connected = false)
         val unsupported = vm.load()
@@ -440,13 +453,46 @@ class DevicesFullViewModelsTest {
     @Test
     fun findWatchNeedsAConnectedWatch() = runBlocking {
         val cmds = FakeCommands()
-        val vm = WatchSettingsViewModel(db, cmds, debuggable = true)
+        val vm = WatchSettingsViewModel(db, cmds, debuggable = true).tracked()
         assertEquals(SendOutcome.NOT_CONNECTED, vm.ring(true))
         val id = addWatch(setOf(Feature.FIND_WATCH))
         assertEquals(SendOutcome.SENT, vm.ring(true))
         assertEquals(SendOutcome.SENT, vm.ring(false))
         assertEquals(listOf(id to true, id to false), cmds.rings)
         assertTrue(withTimeout(5_000) { vm.state.first { it.watch != null } }.canFind)
+    }
+
+    @Test
+    fun garminSignInAnswerIsPerWatchOffByDefaultWithAHint() = runBlocking {
+        val vm = WatchSettingsViewModel(db, FakeCommands(), debuggable = false).tracked()
+        val id = addWatch()
+        val s0 = withTimeout(5_000) { vm.state.first { it.watch != null } }
+        assertFalse(s0.fakeAuth)
+        assertFalse(s0.showSignInHint)
+
+        // The watch asked to sign in and nobody answered: the hint shows.
+        db.settings.set(SettingKeys.deviceSignInAsked(id), "100")
+        assertTrue(withTimeout(5_000) { vm.state.first { it.signInAsked } }.showSignInHint)
+
+        vm.setFakeAuth(true)
+        val on = withTimeout(5_000) { vm.state.first { it.fakeAuth } }
+        assertFalse(on.showSignInHint)
+        assertEquals("true", db.settings.get(SettingKeys.deviceFakeAuth(id)))
+        assertNull("turning it on clears the hint", db.settings.get(SettingKeys.deviceSignInAsked(id)))
+
+        vm.setFakeAuth(false)
+        withTimeout(5_000) { vm.state.first { !it.fakeAuth } }
+        assertFalse(db.settings.getBool(SettingKeys.deviceFakeAuth(id)))
+    }
+
+    @Test
+    fun oldGlobalGarminSignInAnswerMovesToTheCurrentWatch() = runBlocking {
+        db.settings.setBool(SettingKeys.GARMIN_FAKE_AUTH, true)
+        val id = addWatch()
+        val vm = WatchSettingsViewModel(db, FakeCommands(), debuggable = false).tracked()
+        assertTrue(withTimeout(5_000) { vm.state.first { it.watch != null } }.fakeAuth)
+        assertEquals("true", db.settings.get(SettingKeys.deviceFakeAuth(id)))
+        assertFalse(db.settings.getBool(SettingKeys.GARMIN_FAKE_AUTH))
     }
 
     companion object {

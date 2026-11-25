@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.Sports
@@ -14,8 +15,11 @@ import app.selfwatch.activity.WorkoutDetailFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
+import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.ui.format.Fmt
@@ -37,6 +41,25 @@ object WorkoutFuelCard : Card<WorkoutFuel>(
     override val tables: Set<Table> = setOf(Table.DIARY, Table.WORKOUT)
 
     override suspend fun load(env: CardEnv): WorkoutFuel = FoodCardLoader(env.db, env.clock).workoutFuel(env.day)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: WorkoutFuel): SmallFace? {
+        val w = data.workout ?: return null
+        val low = data.band.first
+        return SmallFace(
+            value = Fmt.number(data.gPerHour.toLong()),
+            label = ctx.getString(R.string.small_aim_band, Fmt.number(low.toLong()), Fmt.number(data.band.last.toLong())),
+            unit = ctx.getString(R.string.food_card_unit_g_per_h),
+            status = CardStatusColors.ofProgress(data.gPerHour.toDouble(), low.toDouble()),
+            note = ctx.getString(
+                R.string.card_line_pair,
+                ctx.getString(Sports.label(w.sport)),
+                Fmt.duration(w.durationSec.toLong(), Locale.getDefault(), FmtLabels.from(ctx)),
+            ),
+            progress = if (low > 0) data.gPerHour.toFloat() / low else null,
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<WorkoutFuel> = Holder(host, parent)
 

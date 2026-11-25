@@ -7,6 +7,7 @@
  */
 package app.selfwatch.food.cards
 
+import android.content.Context
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
@@ -14,6 +15,7 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 
@@ -27,6 +29,18 @@ object TotalSugarCard : Card<SugarDay>("total_sugar", CardTab.FOOD, R.string.car
     override val tables: Set<Table> = setOf(Table.DIARY)
 
     override suspend fun load(env: CardEnv): SugarDay = FoodCardLoader(env.db, env.clock).sugar(env.day)
+
+    override fun small(ctx: Context, data: SugarDay): SmallFace? {
+        val c = data.coverage
+        if (c.entries == 0) return null
+        val x10 = c.sum ?: return null
+        return SmallFace(
+            value = Fmt.number((FoodCardLoader.grams(x10) ?: 0).toLong()),
+            label = ctx.getString(R.string.small_sugar_label),
+            unit = ctx.getString(R.string.unit_g),
+            note = kcalShare(x10, data.kcal)?.let { ctx.getString(R.string.small_sugar_share, Fmt.percent(it)) },
+        )
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<SugarDay> = Holder(parent)
 

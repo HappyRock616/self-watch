@@ -15,11 +15,16 @@ import app.selfwatch.activity.cards.IntensityMinutesCard
 import app.selfwatch.activity.cards.StepsTodayCard
 import app.selfwatch.activity.cards.StrengthSessionsCard
 import app.selfwatch.activity.cards.TrainingLoadCard
+import app.selfwatch.activity.cards.Vo2MaxCard
 import app.selfwatch.activity.cards.WeeklyVolumeCard
 import app.selfwatch.body.TestDb
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardTab
+import app.selfwatch.cards.CardPresets
+import app.selfwatch.cards.CardStore
+import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.MainGoal
+import app.selfwatch.cards.Recorded
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.me.GoalField
@@ -84,17 +89,22 @@ class ActivityCardsTest {
         assertEquals(ActivityWeek.days(today), d.days)
         assertEquals(listOf(30, 20, 15, null, null, null, null), d.perDay)
         assertEquals(65, d.weekMin)
-        assertEquals(150, d.target)
-        assertFalse(d.extraBenefit)
+        // No goal set: the default 300 a week, whatever the main goal.
+        assertEquals(300, d.target)
         assertTrue(d.hasData)
         db.settings.set(SettingKeys.MAIN_GOAL, MainGoal.WEIGHT_LOSS.id)
-        val loss = IntensityMinutesCard.load(env(db))
-        assertEquals(250, loss.target)
-        assertTrue(loss.extraBenefit)
+        assertEquals(300, IntensityMinutesCard.load(env(db)).target)
+        // The weekly active-minutes goal is the target.
+        db.goals.set(Goal(GoalKind.ACTIVE_MIN, 140, today.plusDays(-3)))
+        assertEquals(140, IntensityMinutesCard.load(env(db)).target)
 
+        // Active day: a seventh of the weekly goal (140 / 7 = 20): Monday (30) and Tuesday (20).
         val a = ActiveDaysCard.load(env(db))
-        assertEquals(1, a.activeDays)
+        assertEquals(20, a.dayMin)
+        assertEquals(2, a.activeDays)
         assertTrue(a.hasData)
+        db.goals.set(Goal(GoalKind.ACTIVE_MIN, 300, today))
+        assertEquals(0, ActiveDaysCard.load(env(db)).activeDays)
     }
 
     @Test
@@ -104,21 +114,17 @@ class ActivityCardsTest {
         db.summaries.upsertDay(summary(today.plusDays(-2), steps = 9_000, activeKcal = 480), clock.nowSec())
         val s = StepsTodayCard.load(env(db))
         assertEquals(5_000, s.steps)
-        assertEquals(7_000, s.target)
-        assertNull(s.rangeHigh)
+        assertEquals(10_000, s.target)
         assertFalse(s.ownGoal)
         assertEquals(listOf(null, null, null, null, 9_000, null, 5_000), s.week)
-        // 60 and over: 6,000 to 8,000.
+        // No age-based default: 60 and over still gets 10,000.
         db.settings.setInt(SettingKeys.PROFILE_BIRTH_YEAR, 2026 - 62)
-        val older = StepsTodayCard.load(env(db))
-        assertEquals(6_000, older.target)
-        assertEquals(8_000, older.rangeHigh)
+        assertEquals(10_000, StepsTodayCard.load(env(db)).target)
         // The user's own goal wins.
-        db.goals.set(Goal(GoalKind.STEPS, 10_000, today.plusDays(-10)))
+        db.goals.set(Goal(GoalKind.STEPS, 8_000, today.plusDays(-10)))
         val own = StepsTodayCard.load(env(db))
-        assertEquals(10_000, own.target)
+        assertEquals(8_000, own.target)
         assertTrue(own.ownGoal)
-        assertNull(own.rangeHigh)
 
         val k = ActiveKcalCard.load(env(db))
         assertEquals(320, k.kcal)
@@ -265,20 +271,53 @@ class ActivityCardsTest {
     }
 
     @Test
-    fun activityPresetsFollowTheDefaultStacks() {
-        val expected = mapOf(
-            MainGoal.WEIGHT_LOSS to listOf("intensity_minutes", "steps_today", "today_rings", "trends", "workouts"),
-            MainGoal.WEIGHT_MANAGEMENT to listOf("intensity_minutes", "active_kcal", "steps_today", "today_rings", "trends", "workouts"),
-            MainGoal.BUILD_MUSCLE to listOf("strength_sessions", "workouts", "intensity_minutes", "trends"),
-            MainGoal.ATHLETIC to listOf("training_load", "workouts", "easy_hard", "trends"),
-            MainGoal.ENDURANCE to listOf("weekly_volume", "easy_hard", "training_load", "workouts", "trends"),
-            MainGoal.HEART_HEALTH to listOf("intensity_minutes", "steps_today", "today_rings", "trends"),
-            MainGoal.STRESS_WELLBEING to listOf("steps_today", "intensity_minutes", "today_rings"),
-            MainGoal.ACTIVE_AGING to listOf("steps_today", "intensity_minutes", "strength_sessions", "active_days", "today_rings"),
-            MainGoal.GENERAL_HEALTH to listOf("intensity_minutes", "steps_today", "strength_sessions", "today_rings", "trends", "workouts"),
+    fun vo2MaxCardShowsTheLatestEstimateAndItsChange() = runBlocking {
+        val db = TestDb.fresh(ctx)
+        assertNull(Vo2MaxCard.load(env(db)).latest)
+        db.metrics.insert(
+            listOf(
+                // 40 days ago 47.0; today two updates (the last one counts), and a ride.
+                MetricSample(1, MetricKind.VO2_MAX_RUNNING, at(today.plusDays(-40), 18), 470),
+                MetricSample(1, MetricKind.VO2_MAX_RUNNING, at(today, 7), 480),
+                MetricSample(1, MetricKind.VO2_MAX_RUNNING, at(today, 18), 483),
+                MetricSample(1, MetricKind.VO2_MAX_CYCLING, at(today.plusDays(-3), 18), 510),
+            ),
         )
-        assertEquals(MainGoal.entries.toSet(), expected.keys)
-        for ((goal, ids) in expected) assertEquals("$goal", ids, goal.cards(CardTab.ACTIVITY).map { it.id })
+        val d = Vo2MaxCard.load(env(db))
+        assertEquals(48.3, d.latest!!, 1e-9)
+        assertEquals(listOf(47.0, 48.3), d.series)
+        assertEquals(1.3, d.change!!, 1e-9)
+        assertEquals(listOf(51.0, 0.0), d.extras)
+        assertEquals("Running", Vo2MaxCard.label(ctx, d))
+        assertEquals("Cycling 51.0", Vo2MaxCard.note(ctx, d))
+        assertEquals("48.3", Vo2MaxCard.small(ctx, d)!!.value.toString())
+
+        // A rider without a running estimate gets the cycling one; too little history for a change.
+        val riders = TestDb.fresh(ctx)
+        riders.metrics.insert(listOf(MetricSample(1, MetricKind.VO2_MAX_CYCLING, at(today, 9), 512)))
+        val r = Vo2MaxCard.load(env(riders))
+        assertEquals(51.2, r.latest!!, 1e-9)
+        assertNull(r.change)
+        assertEquals("Cycling", Vo2MaxCard.label(ctx, r))
+        assertNull(Vo2MaxCard.note(ctx, r))
+    }
+
+    @Test
+    fun activityDefaultLayoutIsOneListForEveryone() {
+        assertEquals(
+            listOf("activity_goals", "training_load", "vo2_max", "recovery_hr", "weekly_volume", "workouts"),
+            CardPresets.layout(CardTab.ACTIVITY).map { it.card.id },
+        )
+        // Before the watch's first VO2 max estimate, Steps fills its place, right where it would be.
+        val noVo2 = Recorded(Recorded.ALL.kinds - DataKind.VO2_MAX)
+        val all = CardPresets.defaults(CardTab.ACTIVITY, noVo2)
+        assertEquals(listOf("activity_goals", "training_load", "vo2_max", "steps_today", "recovery_hr", "weekly_volume", "workouts"), all.map { it.card.id })
+        assertEquals(
+            listOf("activity_goals", "training_load", "steps_today", "recovery_hr", "weekly_volume", "workouts"),
+            CardStore.shownOf(all, noVo2).map { it.card.id },
+        )
+        // With an estimate stored, the card shows and no backup is needed.
+        assertEquals(CardPresets.layout(CardTab.ACTIVITY), CardPresets.defaults(CardTab.ACTIVITY, Recorded.ALL))
     }
 
     private fun minute(t: Long, intensity: Int) = ActivityMinute(1, t, 100, 50, 7_000, intensity, null)

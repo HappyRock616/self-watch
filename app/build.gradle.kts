@@ -2,6 +2,17 @@ plugins { id("selfwatch.android.app") }
 
 android { namespace = "app.selfwatch" }
 
+// Unit tests also run against the release variant, but only the release checks (src/testRelease,
+// package app.selfwatch.debug): the developer tools of debug builds must not reach release builds.
+androidComponents {
+    beforeVariants(selector().withBuildType("release")) { variant ->
+        variant.hostTests[com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
+    }
+}
+tasks.withType<Test>().configureEach {
+    if (name == "testReleaseUnitTest") filter.includeTestsMatching("app.selfwatch.debug.*")
+}
+
 dependencies {
     implementation(project(":core-model"))
     implementation(project(":core-db"))

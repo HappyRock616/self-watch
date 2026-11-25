@@ -43,7 +43,7 @@ class DiaryImportersTest {
         assertEquals("Oats, Rolled", oats.name)
         assertEquals(50, oats.amountX100)
         assertEquals("cup", oats.servingLabel)
-        assertEquals(Nutrients(1539, 53, 26, 5, 274, 5, 41, 2, 0), oats.nutrients)
+        assertEquals(Nutrients(1539, 53, 26, 5, 274, 5, 41, 2, 0, transfatX10 = 0, monofatX10 = 9, polyfatX10 = 10), oats.nutrients)
         val apple = data.diary[3]
         assertEquals(null, apple.secOfDay)
         assertEquals(1820, apple.gramsX10)
@@ -108,7 +108,8 @@ class DiaryImportersTest {
         assertEquals("MyFitnessPal Lunch", lunch.name)
         assertEquals("Lunch", lunch.meal)
         assertEquals(12 * 3600 + 45 * 60, lunch.secOfDay)
-        assertEquals(Nutrients(6150, 350, 220, 75, 705, 90, 85, 1100, 60), lunch.nutrients)
+        // Vitamin A, vitamin C, calcium and iron are % of the daily value in MyFitnessPal files, so they stay unknown.
+        assertEquals(Nutrients(6150, 350, 220, 75, 705, 90, 85, 1100, 60, transfatX10 = 2, monofatX10 = 98, polyfatX10 = 31, potassiumMg = 700), lunch.nutrients)
         assertEquals(listOf(BodyKind.WEIGHT, BodyKind.BODY_FAT, BodyKind.WEIGHT), data.body.map { it.kind })
         assertEquals(7824, data.body[0].valueX100) // 172.5 lb
         assertEquals(2400, data.body[1].valueX100)

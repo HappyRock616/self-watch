@@ -87,7 +87,7 @@ public class RecipeDao internal constructor(private val db: SelfWatchDb) {
                 statedPerServing = NutrientCols.readOrNull(c, 11),
                 tags = tagsOf(d, id),
                 items = itemsOf(d, id),
-                importId = c.longOrNull(20),
+                importId = c.longOrNull(EDITABLE + 1),
             )
         }
     }
@@ -148,7 +148,7 @@ public class RecipeDao internal constructor(private val db: SelfWatchDb) {
 
     internal companion object {
         private val TABLES = setOf(Table.RECIPE, Table.RECIPE_ITEM, Table.RECIPE_TAG, Table.MY_FOOD_FTS)
-        private const val EDITABLE = 19
+        private const val EDITABLE = 10 + NutrientCols.COUNT
         private const val EDITABLE_NAMES = "kind, name, servings_x10, serving_label, prep_min, cook_min, steps, notes, " +
             "source_name, source_url, ${NutrientCols.NAMES}"
         private val SET_EDITABLE = EDITABLE_NAMES.split(", ").joinToString(", ") { "$it = ?" }

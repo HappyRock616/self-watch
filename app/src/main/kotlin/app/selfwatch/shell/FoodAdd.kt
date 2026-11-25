@@ -19,7 +19,8 @@ import app.selfwatch.food.QuickLogResult
 import app.selfwatch.graph
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.ui.components.SwSnackbar
-import app.selfwatch.ui.format.Fmt
+import app.selfwatch.food.WaterGlass
+import app.selfwatch.ui.format.Units
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -30,7 +31,7 @@ object FoodAdd {
     /** Handles [item] from [activity]; false when it is not water or fasting. */
     fun open(activity: FragmentActivity, item: AddSheet.Item, backend: () -> FoodBackend = { GraphFoodBackend(activity.graph.food) }): Boolean {
         val action: suspend (FoodBackend) -> QuickLogResult = when (item) {
-            AddSheet.Item.WATER -> { b -> QuickLog.water(b) }
+            AddSheet.Item.WATER -> { b -> QuickLog.water(b, WaterGlass.ml(units(activity))) }
             AddSheet.Item.FAST -> { b -> QuickLog.toggleFast(b) }
             else -> return false
         }
@@ -47,9 +48,8 @@ object FoodAdd {
             }
             when (result) {
                 is QuickLogResult.Water -> {
-                    val text = result.goalMl?.let {
-                        activity.getString(R.string.add_water_logged_goal, Fmt.number(result.totalMl.toLong()), Fmt.number(it.toLong()))
-                    } ?: activity.getString(R.string.add_water_logged, Fmt.number(result.totalMl.toLong()))
+                    val units = units(activity)
+                    val text = activity.getString(R.string.water_logged_today, WaterGlass.ofGoal(activity, result.totalMl, WaterGlass.goalMl(result.goalMl, units), units))
                     show(activity, text) { activity.lifecycleScope.launch { QuickLog.undoWater(b) } }
                 }
                 is QuickLogResult.FastStarted ->
@@ -60,6 +60,9 @@ object FoodAdd {
         }
         return true
     }
+
+    /** The display units from the Units setting. */
+    private suspend fun units(activity: FragmentActivity): Units = DisplayUnits.of(activity.graph.db.settings.profile().units)
 
     private fun show(activity: FragmentActivity, text: String, onUndo: (() -> Unit)? = null) {
         val root = activity.findViewById<View>(R.id.tab_container) ?: activity.findViewById(android.R.id.content) ?: return

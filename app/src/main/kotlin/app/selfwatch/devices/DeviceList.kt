@@ -15,7 +15,9 @@ import app.selfwatch.ble.pair.PairFilter
 import app.selfwatch.ble.pair.PairedDevice
 import app.selfwatch.ble.profile.HealthProfile
 import app.selfwatch.db.SelfWatchDb
+import app.selfwatch.db.SettingKeys
 import app.selfwatch.db.Table
+import app.selfwatch.db.dao.DeviceDataDeleted
 import app.selfwatch.model.device.ConnectionState
 import app.selfwatch.model.device.DeviceInfo
 import app.selfwatch.model.device.DeviceKind
@@ -24,15 +26,19 @@ import app.selfwatch.model.device.SupportTier
 import app.selfwatch.model.health.MetricKind
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.time.Clock
+import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.SystemClock
 import app.selfwatch.model.time.TimeRange
 import app.selfwatch.service.device.DeviceKinds
+import app.selfwatch.service.device.DeviceManager
 import app.selfwatch.service.device.WatchStatus
 import app.selfwatch.service.presence.PresenceObserver
+import app.selfwatch.watch.WatchSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import java.time.ZoneId
 
 /**
  * One paired device of any kind, as the Devices tab, Device order and Other devices show it.
@@ -61,9 +67,18 @@ data class DeviceCard(
     val features: Set<Feature>,
     /** See above. */
     val heartRateNow: Int? = null,
+    /** The user tapped this device off: the service leaves it disconnected. */
+    val userOff: Boolean = false,
+    /** For watches: the one watch that connects (only one at a time); always true for sensors. */
+    val activeWatch: Boolean = true,
+    /** For watches: the Exclusive switch (off by default). */
+    val exclusive: Boolean = false,
 ) {
     /** True for watches (they get notifications); false for scales, straps and cuffs. */
     val isWatch: Boolean get() = DeviceKinds.isWatch(kind)
+
+    /** True when the service is meant to keep this device connected (not off, and the chosen watch). */
+    val wanted: Boolean get() = !userOff && activeWatch
 }
 
 /** Every paired device in the user's order (first = primary), and what can be done to them. */
@@ -80,11 +95,37 @@ interface DeviceList {
     /** Saves a newly paired sensor of [kind]; [fallbackName] is used when the picker gave no name. Returns its `device.id`. */
     suspend fun savePairedSensor(paired: PairedDevice, kind: DeviceKind, fallbackName: String): Long
 
-    /** Forgets [device] (stops presence, marks it removed; its data stays) and stops or restarts the service. */
-    suspend fun forget(device: DeviceCard)
+    /**
+     * Forgets [device] (stops presence, marks it removed) and stops or restarts the service. Its data
+     * stays unless [deleteData] (then workouts and their files go too).
+     */
+    suspend fun forget(device: DeviceCard, deleteData: Boolean = false)
+
+    /**
+     * Connects ([on]) or disconnects [device] and keeps it that way. Connecting a watch also makes it
+     * the one watch that connects (the other watches go off: one watch at a time).
+     */
+    suspend fun setConnected(device: DeviceCard, on: Boolean)
+
+    /** The Exclusive switch of watch [id]. */
+    suspend fun setExclusive(id: Long, on: Boolean)
+
+    /** Deletes [device]'s readings but keeps its workouts; returns the number of rows deleted. */
+    suspend fun resetData(device: DeviceCard): Int
 
     /** Starts (or refreshes) the service; false when Android refused. */
     fun startService(): Boolean
+}
+
+/** Which watch connects: the chosen one if it is still paired, else the first watch in the order. */
+object ActiveWatchPick {
+    /** The id of the watch that connects among [watchIdsInOrder], given the stored choice [chosen]. */
+    fun pick(watchIdsInOrder: List<Long>, chosen: Long?): Long? =
+        chosen?.takeIf { it in watchIdsInOrder } ?: watchIdsInOrder.firstOrNull()
+
+    /** The same, read from the database (the service's `devices.active_watch` setting). */
+    suspend fun load(db: SelfWatchDb, devices: List<DeviceInfo>): Long? =
+        pick(devices.filter { DeviceKinds.isWatch(it.kind) }.map { it.id }, db.settings.get(DeviceManager.ACTIVE_WATCH_KEY)?.toLongOrNull())
 }
 
 /** The device types of "Other devices": standard Bluetooth health profiles. */
@@ -129,7 +170,9 @@ class DbDeviceList(
 
     private suspend fun load(): List<DeviceCard> {
         val now = clock.nowSec()
-        return db.devices.active().map { d ->
+        val all = db.devices.active()
+        val activeWatchId = ActiveWatchPick.load(db, all)
+        return all.map { d ->
             val hr = if (d.kind == DeviceKind.HEART_RATE_SENSOR) {
                 db.metrics.series(MetricKind.HEART_RATE, TimeRange(now - LIVE_SEC, now + 1), d.id).lastOrNull()?.value
             } else {
@@ -146,7 +189,52 @@ class DbDeviceList(
                 batteryPct = db.settings.getInt(WatchStatus.batteryKey(d.id)),
                 features = d.features,
                 heartRateNow = hr,
+                userOff = db.settings.getBool(SettingKeys.deviceOff(d.id)),
+                activeWatch = !DeviceKinds.isWatch(d.kind) || d.id == activeWatchId,
+                exclusive = db.settings.getBool(SettingKeys.deviceExclusive(d.id)),
             )
+        }
+    }
+
+    override suspend fun setConnected(device: DeviceCard, on: Boolean) {
+        val values = HashMap<String, String?>()
+        values[SettingKeys.deviceOff(device.id)] = if (on) null else "true"
+        if (on && device.isWatch) values[DeviceManager.ACTIVE_WATCH_KEY] = device.id.toString()
+        db.settings.setAll(values)
+        // The service re-reads the devices: it connects or drops this one (and swaps the watch).
+        service.start()
+        SwLog.i(TAG, "device ${device.id} ${if (on) "connect" else "disconnect"} by the user")
+    }
+
+    override suspend fun setExclusive(id: Long, on: Boolean) {
+        db.settings.set(SettingKeys.deviceExclusive(id), if (on) "true" else null)
+        service.start()
+    }
+
+    override suspend fun resetData(device: DeviceCard): Int {
+        val r = db.devices.deleteData(device.id, keepWorkouts = true)
+        refreshSummaries(r)
+        SwLog.i(TAG, "device ${device.id}: ${r.rows} readings reset (workouts kept)")
+        return r.rows
+    }
+
+    /** Rebuilds the day summaries the deleted rows fed (at most the last [MAX_REFRESH_DAYS] days). */
+    private fun refreshSummaries(r: DeviceDataDeleted) {
+        for (day in refreshDays(r.spanSec, clock.today(), clock.zone())) service.refreshDay(day)
+    }
+
+    /** Deletes the workout files [paths] that live in this app's storage. */
+    private fun deleteFiles(paths: List<String>) {
+        val roots = listOfNotNull(app.filesDir, app.getExternalFilesDir(null)).map { it.canonicalPath + java.io.File.separator }
+        for (p in paths) {
+            val f = java.io.File(p)
+            val inside = try {
+                val c = f.canonicalPath
+                roots.any { c.startsWith(it) }
+            } catch (e: java.io.IOException) {
+                false
+            }
+            if (inside && f.isFile && !f.delete()) SwLog.w(TAG, "could not delete a workout file")
         }
     }
 
@@ -170,10 +258,26 @@ class DbDeviceList(
         return id
     }
 
-    override suspend fun forget(device: DeviceCard) {
+    override suspend fun forget(device: DeviceCard, deleteData: Boolean) {
         PresenceObserver.stop(app, device.address, device.associationId?.toLong())
         db.devices.markRemoved(device.id)
-        db.settings.setAll(mapOf(WatchStatus.stateKey(device.id) to null, WatchStatus.batteryKey(device.id) to null))
+        db.settings.setAll(
+            mapOf(
+                WatchStatus.stateKey(device.id) to null,
+                WatchStatus.batteryKey(device.id) to null,
+                SettingKeys.deviceOff(device.id) to null,
+                SettingKeys.deviceExclusive(device.id) to null,
+                SettingKeys.deviceFakeAuth(device.id) to null,
+                SettingKeys.deviceSignInAsked(device.id) to null,
+                WatchSettings.firstConnectKey(device.address) to null,
+            ),
+        )
+        if (deleteData) {
+            val r = db.devices.deleteData(device.id, keepWorkouts = false)
+            deleteFiles(r.workoutFiles)
+            refreshSummaries(r)
+            SwLog.i(TAG, "device ${device.id}: ${r.rows} rows deleted with it")
+        }
         if (db.devices.active().isEmpty()) service.stop() else service.start()
         SwLog.i(TAG, "device ${device.id} removed")
     }
@@ -186,6 +290,29 @@ class DbDeviceList(
 
         /** How recent a heart rate must be to count as live. */
         const val LIVE_SEC: Long = 30
+
+        /** Day summaries rebuilt after a reset or delete: at most this many recent days. */
+        const val MAX_REFRESH_DAYS: Int = 400
+
+        /**
+         * The local days whose summaries deleted rows covering [spanSec] fed: from the first day to the
+         * day after the last (night heart rate feeds the next morning), never after [today], newest
+         * [MAX_REFRESH_DAYS] at most.
+         */
+        fun refreshDays(spanSec: Pair<Long, Long>?, today: Day, zone: ZoneId): List<Day> {
+            val (lo, hi) = spanSec ?: return emptyList()
+            val first = Day.of(lo, zone)
+            val lastDay = Day.of(hi + 12 * 3600L, zone)
+            val last = if (lastDay > today) today else lastDay
+            if (first > last) return emptyList()
+            val out = ArrayList<Day>()
+            var d = last
+            while (d >= first && out.size < MAX_REFRESH_DAYS) {
+                out += d
+                d = d.plusDays(-1)
+            }
+            return out
+        }
 
         /** The `device` row for a newly paired sensor: features from its kind until it connects. */
         fun sensorInfo(paired: PairedDevice, kind: DeviceKind, fallbackName: String): DeviceInfo {

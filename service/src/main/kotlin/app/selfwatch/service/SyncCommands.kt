@@ -96,6 +96,15 @@ public object SyncCommands {
     /** Show a test notification on every connected watch (C19). Ignored when the service is not running. */
     public const val ACTION_TEST_NOTIFICATION: String = "app.selfwatch.service.action.TEST_NOTIFICATION"
 
+    /**
+     * A screen shows live heart rate or steps ([EXTRA_ENABLE] true; repeated while shown) or stopped showing
+     * them (false). See `live.LiveRelay`. Ignored when the service is not running (nothing is connected).
+     */
+    public const val ACTION_LIVE: String = "app.selfwatch.service.action.LIVE"
+
+    /** Extra: live readings wanted (`Boolean`). */
+    public const val EXTRA_ENABLE: String = "app.selfwatch.service.extra.ENABLE"
+
     /** Extra: start (true) or stop (false) ringing (`Boolean`). */
     public const val EXTRA_RING: String = "app.selfwatch.service.extra.RING"
 
@@ -108,6 +117,9 @@ public object SyncCommands {
     /** Asks the service to send watch [deviceId]'s stored alarms. Returns false when Android refuses. */
     public fun setAlarms(ctx: Context, deviceId: Long): Boolean =
         sendPlain(ctx, intent(ctx, ACTION_SET_ALARMS).putExtra(EXTRA_DEVICE_ID, deviceId))
+
+    /** Asks the service for live readings ([enable]) or tells it they are no longer shown. False when Android refuses. */
+    public fun live(ctx: Context, enable: Boolean): Boolean = sendPlain(ctx, intent(ctx, ACTION_LIVE).putExtra(EXTRA_ENABLE, enable))
 
     /** Asks the service to show a test notification on the connected watches. Returns false when Android refuses. */
     public fun testNotification(ctx: Context): Boolean = sendPlain(ctx, intent(ctx, ACTION_TEST_NOTIFICATION))

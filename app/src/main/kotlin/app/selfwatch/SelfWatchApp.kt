@@ -9,6 +9,7 @@ package app.selfwatch
 
 import android.app.Application
 import android.content.Context
+import app.selfwatch.activity.ActiveGoalMigration
 import app.selfwatch.data.KeystorePassphraseStore
 import app.selfwatch.db.SettingKeys
 import app.selfwatch.interop.jobs.AutoJobs
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Application entry point. Every process gets the log sink; only the main process applies the theme
@@ -70,6 +72,15 @@ class SelfWatchApp : Application(), WatchServiceHost {
         logFile = AppStartup.start(this, role, scope) { graph }
     }
 
+    /**
+     * Tests only: cancels this app's background observers, so a test that resets the database does not
+     * leave the previous test's coroutines writing to it (on Windows the old file can't be deleted while
+     * a connection holds it, and the next test then sees "database is locked").
+     */
+    fun stopBackgroundForTests() {
+        scope.coroutineContext[kotlinx.coroutines.Job]?.let { job -> job.children.forEach { it.cancel() } }
+    }
+
     private companion object {
         const val TAG = "SelfWatchApp"
     }
@@ -92,6 +103,7 @@ object AppStartup {
             SwTheme.applyNightMode(SwTheme.DEFAULT_NIGHT_MODE)
             val g = graph()
             watchAppearance(g, scope)
+            migrateGoals(g, scope)
             wireAutoJobs(ctx.applicationContext, g, scope)
         }
         return file
@@ -114,6 +126,20 @@ object AppStartup {
                 .flowOn(Dispatchers.IO)
                 .distinctUntilChanged()
                 .collect { withContext(Dispatchers.IO) { AutoJobs.sync(ctx) } }
+        }
+    }
+
+    /** One-time goal moves: the active-minutes goal from per day to per week ([ActiveGoalMigration]). */
+    private fun migrateGoals(g: AppGraph, scope: CoroutineScope) {
+        scope.launch {
+            try {
+                val changed = withContext(Dispatchers.IO) { ActiveGoalMigration.run(g.db) }
+                if (changed > 0) SwLog.i(TAG, "active-minutes goal moved to per week: $changed rows")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: RuntimeException) {
+                SwLog.e(TAG, "goal migration failed", e)
+            }
         }
     }
 

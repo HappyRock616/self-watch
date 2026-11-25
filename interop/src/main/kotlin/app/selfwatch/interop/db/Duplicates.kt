@@ -47,6 +47,10 @@ internal class Duplicates private constructor(
 
     /** Builders. */
     companion object {
+        /** Workout start times in a range, a trimmed workout's original start included (re-imports of it are duplicates). */
+        private const val WORKOUT_STARTS = "SELECT start_sec FROM workout WHERE start_sec BETWEEN ?1 AND ?2 " +
+            "UNION SELECT orig_start_sec FROM workout_trim WHERE orig_start_sec BETWEEN ?1 AND ?2"
+
         /** Nothing is a duplicate (the user chose to import everything). */
         fun none(data: ImportData): Duplicates = Duplicates(
             BooleanArray(data.diary.size), BooleanArray(data.body.size), BooleanArray(data.exercises.size),
@@ -82,7 +86,7 @@ internal class Duplicates private constructor(
             }
 
             val starts = data.workouts.map { it.workout.startSec } + data.exercises.map { exerciseStart(it.day, it.secOfDay, zone) }
-            val known = if (starts.isEmpty()) LongArray(0) else times(d, "SELECT start_sec FROM workout WHERE start_sec BETWEEN ? AND ?", starts.min(), starts.max())
+            val known = if (starts.isEmpty()) LongArray(0) else times(d, WORKOUT_STARTS, starts.min(), starts.max())
             val workouts = BooleanArray(data.workouts.size) { known.has(data.workouts[it].workout.startSec) }
             val exercises = BooleanArray(data.exercises.size) { known.has(exerciseStart(data.exercises[it].day, data.exercises[it].secOfDay, zone)) }
 

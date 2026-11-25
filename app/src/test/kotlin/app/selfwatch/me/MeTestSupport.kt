@@ -26,12 +26,17 @@ object MeTestSupport {
     /** The app, with a fresh database. */
     fun freshApp(): SelfWatchApp {
         val app = RuntimeEnvironment.getApplication() as SelfWatchApp
-        resetDb()
+        // The app's onCreate already opened the shared database: empty it in place (see TestDb.wipeShared).
+        TestDb.wipeShared(app)
         return app
     }
 
-    /** Closes and forgets the shared database (core-db's [TestDb] fixture), so each test starts empty. */
+    /**
+     * For tearDown: stops the app's background observers, then closes and forgets the shared database
+     * (core-db's [TestDb] fixture), so the next test starts empty and unlocked.
+     */
     fun resetDb() {
+        (RuntimeEnvironment.getApplication() as? SelfWatchApp)?.stopBackgroundForTests()
         TestDb.resetShared(RuntimeEnvironment.getApplication())
     }
 

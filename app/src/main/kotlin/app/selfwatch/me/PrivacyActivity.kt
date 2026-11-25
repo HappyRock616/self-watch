@@ -15,16 +15,23 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import app.selfwatch.R
 import app.selfwatch.data.AndroidHcOps
+import app.selfwatch.devices.AndroidPermissionChecker
 import app.selfwatch.food.FoodViews
 import app.selfwatch.graph
+import app.selfwatch.interop.hc.HcAvailability
+import app.selfwatch.interop.hc.HcPermissions
 import app.selfwatch.interop.hc.HcStatus
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.net.NetFeature
@@ -32,8 +39,9 @@ import app.selfwatch.ui.components.ListRow
 
 /**
  * Privacy center (C20, DESIGN §11): requests today with a link to Network activity, the promise, a
- * firewall switch for each internet feature, and the permissions the app holds (each asked only at
- * the moment of use; changed in Android's own settings).
+ * firewall switch for each listed internet feature, and the permissions the app holds. Each permission
+ * row is its master control ([PermissionAction]): it asks when Android still can, else opens the
+ * matching Android page; the rows are read again on return.
  */
 class PrivacyActivity : MeScreenActivity() {
 
@@ -41,6 +49,25 @@ class PrivacyActivity : MeScreenActivity() {
         val ctx = applicationContext
         PrivacyViewModel.factory(graph) { readPermissions(ctx) }
     }
+
+    private var requestedPermission: String? = null
+    private var requestedAtMs = 0L
+
+    private val permissionRequest = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val p = requestedPermission
+        requestedPermission = null
+        // Denied at once, with no dialog: Android won't ask again, so open its page instead.
+        if (!granted && p != null && SystemClock.elapsedRealtime() - requestedAtMs < NO_DIALOG_MS &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(this, p)
+        ) {
+            open(if (p == NOTIFICATIONS_PERMISSION) PermissionAction.APP_NOTIFICATIONS else PermissionAction.APP_DETAILS)
+        }
+        vm.refreshPermissions()
+    }
+
+    private val hcRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.refreshPermissions() }
+
+    private val asked by lazy { getSharedPreferences(PREFS, MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +83,7 @@ class PrivacyActivity : MeScreenActivity() {
 
         val net = MeViews.card(column, getString(R.string.privacy_switches_title))
         MeViews.add(net.content, MeViews.caption(this, getString(R.string.privacy_switches_help)), gap = false)
-        val switches = NetFeature.entries.associateWith { f ->
+        val switches = NetFeature.entries.filter { it.listed }.associateWith { f ->
             SwitchRow(this, getString(featureLabel(f)), getString(featureHelp(f))).also { row ->
                 row.onChange = { on -> vm.setAllowed(f, on) }
                 MeViews.add(net.content, row)
@@ -74,10 +101,21 @@ class PrivacyActivity : MeScreenActivity() {
             for ((f, row) in switches) row.checked = s.switches[f] ?: f.defaultOn
             permRows.removeAllViews()
             for (p in s.permissions) {
+                val action = actionFor(p)
                 permRows.addView(
                     ListRow(this).apply {
                         title = getString(permissionLabel(p.kind))
+                        subtitle = getString(
+                            when {
+                                p.granted -> R.string.privacy_perm_tap_revoke
+                                action == PermissionAction.REQUEST || action == PermissionAction.HEALTH_CONNECT_REQUEST -> R.string.privacy_perm_tap_allow
+                                else -> R.string.privacy_perm_tap_settings
+                            },
+                        )
                         trailing = getString(if (p.granted) R.string.privacy_allowed else R.string.privacy_not_allowed)
+                        showChevron = true
+                        tag = "perm_${p.kind.name.lowercase()}"
+                        onClick = { onPermissionTap(p) }
                     },
                     FoodViews.matchWrap(),
                 )
@@ -91,17 +129,92 @@ class PrivacyActivity : MeScreenActivity() {
     }
 
     private fun openAppSettings() {
-        val i = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-        try {
-            startActivity(i)
-        } catch (e: ActivityNotFoundException) {
-            SwLog.w(TAG, "no app settings screen", e)
+        open(PermissionAction.APP_DETAILS)
+    }
+
+    private fun actionFor(p: HeldPermission): PermissionAction {
+        val name = runtimePermission(p.kind)
+        val key = name ?: p.kind.name
+        val rationale = name != null && ActivityCompat.shouldShowRequestPermissionRationale(this, name)
+        return PermissionAction.of(p, asked.getBoolean(key, false), rationale)
+    }
+
+    /** The row tap: ask, or open the Android page for [p]. The rows refresh on the result or in [onResume]. */
+    private fun onPermissionTap(p: HeldPermission) {
+        when (val action = actionFor(p)) {
+            PermissionAction.REQUEST -> {
+                val name = runtimePermission(p.kind) ?: return open(PermissionAction.APP_DETAILS)
+                asked.edit().putBoolean(name, true).apply()
+                requestedPermission = name
+                requestedAtMs = SystemClock.elapsedRealtime()
+                try {
+                    permissionRequest.launch(name)
+                } catch (e: ActivityNotFoundException) {
+                    SwLog.w(TAG, "no permission dialog", e)
+                    open(PermissionAction.APP_DETAILS)
+                }
+            }
+            PermissionAction.HEALTH_CONNECT_REQUEST -> {
+                asked.edit().putBoolean(p.kind.name, true).apply()
+                try {
+                    hcRequest.launch(HcPermissions.build(write = true, read = true).toTypedArray())
+                } catch (e: ActivityNotFoundException) {
+                    SwLog.w(TAG, "no Health Connect permission screen", e)
+                    open(PermissionAction.HEALTH_CONNECT_SETTINGS)
+                }
+            }
+            else -> open(action)
+        }
+    }
+
+    /** Opens the Android page for [action], falling back to the app details page. */
+    private fun open(action: PermissionAction) {
+        for (i in listOfNotNull(settingsIntent(this, action), appDetails(this))) {
+            try {
+                startActivity(i)
+                return
+            } catch (e: ActivityNotFoundException) {
+                SwLog.w(TAG, "no screen for ${i.action}", e)
+            } catch (e: SecurityException) {
+                SwLog.w(TAG, "screen refused for ${i.action}", e)
+            }
         }
     }
 
     /** Labels and permission reading. */
     companion object {
         private const val TAG = "PrivacyActivity"
+        private const val PREFS = "privacy_permissions_asked"
+        private const val NO_DIALOG_MS = 400L
+        private val NOTIFICATIONS_PERMISSION: String? =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS else null
+
+        /** The Android runtime permission behind [k], or null for special access. */
+        fun runtimePermission(k: PermissionKind): String? = when (k) {
+            PermissionKind.NEARBY_DEVICES -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_CONNECT else null
+            PermissionKind.NOTIFICATIONS -> NOTIFICATIONS_PERMISSION
+            PermissionKind.CAMERA -> Manifest.permission.CAMERA
+            PermissionKind.PHONE -> Manifest.permission.READ_PHONE_STATE
+            PermissionKind.CALL_LOG -> Manifest.permission.READ_CALL_LOG
+            PermissionKind.CONTACTS -> Manifest.permission.READ_CONTACTS
+            PermissionKind.ANSWER_CALLS -> Manifest.permission.ANSWER_PHONE_CALLS
+            PermissionKind.NOTIFICATION_ACCESS, PermissionKind.HEALTH_CONNECT, PermissionKind.BATTERY_OPTIMIZATION -> null
+        }
+
+        /** Android's app details page for this app. */
+        fun appDetails(ctx: Context): Intent =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", ctx.packageName, null))
+
+        /** The Android page for [action] (null for the request actions, which show a dialog instead). */
+        fun settingsIntent(ctx: Context, action: PermissionAction): Intent? = when (action) {
+            PermissionAction.REQUEST, PermissionAction.HEALTH_CONNECT_REQUEST -> null
+            PermissionAction.APP_DETAILS -> appDetails(ctx)
+            PermissionAction.APP_NOTIFICATIONS ->
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+            PermissionAction.NOTIFICATION_LISTENER -> AndroidPermissionChecker.notificationAccessIntent(ctx)
+            PermissionAction.BATTERY_OPTIMIZATION -> Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            PermissionAction.HEALTH_CONNECT_SETTINGS -> HcAvailability.settingsIntent(ctx)
+        }
 
         /** "12 requests today · 2 blocked". */
         fun requestsText(ctx: Context, r: RequestsToday): String {
@@ -143,6 +256,7 @@ class PrivacyActivity : MeScreenActivity() {
             PermissionKind.CONTACTS -> R.string.perm_contacts
             PermissionKind.ANSWER_CALLS -> R.string.perm_answer_calls
             PermissionKind.HEALTH_CONNECT -> R.string.perm_health_connect
+            PermissionKind.BATTERY_OPTIMIZATION -> R.string.perm_battery
         }
 
         /**
@@ -169,6 +283,9 @@ class PrivacyActivity : MeScreenActivity() {
             runtime(PermissionKind.ANSWER_CALLS, Manifest.permission.ANSWER_PHONE_CALLS)
             val hc = AndroidHcOps(ctx)
             if (hc.status() == HcStatus.AVAILABLE) out += HeldPermission(PermissionKind.HEALTH_CONNECT, hc.granted().isNotEmpty())
+            ctx.getSystemService(PowerManager::class.java)?.let { pm ->
+                out += HeldPermission(PermissionKind.BATTERY_OPTIMIZATION, pm.isIgnoringBatteryOptimizations(ctx.packageName))
+            }
             return out
         }
 

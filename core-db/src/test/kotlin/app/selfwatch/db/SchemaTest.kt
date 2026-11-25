@@ -17,7 +17,7 @@ class SchemaTest : DbTest() {
 
     @Test
     fun createsDatabaseWithSettings() {
-        assertEquals("1", pragma("user_version"))
+        assertEquals(SelfWatchDb.VERSION.toString(), pragma("user_version"))
         assertEquals("wal", pragma("journal_mode").lowercase())
         assertEquals("1", pragma("foreign_keys"))
         // Writes run on the primary connection (inside a transaction), which onConfigure set up.

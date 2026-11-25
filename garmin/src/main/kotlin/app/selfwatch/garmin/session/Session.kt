@@ -24,7 +24,7 @@ public enum class SessionState { DISCONNECTED, LINK_UP, INFO_EXCHANGED, CONFIGUR
  *
  * @property reliableLink ask for the multi-link reliable layer (the reference's default).
  * @property advertisedCapabilities capability flags we send in CONFIGURATION.
- * @property fakeAuth setting `garmin.fake_auth` (R1): fake Garmin sign-in replies. Off by default.
+ * @property fakeAuth per-watch setting `devices.<id>.fake_auth` (R1): fake Garmin sign-in replies. Off by default.
  * @property timeSync answer time requests and send TIME_UPDATED on connect.
  * @property firstConnect send the pairing system events (pair complete, sync complete, setup wizard complete).
  * @property archiveAfterIngest set the archive flag after a file is safely stored.
@@ -51,7 +51,7 @@ public data class GarminConfig(
  *
  * AUTH_NEGOTIATION gets the reference's minimal reply: ACK, "guess OK", the watch's own byte and flags
  * echoed. Garmin Connect credential/OAuth protobuf requests (handled in `pb/`, A15) must be answered
- * "not available" unless [allowFakeOAuth]; that is off unless the user turns on `garmin.fake_auth`.
+ * "not available" unless [allowFakeOAuth]; that is off unless the user turns it on for the watch (`devices.<id>.fake_auth`).
  *
  * Ref: Gadgetbridge 160beab41 service/devices/garmin/messages/AuthNegotiationMessage.java (status message built in
  * the constructor) and ProtocolBufferHandler.java (fake OAuth only when the preference is on).

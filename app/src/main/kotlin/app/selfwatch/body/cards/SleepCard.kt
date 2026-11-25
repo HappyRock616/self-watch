@@ -20,8 +20,12 @@ import app.selfwatch.body.SleepInfo
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
+import app.selfwatch.cards.CardSize
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.health.SleepStage
 import app.selfwatch.ui.components.EmptyState
@@ -41,6 +45,33 @@ object SleepCard : Card<SleepInfo>("sleep", CardTab.BODY, R.string.card_sleep, R
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.SLEEP_SESSION, Table.SLEEP_STAGE)
 
     override suspend fun load(env: CardEnv): SleepInfo = BodyTrendLoader(env.db, env.clock).sleep()
+
+    override val needs: Set<DataKind> = setOf(DataKind.SLEEP)
+
+    override val defaultSize: CardSize get() = CardSize.LARGE
+
+    override fun small(ctx: Context, data: SleepInfo): SmallFace? {
+        if (data.isEmpty) return null
+        val last = data.lastMin
+        if (last == null) {
+            val avg = data.avgMin ?: return null
+            return SmallFace(value = duration(ctx, avg), label = ctx.getString(R.string.small_seven_night_avg))
+        }
+        val today = Fmt.dateToDay(java.time.LocalDate.now())
+        val label = data.lastDay?.takeIf { it.yyyymmdd != today }?.let { Fmt.day(ctx, it.yyyymmdd) }
+            ?: ctx.getString(R.string.sleep_card_last_night)
+        val (status, note) = when (BodyCardMath.sleepStatus(last)) {
+            RangeStatus.WITHIN -> CardStatus.GOOD to R.string.sleep_card_within
+            RangeStatus.BELOW -> CardStatus.CLOSE to R.string.sleep_card_below
+            RangeStatus.ABOVE -> CardStatus.CLOSE to R.string.sleep_card_above
+        }
+        return SmallFace(value = duration(ctx, last), label = label, status = status, note = ctx.getString(note))
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(SleepDetailFragment())
+        return true
+    }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<SleepInfo> = Holder(host, parent)
 

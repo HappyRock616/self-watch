@@ -15,8 +15,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The five color themes: Just Go 5K's exact colors in the dark look, colors.xml and themes.xml in step
- * with [ThemeColors], and the text-on-color contrast rules.
+ * The five color themes: Just Go 5K's exact colors in both looks, colors.xml and themes.xml in step
+ * with [ThemeColors], and the readable-text rules.
  */
 class ThemeColorsTest {
     private fun hex(c: Int): String = "#%06X".format(c and 0xFFFFFF)
@@ -39,12 +39,47 @@ class ThemeColorsTest {
     }
 
     @Test
-    fun darkLookUsesTheExactThemeColors() {
+    fun bothLooksUseTheExactThemeColors() {
         for (t in SwTheme.Theme.entries) {
-            val c = ThemeColors.of(t, night = true)
-            assertEquals(t.name, hex(t.primary), hex(c.primary))
-            assertEquals(t.name, hex(t.secondary), hex(c.secondary))
+            for (night in listOf(false, true)) {
+                val c = ThemeColors.of(t, night)
+                assertEquals("$t night=$night", hex(t.primary), hex(c.primary))
+                assertEquals("$t night=$night", hex(t.secondary), hex(c.secondary))
+                assertEquals("$t night=$night", hex(t.onPrimary), hex(c.onPrimary))
+                assertEquals("$t night=$night", hex(t.onSecondary), hex(c.onSecondary))
+            }
         }
+    }
+
+    @Test
+    fun paletteXmlHoldsTheThemeMcValuesInBothLooks() {
+        val failures = ArrayList<String>()
+        for (look in ColorTokens.THEMES) {
+            val tokens = ColorTokens.load(look)
+            for (t in SwTheme.Theme.entries) {
+                val name = t.name.lowercase()
+                val want = mapOf("primary" to t.primary, "secondary" to t.secondary, "on_primary" to t.onPrimary, "on_secondary" to t.onSecondary)
+                for ((k, v) in want) {
+                    val got = tokens["sw_theme_${name}_$k"]
+                    if (got == null || hex(got) != hex(v)) failures += "$look sw_theme_${name}_$k: ${got?.let(::hex)} != ${hex(v)}"
+                }
+            }
+        }
+        assertTrue(failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun lightLookTextIsNeverADarkenedThemeColor() {
+        // On light surfaces, accent text is the theme color itself, Just Go 5K's text-on color or the text color.
+        for (t in SwTheme.Theme.entries) {
+            val c = ThemeColors.of(t, night = false)
+            assertTrue("$t accentText ${hex(c.accentText)}", c.accentText in intArrayOf(c.primary, c.onPrimary, c.neutrals.text))
+            assertTrue("$t secondaryText ${hex(c.secondaryText)}", c.secondaryText in intArrayOf(c.secondary, c.onSecondary, c.neutrals.text))
+            val dark = ThemeColors.of(t, night = true)
+            assertTrue("$t inverse ${hex(dark.accentTextInverse)}", dark.accentTextInverse in intArrayOf(dark.primary, dark.onPrimary, dark.neutrals.inverseText))
+        }
+        assertEquals("#412402", hex(ThemeColors.of(SwTheme.Theme.YELLOW, night = false).accentText))
+        assertEquals("#16202A", hex(ThemeColors.of(SwTheme.Theme.FOREST, night = false).accentText))
     }
 
     @Test
@@ -95,14 +130,12 @@ class ThemeColorsTest {
     }
 
     @Test
-    fun textOnColorReachesFourPointFive() {
+    fun smallTextReachesFourPointFive() {
         for (t in SwTheme.Theme.entries) {
             for (night in listOf(false, true)) {
                 val c = ThemeColors.of(t, night)
                 val n = c.neutrals
                 val pairs = listOf(
-                    "onPrimary" to SwContrast.ratio(c.onPrimary, c.primary),
-                    "onSecondary" to SwContrast.ratio(c.onSecondary, c.secondary),
                     "accentText/bg" to SwContrast.ratio(c.accentText, n.background),
                     "accentText/surface" to SwContrast.ratio(c.accentText, n.surface),
                     "accentText/variant" to SwContrast.ratio(c.accentText, n.surfaceVariant),
@@ -110,18 +143,19 @@ class ThemeColorsTest {
                     "accentTextInverse" to SwContrast.ratio(c.accentTextInverse, n.inverseSurface),
                 )
                 for ((what, r) in pairs) assertTrue("$t night=$night $what ${"%.2f".format(r)}", r >= SwContrast.TEXT_MIN)
+                // Button labels on a fill are Just Go 5K's own text colors: at least 3:1 (large, bold text).
+                assertTrue("$t onPrimary", SwContrast.ratio(c.onPrimary, c.primary) >= SwContrast.GRAPHIC_MIN)
+                assertTrue("$t onSecondary", SwContrast.ratio(c.onSecondary, c.secondary) >= SwContrast.GRAPHIC_MIN)
             }
         }
     }
 
     @Test
-    fun justGo5KTextIsKeptWhereItIsReadable() {
-        // Dark look: the watch's dark text on the bright themes stays; only light text on green changes.
+    fun justGo5KTextOnColorsAreKept() {
         val orange = ThemeColors.of(SwTheme.Theme.ORANGE, night = true)
         assertEquals("#412402", hex(orange.onPrimary))
         assertEquals("#042C53", hex(orange.onSecondary))
-        val forest = ThemeColors.of(SwTheme.Theme.FOREST, night = true)
-        assertTrue(hex(forest.onPrimary) != "#E8F5EC")
-        assertTrue(SwContrast.luminance(forest.onPrimary) < SwContrast.luminance(forest.primary))
+        assertEquals("#E8F5EC", hex(ThemeColors.of(SwTheme.Theme.FOREST, night = true).onPrimary))
+        assertEquals("#E8F5EC", hex(ThemeColors.of(SwTheme.Theme.FOREST, night = false).onPrimary))
     }
 }

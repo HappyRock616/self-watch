@@ -27,8 +27,8 @@ object FoodDbChecks {
         try {
             assertEquals("ok", text(db, "PRAGMA integrity_check"))
             assertEquals(FoodDbFormat.FOODS_APPLICATION_ID.toLong(), long(db, "PRAGMA application_id"))
-            assertEquals(1L, long(db, "PRAGMA user_version"))
-            assertEquals("1", text(db, "SELECT value FROM meta WHERE key='schema_version'"))
+            assertEquals(FoodDbFormat.SCHEMA_VERSION.toLong(), long(db, "PRAGMA user_version"))
+            assertEquals(FoodDbFormat.SCHEMA_VERSION.toString(), text(db, "SELECT value FROM meta WHERE key='schema_version'"))
             val zero = listOf(
                 "SELECT COUNT(*) FROM food WHERE name IS NULL OR TRIM(name)='' OR LENGTH(name)>80",
                 "SELECT COUNT(*) FROM food WHERE brand='' OR LENGTH(brand)>60",
@@ -41,6 +41,11 @@ object FoodDbChecks {
                 "SELECT COUNT(*) FROM barcode b LEFT JOIN food f ON f.id=b.food_id WHERE f.id IS NULL",
                 "SELECT COUNT(*) FROM food f WHERE NOT EXISTS (SELECT 1 FROM serving s WHERE s.food_id=f.id AND s.seq=0)",
                 "SELECT COUNT(*) FROM barcode WHERE gtin < 10000000 OR gtin > 99999999999999",
+                // Schema 2: every category exists, bits stay in range, a "decided" bit never claims an unknown diet.
+                "SELECT COUNT(*) FROM food f LEFT JOIN category c ON c.id = f.category_id WHERE c.id IS NULL",
+                "SELECT COUNT(*) FROM food WHERE diet < 0 OR diet > 15 OR diet_known < 0 OR diet_known > 3 OR allergens < 0 OR allergens > 511",
+                "SELECT COUNT(*) FROM food WHERE allergens_full NOT IN (0, 1)",
+                "SELECT COUNT(*) FROM food WHERE (diet & 3) & ~diet_known != 0",
             )
             for (q in zero) assertEquals(q, 0L, long(db, q))
             // Only features of Android 8.0's SQLite: FTS4, no triggers, no views.

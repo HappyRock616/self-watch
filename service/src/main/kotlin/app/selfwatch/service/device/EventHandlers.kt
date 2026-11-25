@@ -145,7 +145,8 @@ public class EventRouter(private val handlers: EventHandlers) {
                 is WatchEvent.WebRequest -> handlers.webRequest.onWebRequest(from, event)
                 is WatchEvent.InstalledApps -> handlers.watchApps.onInstalledApps(from, event)
                 is WatchEvent.AppSettings -> handlers.watchApps.onAppSettings(from, event)
-                is WatchEvent.Battery, WatchEvent.SecurePairingRequired -> return false
+                is WatchEvent.Battery, WatchEvent.SecurePairingRequired, is WatchEvent.GarminSignInRequested,
+                is WatchEvent.LiveHeartRate, is WatchEvent.LiveSteps -> return false
             }
         } catch (e: CancellationException) {
             throw e

@@ -41,6 +41,7 @@ Body, Activity and Food are each an editable stack of cards. The main goal picke
 | `cards.<tab>.known` | Every card id of that tab the app knew when `cards.<tab>` was saved |
 | `cards.<tab>.preset` | The main goal the tab was last reset to |
 | `activity.trend_range` | Trends card range: `week`, `month`, `year` or `all`; absent = month |
+| `chart.<chart>.layers` | Hidden layer ids of one chart's chips, comma list (`chart.weight.layers`, `chart.sleep.layers`, `chart.sleep_period.layers`, `chart.heart_trend.layers`, `chart.body_comp.layers`, `chart.body_signals.layers`, `chart.training.layers`, `chart.exercise_sleep.layers`, `chart.activity_trends.layers`, `chart.sleep_kcal.layers`, `chart.heart_rate_trends.layers`, `chart.today_timeline.layers`). Absent = the main goal's defaults ([Chart defaults](#chart-defaults-per-goal)). Empty = every layer on |
 | `body.cards`, `body.cards.known`, `body.cards.preset` | **Old** Body keys. The first read of the Body cards moves them to `cards.body*` and deletes them (when both exist, the new keys win) |
 
 **Merge rules** (`CardStore.resolve`, same on every tab):
@@ -112,12 +113,12 @@ Thirty cards cover all nine goals; each goal gets six to eight of them in its ow
 | C7 | Protein g/kg/day | Food | `protein_per_kg` | Food log ÷ weight | Loss ≥1.2 (≥1.6 if training). Muscle 1.6 (1.4–2.0). Athletic and endurance 1.2–2.0. 65+ 1.0–1.2. General: US 1.2–1.6 (contested). Computed | [Rev Endocr Metab Disord 2025](https://link.springer.com/article/10.1007/s11154-025-09968-3); [ISSN 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5477153/); [PROT-AGE](https://www.jamda.com/article/s1525-8610(13)00326-5/fulltext); [Dietary Guidelines](https://www.dietaryguidelines.gov/) |
 | C8 | Protein per meal | Food | `protein_per_meal` | Food log by meal | Meals reaching 0.25–0.4 g/kg (about 20–40 g), every 3–4 h. Computed | [ISSN 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5477153/) |
 | C9 | Carbs g/kg/day, auto band | Food | `carbs_per_kg` | Food log ÷ weight; band from 7-day training time | Under 1 h/day → 3–5; about 1 h/day → 5–7; 1–3 h/day → 6–10; over 4 h/day → 8–12. Computed | [AND/DC/ACSM 2016](http://drugfreesport.org.za/wp-content/uploads/2018/04/Position-stand-on-Nutrition-Athletic-Performance-ACSM-2016-1.pdf) |
-| C10 | Intensity minutes this week (vigorous counts double) | Activity | `intensity_minutes` | Watch activity minutes | 150. Loss/maintenance: 250+. 300 for extra benefit | [WHO 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7719906/); [ACSM 2009 summary](https://obesitymedicine.org/blog/how-much-physical-activity-is-needed-for-weight-loss-weight-loss-maintenance-and-weight-gain-prevention/) |
-| C11 | Steps today | Activity | `steps_today` | Watch | 7,000 (60+: 6,000–8,000; under 60 the benefit levels off at 8,000–10,000). No official body sets a step target | [Ding 2025](https://www.thelancet.com/journals/lanpub/article/PIIS2468-2667(25)00164-1/fulltext); [Paluch 2022](https://www.thelancet.com/pdfs/journals/lanpub/PIIS2468-2667(21)00302-9.pdf) |
+| C10 | Intensity minutes this week (vigorous counts double) | Activity | `intensity_minutes` | Watch activity minutes | The weekly active-minutes goal (Me › Goals, default 300); WHO minimum 150 shown as a note | [WHO 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7719906/); [ACSM 2009 summary](https://obesitymedicine.org/blog/how-much-physical-activity-is-needed-for-weight-loss-weight-loss-maintenance-and-weight-gain-prevention/) |
+| C11 | Steps today | Activity | `steps_today` | Watch | The step goal, else 10,000 (owner's decision; no age-based default). No official body sets a step target | [Ding 2025](https://www.thelancet.com/journals/lanpub/article/PIIS2468-2667(25)00164-1/fulltext); [Paluch 2022](https://www.thelancet.com/pdfs/journals/lanpub/PIIS2468-2667(21)00302-9.pdf) |
 | C12 | Active kcal today | Activity | `active_kcal` | Watch | About 400 kcal/day, as reported by long-term maintainers (NWCR) | [Wyatt 2002](https://onlinelibrary.wiley.com/doi/full/10.1038/oby.2002.13) |
 | C13 | Strength (and balance) sessions this week | Activity | `strength_sessions` | Workout types | 2 or more. 65+: multicomponent balance and strength on 3+ days | [WHO 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7719906/) |
 | C14 | Weekly sets per muscle group | Activity | `weekly_sets` | Strength sets from the watch, if readable | About 10+ per muscle group. **Later, needs owner OK** (needs set data the app does not read yet) | [ACSM 2026](https://acsm.org/science-spotlight-acsm-releases-new-position-stand-on-resistance-training/) |
-| C15 | Active days this week | Activity | `active_days` | Watch | No official number: "most days", "some is better than none" | [CDC older adults](https://www.cdc.gov/physical-activity-basics/guidelines/older-adults.html) |
+| C15 | Active days this week | Activity | `active_days` | Watch | A day counts with a seventh of the weekly active goal (43 with 300); aim "most days", "some is better than none" | [CDC older adults](https://www.cdc.gov/physical-activity-basics/guidelines/older-adults.html) |
 | C16 | Sleep duration (stages as detail) | Body | `sleep` | Watch | 7–9 h (athletes 7–9 h, set individually) | [AHA Life's Essential 8](https://www.heart.org/en/healthy-living/healthy-lifestyle/lifes-essential-8); [Walsh 2021](https://www.sportgeneeskunde.com/wp-content/uploads/Br-J-Sports-Med-2021-Walsh-consensus-statement-sleep-and-the-athlete.pdf) |
 | C17 | Overnight HRV vs your baseline | Body | `hrv_baseline` | Overnight HRV, 7-day average | Inside your own normal band; no population target | Plews and Buchheit's baseline method |
 | C18 | Resting HR trend | Body | `resting_hr` | Watch, 4-week rolling | Lower or stable vs baseline. Each +10 bpm goes with about 9% higher mortality | [Zhang 2016, CMAJ](https://pubmed.ncbi.nlm.nih.gov/26598376/) |
@@ -137,6 +138,23 @@ Thirty cards cover all nine goals; each goal gets six to eight of them in its ow
 **Swap-ins outside the defaults:** water (Food `water`, built; EFSA 2.0/2.5 L **[unverified]**), SpO2 (Body `spo2`, built; single value with a "not medical" note), macros (Food `macros_today` and Body `macros`, built), workouts and trends (Activity, built), aerobic decoupling (needs per-second HR and pace streams that may not be readable), VO2 max (on the watch, not yet read), and manual blood pressure, cholesterol and HbA1c cards.
 
 **Later, needs owner OK** (inputs the app lacks): C30 "How do you feel?" (1–5 check-in), O8 (alcohol tags in the diary), session RPE after workouts (for an RPE-based C19; C19 ships on HR-zone minutes), C14 weekly sets (strength set data over Bluetooth), C23 sweat loss (before/after weigh-ins).
+
+## Heart-rate and today cards (owner's request, 2026-11-23)
+
+| Tab | Id | Card |
+|---|---|---|
+| Body | `heart_rate_now` | Live heart rate while the card is on screen and the watch is connected (the watch's live readings are on only then; the service's lease lapses after 90 s without a renewal), else the newest stored reading and its age; today's low, high and resting; last 24 hours. Opens Heart (full day, day picker) |
+| Body | `heart_rate_trends` | 30-day resting and daily average heart rate, two lines with chips (both on) |
+| Body | `breathing_rate` | Last night's breathing against the usual range (60 nights, mean ± 1 SD, at least ± 0.5) |
+| Body | `energy_level` | The watch's energy level today (FIT `stress_level` field 3); never called by the watch maker's trademark |
+| Activity | `steps_today` | Now the "steps now" card: live steps while on screen, distance, active kcal, target (stored id kept) |
+| Activity | `today_timeline` | Today hour by hour: step bars with the heart-rate line (both on) |
+| Activity | `recovery_hr` | Heart-rate drop 1 and 2 minutes after the latest workout with readings; last 10 workouts' 1-minute drop |
+| Activity | `distance_today`, `calories_today` | Distance today; total kcal (active + resting) |
+
+Every goal: `heart_rate_now` first or second on Body; `steps_today` first, `today_timeline` second and `recovery_hr` on
+Activity; `heart_rate_trends` for athletic, endurance, heart, stress and general health. The table in `CardPresets`
+is the source; the phase 2 targets below are older.
 
 ## Default stacks per goal and tab (phase 2 target)
 
@@ -171,6 +189,27 @@ Only relationships rated Strong or Moderate share an axis; each uses the lag the
 | A1 | Annotation, not a line: "high-carb day yesterday, likely water" on weight jumps | Moderate (glycogen holds about 3 g water per g) | 1–3 days | Lose, Maintain | Varies by person |
 
 **Kept apart on purpose:** watch stress score vs HRV (circular: the score is computed from HR and HRV, [bioRxiv 2025](https://www.biorxiv.org/content/10.1101/2025.01.06.630177v1.full.pdf)); stress score vs sleep (score unvalidated); sodium vs next-day weight (contested, [NephJC on Rakova 2017](http://www.nephjc.com/news/2017/5/31/spookysodium)); active kcal as a 1:1 offset to food (energy use plateaus, [Pontzer 2016](https://www.cell.com/current-biology/pdfExtended/S0960-9822(15)01577-8); [Curr Nutr Rep 2023](https://pubmed.ncbi.nlm.nih.gov/36933180/)); logged water vs workout HR (the log does not measure hydration, [Adams 2014](https://www.researchgate.net/publication/277306972_Influence_of_Dehydration_on_Heart_Rate_During_Exercise_in_the_Heat_A_Systematic_Review)); SpO2 vs anything (wrist readings below 95% when the reference was ≥98%, [UCL CinC 2023](https://discovery.ucl.ac.uk/10186376/1/CinC2023-237.pdf)); short sleep vs body composition (one 10-person RCT, [Nedeltcheva 2010](https://pubmed.ncbi.nlm.nih.gov/20921542/)); acute:chronic workload ratio ([Impellizzeri 2021](https://www.researchgate.net/publication/347442902_What_Role_Do_Chronic_Workloads_Play_in_the_Acute_to_Chronic_Workload_Ratio_Time_to_Dismiss_ACWR_and_Its_Underlying_Theory)); steps vs health outcomes (better as one target, [Paluch 2022](https://www.thelancet.com/journals/lanpub/article/PIIS2468-2667(21)00302-9/fulltext)); raw daily weight vs daily calories (water swings swamp the signal, [Hall model appendix](https://www.niddk.nih.gov/-/media/Files/BWP/Hall_Lancet_Web_Appendix.pdf)).
+
+## Chart defaults per goal
+
+Every chart's chips start from the user's main goal: **two layers on** (three or more only where the chart means nothing with fewer, like body signals); every other layer starts off and stays one tap away. Once the user taps a chip, their choice is stored (`chart.<chart>.layers`) and kept. When the main goal changes and the user accepts "Switch cards?" (onboarding's first run applies it silently), every chart's stored choice is cleared so the charts show the new goal's defaults; keeping the cards keeps the chart choices too. No reset button. The table lives in code in one place, `app/.../cards/ChartDefaults.kt`.
+
+| Chart | Lose, Maintain | Muscle | Athletic | Endurance | Heart, Aging, General | Stress |
+|---|---|---|---|---|---|---|
+| Weight (weight always on) | net calories (7-day) | calories in | net calories | net calories | active minutes | active minutes |
+| Sleep, night | stages + heart rate | stages + heart rate | stages + HRV | stages + HRV | stages + heart rate | stages + HRV |
+| Sleep, week and month | sleep + resting HR | sleep + resting HR | sleep + HRV | sleep + HRV | sleep + resting HR | sleep + HRV |
+| Activity Trends card | steps + active minutes | active minutes + steps | active minutes + distance | distance + active minutes | steps + active minutes | steps + active minutes |
+| Training and recovery | load + HRV | load + HRV | load + HRV | load + HRV | load + HRV | load + HRV |
+| Heart trend | both | both | both | both | both | both |
+| Exercise and sleep | both | both | both | both | both | both |
+| Sleep and calories | both | both | both | both | both | both |
+| Heart rate trends card (resting, daily average) | both | both | both | both | both | both |
+| Today card (steps per hour, heart rate) | both | both | both | both | both | both |
+| Protein and body composition (measurement always on) | protein | protein + strength sessions | protein | protein | protein | protein |
+| Body signals | all three + usual band | all three + usual band | all three + usual band | all three + usual band | all three + usual band | all three + usual band |
+
+Stand-ins: the Trends card has no strength-days or intensity-minutes metric, so Muscle uses steps and Athletic uses distance. The Sleep week and month views follow the night view's heart rate or HRV pick.
 
 ## Display and wording rules for every card
 

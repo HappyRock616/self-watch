@@ -19,6 +19,7 @@ import app.selfwatch.R
 import app.selfwatch.cards.CardStack
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.EditCardsFragment
+import app.selfwatch.debug.DebugTools
 import app.selfwatch.graph
 import app.selfwatch.shell.DemoLink
 import app.selfwatch.shell.MainActivity
@@ -40,7 +41,7 @@ class BodyFragment : TabFragment(R.layout.fragment_body, R.menu.menu_body) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        if (resources.getBoolean(R.bool.demo_data_enabled)) toolbar.inflateMenu(R.menu.menu_body_debug)
+        if (DebugTools.ENABLED) toolbar.inflateMenu(R.menu.menu_body_debug)
         val chip = view.findViewById<Chip>(R.id.watch_chip)
         chip.setOnClickListener { (activity as? MainActivity)?.select(Tab.DEVICES) }
         val stack = CardStack(this, CardTab.BODY, view.findViewById<ViewGroup>(R.id.body_cards), requireContext().graph.db)
@@ -88,8 +89,8 @@ class BodyFragment : TabFragment(R.layout.fragment_body, R.menu.menu_body) {
             Nav.open(this, EditCardsFragment.newInstance(CardTab.BODY))
             true
         }
-        R.id.demo_load -> runDemo(DemoLink.ACTION_LOAD)
-        R.id.demo_clear -> runDemo(DemoLink.ACTION_CLEAR)
+        R.id.demo_load -> DebugTools.ENABLED && runDemo(DemoLink.ACTION_LOAD)
+        R.id.demo_clear -> DebugTools.ENABLED && runDemo(DemoLink.ACTION_CLEAR)
         else -> false
     }
 

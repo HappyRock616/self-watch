@@ -71,8 +71,8 @@ data class DevicesUiState(
     val bleCapture: Boolean = false,
     /** True while pairing or removing is in progress. */
     val busy: Boolean = false,
-    /** Every other paired device (more watches, scales, straps, cuffs) in the user's order. */
-    val others: List<DeviceCard> = emptyList(),
+    /** Every paired device (watches, scales, straps, cuffs) in the user's order: one card each. */
+    val devices: List<DeviceCard> = emptyList(),
     /** The first device of the order (the primary one), or null. */
     val primaryId: Long? = null,
 )
@@ -123,7 +123,7 @@ class DevicesViewModel(
         combine(source.watch, source.counts, source.bleCapture, busy, list?.devices ?: flowOf(emptyList())) { watch, counts, capture, b, all ->
             DevicesUiState(
                 loading = false, watch = watch, counts = counts, bleCapture = capture, busy = b,
-                others = all.filter { it.id != watch?.id },
+                devices = all,
                 primaryId = all.firstOrNull()?.id,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), DevicesUiState())
@@ -160,15 +160,28 @@ class DevicesViewModel(
         actions.forget(watch)
     }
 
-    /** Makes device [id] the primary device (top of the device order). */
-    fun makePrimary(id: Long) {
-        val l = list ?: return
-        viewModelScope.launch { l.makePrimary(id) }
+    /**
+     * A tap on [device]'s card: disconnects it when the service keeps it connected, else connects it
+     * (for a watch that is not in use, it becomes the watch in use). Returns the new "wanted" state.
+     */
+    suspend fun toggle(device: DeviceCard): Boolean {
+        val on = !device.wanted
+        list?.setConnected(device, on)
+        return on
     }
 
-    /** Forgets another device (after its companion association is ended). */
-    suspend fun forget(device: DeviceCard) {
-        list?.forget(device)
+    /** The Exclusive switch of watch [id]. */
+    fun setExclusive(id: Long, on: Boolean) {
+        val l = list ?: return
+        viewModelScope.launch { l.setExclusive(id, on) }
+    }
+
+    /** The 3-second hold: deletes [device]'s readings, keeps workouts. Returns the rows deleted. */
+    suspend fun resetData(device: DeviceCard): Int = list?.resetData(device) ?: 0
+
+    /** Forgets a device (after its companion association is ended); [deleteData] also deletes its data. */
+    suspend fun forget(device: DeviceCard, deleteData: Boolean = false) {
+        list?.forget(device, deleteData)
     }
 
     /** The Bluetooth capture switch. */

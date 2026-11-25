@@ -95,11 +95,18 @@ public object WatchStatus {
     private const val MAX_TEXT = 120
 }
 
+/** Keeps a device's battery history (the real one writes `device_battery`, see `BatteryDao`). */
+public fun interface BatteryLog {
+    /** Device [deviceId] reported [pct] percent. */
+    public suspend fun record(deviceId: Long, pct: Int)
+}
+
 /**
  * Writes [DeviceStatus] lists as [WatchStatus] settings, only when something changed. Devices that
- * drop out of the list are marked [WatchStatus.OFF]. Never throws (a failed write is logged).
+ * drop out of the list are marked [WatchStatus.OFF]. Each new battery level also goes to [battery]
+ * (the battery history), once per change. Never throws (a failed write is logged).
  */
-public class WatchStatusPublisher(private val settings: SettingsStore) {
+public class WatchStatusPublisher(private val settings: SettingsStore, private val battery: BatteryLog? = null) {
     private val written = HashMap<String, String?>()
     private val lock = Mutex()
 
@@ -107,11 +114,26 @@ public class WatchStatusPublisher(private val settings: SettingsStore) {
     public suspend fun publish(list: List<DeviceStatus>) {
         val wanted = HashMap<String, String?>()
         for (key in written.keys) if (key.startsWith(STATE_PREFIX)) wanted[key] = WatchStatus.OFF
+        val levels = HashMap<Long, Int>()
         for (d in list) {
             wanted[WatchStatus.stateKey(d.info.id)] = WatchStatus.encode(d.state)
-            d.info.batteryPct?.let { wanted[WatchStatus.batteryKey(d.info.id)] = it.toString() }
+            d.info.batteryPct?.let {
+                val key = WatchStatus.batteryKey(d.info.id)
+                if (lock.withLock { written[key] } != it.toString()) levels[d.info.id] = it
+                wanted[key] = it.toString()
+            }
         }
         write(wanted)
+        val log = battery ?: return
+        for ((id, pct) in levels) {
+            try {
+                log.record(id, pct)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SwLog.w(TAG, "could not store the battery level", e)
+            }
+        }
     }
 
     /** Marks every device published so far [WatchStatus.OFF] (the service is stopping). */

@@ -13,6 +13,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.selfwatch.AppGraph
+import app.selfwatch.activity.ActivityGoals
+import app.selfwatch.activity.ActivityWeek
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.devices.WatchCard
@@ -91,7 +93,10 @@ data class MacrosInfo(
 /** Vigorous minutes today and over the last 7 days, and the weekly goal. */
 data class IntensityInfo(val todayMin: Int, val weekMin: Int, val weekGoalMin: Int)
 
-/** Steps and active minutes today and their goals (null when not known). */
+/**
+ * Steps today against the daily step goal (default 10,000), and active minutes this week (Monday to
+ * today) against the weekly active-minutes goal (default 300). Values are null when not known.
+ */
 data class StepsInfo(val steps: Int?, val stepsGoal: Int?, val activeMin: Int?, val activeMinGoal: Int?) {
     /** True with no activity data today. */
     val isEmpty: Boolean get() = steps == null && activeMin == null
@@ -207,20 +212,23 @@ class BodyLoader(private val db: SelfWatchDb, private val clock: Clock) {
         )
     }
 
-    /** Steps and active minutes today. */
+    /** Steps today and active minutes this week. */
     suspend fun steps(): StepsInfo {
         val today = clock.today()
-        val s = summary(today)
-        val totals = if (s?.steps == null || s.activeMin == null) {
-            db.activity.totalsByDay(DayRange(today, today), clock.zone()).firstOrNull()
-        } else {
-            null
+        val range = DayRange(ActivityWeek.start(today), today)
+        val summaries = db.summaries.days(range).associateBy { it.day }
+        val totals = db.activity.totalsByDay(range, clock.zone()).associateBy { it.day }
+        val s = summaries[today]
+        var weekActive: Int? = null
+        for (d in range.days()) {
+            val m = summaries[d]?.activeMin ?: totals[d]?.activeMin ?: continue
+            weekActive = (weekActive ?: 0) + m
         }
         return StepsInfo(
-            steps = s?.steps ?: totals?.steps?.toInt(),
-            stepsGoal = db.goals.goalOn(GoalKind.STEPS, today)?.value,
-            activeMin = s?.activeMin ?: totals?.activeMin,
-            activeMinGoal = db.goals.goalOn(GoalKind.ACTIVE_MIN, today)?.value,
+            steps = s?.steps ?: totals[today]?.steps?.toInt(),
+            stepsGoal = ActivityGoals.steps(db, today),
+            activeMin = weekActive,
+            activeMinGoal = ActivityGoals.activeMinWeek(db, today),
         )
     }
 

@@ -34,6 +34,13 @@ abstract class SwSheet : BottomSheetDialogFragment() {
     /** Builds the sheet body. */
     protected abstract fun onCreateSheetContent(inflater: LayoutInflater, container: ViewGroup?): View
 
+    private var titleView: android.widget.TextView? = null
+
+    /** Changes the title shown (for sheets whose title is known only after loading, like a food's name). */
+    protected fun updateSheetTitle(text: CharSequence?) {
+        titleView?.text = text
+    }
+
     override fun getTheme(): Int = R.style.ThemeOverlay_SelfWatch_BottomSheetDialog
 
     final override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -51,6 +58,7 @@ abstract class SwSheet : BottomSheetDialogFragment() {
             text = sheetTitle
             ViewCompat.setAccessibilityHeading(this, true)
         }
+        titleView = title
         val close = MaterialButton(ctx, null, com.google.android.material.R.attr.materialIconButtonStyle).apply {
             setIconResource(R.drawable.sw_ic_close)
             contentDescription = ctx.getString(R.string.sw_close)

@@ -5,7 +5,7 @@
     <string name="card_intensity_minutes">Intensity minutes</string>
     <string name="card_intensity_minutes_summary">This week, vigorous minutes count double</string>
     <string name="im_label">this week · target %1$s min</string>
-    <string name="im_label_extra">this week · target %1$s min (%2$s for extra benefit)</string>
+    <string name="im_label_who">this week · target %1$s min (WHO minimum %2$s)</string>
     <string name="im_caption_none">Some is better than none: a brisk 10-minute walk counts.</string>
     <string name="im_caption_left">%1$s min to go this week. Every minute counts.</string>
     <string name="im_caption_done">Weekly target reached. Anything more is a bonus.</string>
@@ -13,11 +13,12 @@
     <string name="im_empty">No activity minutes this week yet. Moderate and vigorous minutes from your watch show up here.</string>
     <string name="im_description">Intensity minutes this week: %1$s of a %2$s minute target. Double tap to see exercise and sleep.</string>
 
-    <!-- C11 steps_today -->
-    <string name="card_steps_today">Steps today</string>
-    <string name="card_steps_today_summary">Steps against a daily target, last 7 days</string>
+    <!-- C11 steps_today: today's steps, live from the watch when connected (the "steps now" card) -->
+    <string name="card_steps_today">Steps</string>
+    <string name="card_steps_today_summary">Today\'s steps, distance and calories against your target, live when your watch is connected</string>
+    <string name="st_live">Live from your watch</string>
+    <string name="st_extras">%1$s · %2$s active kcal</string>
     <string name="st_label">steps · target %1$s</string>
-    <string name="st_label_range">steps · target %1$s to %2$s</string>
     <string name="st_label_own">steps · your goal %1$s</string>
     <string name="st_caption_more">Every extra 1,000 steps helps. %1$s to your target.</string>
     <string name="st_caption_done">Past your target. Every extra 1,000 still helps.</string>
@@ -49,7 +50,7 @@
 
     <!-- C15 active_days -->
     <string name="card_active_days">Active days</string>
-    <string name="card_active_days_summary">Days this week with 30 or more active minutes</string>
+    <string name="card_active_days_summary">Days this week reaching a seventh of your weekly active goal</string>
     <string name="ad_label">active days this week · most days is the aim</string>
     <string name="ad_caption">A day counts with %1$s or more active minutes (vigorous minutes count double).</string>
     <string name="ad_note">Some is better than none: every active day helps.</string>
@@ -57,21 +58,21 @@
     <string name="ad_description">%1$s active days this week.</string>
 
     <!-- C19 training_load -->
-    <string name="card_training_load">Training load</string>
-    <string name="card_training_load_summary">Weekly load from heart-rate zones</string>
+    <string name="card_training_load">Weekly effort</string>
+    <string name="card_training_load_summary">How hard you trained this week, from heart-rate zones</string>
     <string name="tl_label">this week so far</string>
     <string name="tl_caption">Recent weeks: %1$s on average. Steady, gradual steps up work best.</string>
-    <string name="tl_caption_first">Load is minutes in each heart-rate zone times the zone (1 to 5).</string>
+    <string name="tl_caption_first">Effort is minutes in each heart-rate zone times the zone (1 to 5).</string>
     <string name="tl_note">Zones from a maximum heart rate of %1$s bpm (%2$s). Tap to see training and recovery.</string>
     <string name="tl_source_age">220 minus your age</string>
     <string name="tl_source_stored">your setting</string>
     <string name="tl_source_default">add your birth year in Profile for a closer number</string>
     <string name="tl_empty">No workouts with heart rate in the last 6 weeks. Workouts from your watch show up here.</string>
-    <string name="tl_description">Training load this week: %1$s. Recent weeks: %2$s. Double tap to see training and recovery.</string>
+    <string name="tl_description">Weekly effort so far: %1$s. Recent weeks: %2$s. Double tap to see training and recovery.</string>
 
     <!-- C20 weekly_volume -->
-    <string name="card_weekly_volume">Weekly volume</string>
-    <string name="card_weekly_volume_summary">Workout time and distance, long-session check</string>
+    <string name="card_weekly_volume">Workout time this week</string>
+    <string name="card_weekly_volume_summary">Workout time and distance this week</string>
     <string name="wv_label">this week</string>
     <string name="wv_label_distance">this week · %1$s</string>
     <string name="wv_caption_flag">Your %1$s on %2$s was %3$s%% longer than your longest in the 30 days before. Building up in smaller steps is easier on the body.</string>
@@ -98,7 +99,7 @@
 
     <!-- O4 training and recovery -->
     <string name="training_title">Training and recovery</string>
-    <string name="training_layer_load">Training load</string>
+    <string name="training_layer_load">Effort</string>
     <string name="training_layer_intensity">Intensity minutes</string>
     <string name="training_layer_hrv">HRV, 7-day average</string>
     <string name="training_layer_band">Your usual HRV</string>
@@ -112,4 +113,43 @@
     <string name="exercise_sleep_layer_sleep">Sleep, weekly average</string>
     <string name="exercise_sleep_note">Last 26 weeks, one point per week: active minutes (moderate and vigorous) and your average night\'s sleep. The link is small, and weekly patterns say more than single nights.</string>
     <string name="exercise_sleep_empty">No activity or sleep in the last 26 weeks yet. They show up here after a sync.</string>
+    <!-- today_timeline -->
+    <string name="card_today_timeline">Today</string>
+    <string name="card_today_timeline_summary">Today hour by hour: steps with your heart rate on top</string>
+    <string name="tt_layer_steps">Steps</string>
+    <string name="tt_layer_hr">Heart rate</string>
+    <string name="tt_caption">%1$s steps so far, busiest hour %2$s.</string>
+    <string name="tt_empty">Today\'s steps and heart rate fill in hour by hour as your watch syncs.</string>
+    <string name="tt_description">Today hour by hour. %1$s</string>
+
+    <!-- recovery_hr -->
+    <string name="card_recovery_hr">Heart rate recovery</string>
+    <string name="card_recovery_hr_summary">How fast your heart rate drops after a workout</string>
+    <string name="rhr_label">bpm drop in the first minute</string>
+    <string name="rhr_two_min">%1$s bpm after 2 minutes</string>
+    <string name="rhr_workout">%1$s, %2$s · ended at %3$d bpm</string>
+    <string name="rhr_trend">Last %1$d workouts: %2$s bpm in the first minute on average</string>
+    <string name="rhr_explain">A bigger drop in the first minute usually means better fitness. Compare it with your own earlier workouts.</string>
+    <string name="rhr_tip">Keep your watch on for two minutes after you stop.</string>
+    <string name="rhr_empty_none">After your next workout, keep your watch on for two minutes: your heart rate recovery shows here.</string>
+    <string name="rhr_empty_no_readings">Your recent workouts have no heart rate readings in the two minutes after you stopped. Keep your watch on after you stop and it shows here.</string>
+    <string name="rhr_description">Heart rate recovery: %1$s beats a minute in the first minute. %2$s</string>
+
+    <!-- distance_today -->
+    <string name="card_distance_today">Distance today</string>
+    <string name="card_distance_today_summary">How far you moved today, last 7 days</string>
+    <string name="dt_label">today</string>
+    <string name="dt_caption">Last 7 days, %1$s a day on average.</string>
+    <string name="dt_note">Steps, walks and runs from your watch.</string>
+    <string name="dt_empty">No distance yet. Sync your watch to see how far you moved today.</string>
+    <string name="dt_description">Distance today: %1$s.</string>
+
+    <!-- calories_today -->
+    <string name="card_calories_today">Calories today</string>
+    <string name="card_calories_today_summary">Total calories burned today: active plus resting</string>
+    <string name="ct_label">kcal so far · active %1$s + resting %2$s</string>
+    <string name="ct_caption">Last 7 days, about %1$s kcal a day.</string>
+    <string name="ct_note">Resting calories are what your body burns anyway; both are estimates.</string>
+    <string name="ct_empty">No calories yet. Sync your watch to see today\'s total.</string>
+    <string name="ct_description">Calories today: about %1$s.</string>
 </resources>

@@ -37,6 +37,18 @@ class FmtTest {
         LocalDateTime.of(2026, 11, 22, h, m).toEpochSecond(ZoneOffset.UTC)
 
     @Test
+    fun minutesAndSeconds() {
+        assertEquals("5:07", Fmt.minSec(307.0, us))
+        assertEquals("8:03", Fmt.minSec(483.0, us))
+        assertEquals("0:09", Fmt.minSec(9.0, us))
+        assertEquals("12:00", Fmt.minSec(720.0, us))
+        // Rounded before splitting, so the seconds never read 60.
+        assertEquals("5:00", Fmt.minSec(299.6, us))
+        assertEquals("0:00", Fmt.minSec(-3.0, us))
+        assertEquals("0:00", Fmt.minSec(Double.NaN, us))
+    }
+
+    @Test
     fun numbers() {
         assertEquals("1,240", Fmt.number(1240L, us))
         assertEquals("1,240", Fmt.number(1240L, gb))
@@ -73,6 +85,21 @@ class FmtTest {
         assertEquals("123 km", norm(Fmt.distance(123_400.0, Units.METRIC, gb)))
         assertEquals("2.0 mi", norm(Fmt.distance(3218.7, Units.IMPERIAL, us)))
         assertEquals("328 ft", norm(Fmt.distance(100.0, Units.IMPERIAL, us)))
+        // A short walk never rounds to "0 mi".
+        assertEquals("0.3 mi", norm(Fmt.distance(483.0, Units.IMPERIAL, us)))
+    }
+
+    @Test
+    fun volumeElevationAndTemperature() {
+        assertEquals("350 ml", norm(Fmt.volume(350.0, Units.METRIC, gb)))
+        assertEquals("2.8 L", norm(Fmt.volume(2_800.0, Units.METRIC, gb)))
+        assertEquals("12 fl oz", norm(Fmt.volume(355.0, Units.IMPERIAL, us)))
+        assertEquals("96 fl oz", norm(Fmt.volume(2_840.0, Units.IMPERIAL, us)))
+        assertEquals("420 m", norm(Fmt.elevation(420.0, Units.METRIC, gb)))
+        assertEquals("1,378 ft", norm(Fmt.elevation(420.0, Units.IMPERIAL, us)))
+        assertEquals("21 °C", norm(Fmt.temperature(21.0, Units.METRIC, locale = gb)))
+        assertEquals("70 °F", norm(Fmt.temperature(21.0, Units.IMPERIAL, locale = us)))
+        assertEquals(0.54, Fmt.temperatureDelta(0.3, Units.IMPERIAL), 1e-9)
     }
 
     @Test

@@ -164,11 +164,14 @@ class JsonExporter(private val source: ExportSource) : Exporter {
 
     /** JSON shapes, shared with tests. */
     companion object {
-        /** Nutrient fields, nulls kept. */
+        /** Nutrient fields, nulls kept; the unit is in each key (X10 = ×10, Mg milligrams, Ug micrograms). */
         fun nutrientsJson(n: Nutrients): JsonValue = JsonBuild.obj(
             "kcalX10" to n.kcalX10, "proteinX10" to n.proteinX10, "fatX10" to n.fatX10, "satfatX10" to n.satfatX10,
             "carbX10" to n.carbX10, "sugarX10" to n.sugarX10, "fibreX10" to n.fibreX10, "sodiumMg" to n.sodiumMg,
             "cholesterolMg" to n.cholesterolMg,
+            "transfatX10" to n.transfatX10, "monofatX10" to n.monofatX10, "polyfatX10" to n.polyfatX10,
+            "addsugarX10" to n.addsugarX10, "potassiumMg" to n.potassiumMg, "calciumMg" to n.calciumMg,
+            "ironMgX10" to n.ironX10, "vitaUg" to n.vitaUg, "vitcMgX10" to n.vitcX10, "vitdUgX10" to n.vitdX10,
         )
 
         /** A diary line. */

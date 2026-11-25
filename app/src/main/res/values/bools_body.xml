@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- True only in debug builds (overridden in src/debug): shows "Load demo data" on Body. -->
-    <bool name="demo_data_enabled">false</bool>
-</resources>
