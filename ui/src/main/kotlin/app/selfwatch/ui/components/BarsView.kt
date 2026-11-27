@@ -77,6 +77,16 @@ class BarsView @JvmOverloads constructor(
             update()
         }
 
+    /**
+     * Per-bar colour (card design standard: met = primary, short = secondary): given the group and its
+     * value, the colour for that bar, or null for the series colour.
+     */
+    var barColor: ((group: Int, value: Int) -> Int?)? = null
+        set(v) {
+            field = v
+            invalidate()
+        }
+
     /** Colour of the goal line; defaults to the muted text colour. */
     @ColorInt
     var goalColor: Int = themeColor(com.google.android.material.R.attr.colorOnSurfaceVariant)
@@ -128,9 +138,9 @@ class BarsView @JvmOverloads constructor(
         val barGap = context.dp(2f)
 
         series.forEachIndexed { s, ser ->
-            barPaint.color = ser.color
             for (g in 0 until groups) {
                 val v = ser.values.getOrNull(g) ?: continue
+                barPaint.color = barColor?.invoke(g, v) ?: ser.color
                 val slot = BarsMath.slot(g, s, groups, series.size, chartW, barGap = barGap, rtl = rtl)
                 val y = BarsMath.valueToY(v.toFloat(), scale, top, bottom)
                 rect.set(left + slot.left, y, left + slot.right, bottom)

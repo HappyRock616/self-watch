@@ -10,9 +10,9 @@ package app.selfwatch.body.cards
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.body.BreathingInfo
+import app.selfwatch.body.BreathingResult
 import app.selfwatch.body.HeartCardLoader
 import app.selfwatch.body.RangeStatus
 import app.selfwatch.body.SleepDetailFragment
@@ -22,19 +22,21 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.ui.components.EmptyState
-import app.selfwatch.ui.components.Sparkline
+import app.selfwatch.ui.components.RangeBarView
 import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.R as UiR
 
 /**
- * Breathing rate: last night's average breathing while asleep against the user's usual range, learned
- * from the 60 nights before it (like HRV: no population numbers). Until about two weeks of nights are
- * in, it says it is still learning. Opens Sleep.
+ * Breathing rate (card design standard): last night's average breathing while asleep, with a range bar of
+ * the user's usual range (learned from the 60 nights before it, like HRV: no population numbers) and a
+ * marker at last night. Until about two weeks of nights are in, the tag says it is learning. Small form:
+ * the number and the range bar. Opens Sleep.
  */
 object BreathingRateCard : Card<BreathingInfo>("breathing_rate", CardTab.BODY, R.string.card_breathing_rate, R.string.card_breathing_rate_summary) {
 
@@ -44,21 +46,41 @@ object BreathingRateCard : Card<BreathingInfo>("breathing_rate", CardTab.BODY, R
 
     override val needs: Set<DataKind> = setOf(DataKind.RESPIRATION)
 
+    /** The short tag: "Usual", "Below usual", "Above usual" or "Learning 5/14". */
+    fun tag(ctx: Context, data: BreathingInfo): String =
+        data.result?.let { ctx.getString(BodyVisuals.usualTag(it.status)) } ?: ctx.getString(R.string.body1_learning, data.nights, data.needed)
+
     override fun small(ctx: Context, data: BreathingInfo): SmallFace? {
         val r = data.result
         val last = r?.lastX10 ?: data.lastX10 ?: return null
-        val (status, note) = when (r?.status) {
-            null -> CardStatus.NONE to ctx.getString(R.string.small_learning_nights, data.nights, data.needed)
-            RangeStatus.WITHIN -> CardStatus.GOOD to ctx.getString(R.string.small_usual_within)
-            RangeStatus.BELOW -> CardStatus.CLOSE to ctx.getString(R.string.small_usual_below)
-            RangeStatus.ABOVE -> CardStatus.CLOSE to ctx.getString(R.string.small_usual_above)
+        val status = when (r?.status) {
+            null -> CardStatus.NONE
+            RangeStatus.WITHIN -> CardStatus.GOOD
+            RangeStatus.BELOW, RangeStatus.ABOVE -> CardStatus.CLOSE
         }
         return SmallFace(
-            value = Fmt.number(last / SMALL_TENTHS, 1),
-            label = ctx.getString(R.string.br_label),
+            value = Fmt.number(last / TENTHS, 1),
+            label = tag(ctx, data),
             unit = ctx.getString(R.string.unit_br_min),
             status = status,
-            note = note,
+            note = ctx.getString(R.string.br_label),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = BodyVisuals.smallRange(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: BreathingInfo) {
+        val r = data.result
+        CardVisuals.show(graphic, r != null)
+        if (r != null) bindRange(graphic as RangeBarView, r, ticks = false)
+    }
+
+    /** Last night against the usual range on [bar]. */
+    fun bindRange(bar: RangeBarView, r: BreathingResult, ticks: Boolean) {
+        BodyVisuals.bindUsual(
+            bar, r.lowX10 / TENTHS.toFloat(), r.highX10 / TENTHS.toFloat(), r.lastX10 / TENTHS.toFloat(),
+            if (ticks) Fmt.number(r.lowX10 / TENTHS, 1) else null,
+            if (ticks) Fmt.number(r.highX10 / TENTHS, 1) else null,
         )
     }
 
@@ -67,58 +89,44 @@ object BreathingRateCard : Card<BreathingInfo>("breathing_rate", CardTab.BODY, R
         return true
     }
 
-    private const val SMALL_TENTHS = 10.0
+    private const val TENTHS = 10.0
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<BreathingInfo> = Holder(host, parent)
 
     private class Holder(host: CardHost, parent: ViewGroup) : CardView<BreathingInfo>(CardView.inflate(parent, R.layout.card_body_breathing_rate)) {
         private val tile = find<StatTile>(R.id.br_tile)
-        private val status = find<TextView>(R.id.br_status)
-        private val band = find<TextView>(R.id.br_band)
-        private val spark = find<Sparkline>(R.id.br_spark)
-        private val note = find<TextView>(R.id.br_note)
+        private val range = find<RangeBarView>(R.id.br_range)
         private val empty = find<EmptyState>(R.id.br_empty)
 
         init {
             root.setOnClickListener { host.open(SleepDetailFragment()) }
             tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
-            note.setText(R.string.br_note)
         }
 
         override fun bind(data: BreathingInfo) {
             val ctx = root.context
             val last = data.result?.lastX10 ?: data.lastX10
-            for (v in listOf(tile, status, band, spark, note)) v.visibility = if (last == null) View.GONE else View.VISIBLE
-            empty.visibility = if (last == null) View.VISIBLE else View.GONE
+            CardVisuals.show(tile, last != null)
+            CardVisuals.show(empty, last == null)
             if (last == null) {
+                CardVisuals.show(range, false)
                 root.contentDescription = ctx.getString(R.string.br_empty)
                 return
             }
             tile.value = Fmt.number(last / TENTHS, 1)
-            tile.unit = ctx.getString(R.string.unit_brpm)
-            tile.label = ctx.getString(R.string.br_label)
+            tile.unit = ctx.getString(R.string.unit_br_min)
+            tile.label = tag(ctx, data)
             val r = data.result
-            if (r == null) {
-                status.text = ctx.getString(R.string.br_learning, data.nights, data.needed)
-                band.visibility = View.GONE
-                spark.visibility = View.GONE
-            } else {
-                status.setText(
-                    when (r.status) {
-                        RangeStatus.BELOW -> R.string.br_below
-                        RangeStatus.WITHIN -> R.string.br_within
-                        RangeStatus.ABOVE -> R.string.br_above
-                    },
+            CardVisuals.show(range, r != null)
+            if (r != null) {
+                bindRange(range, r, ticks = true)
+                root.contentDescription = ctx.getString(
+                    R.string.body1_range_description, ctx.getString(R.string.card_breathing_rate), tile.value, ctx.getString(R.string.unit_brpm),
+                    tile.label, Fmt.number(r.lowX10 / TENTHS, 1), Fmt.number(r.highX10 / TENTHS, 1),
                 )
-                band.text = ctx.getString(R.string.br_band, Fmt.number(r.lowX10 / TENTHS, 1), Fmt.number(r.highX10 / TENTHS, 1))
-                spark.values = r.nights.toIntArray()
-                spark.visibility = if (r.nights.size >= 2) View.VISIBLE else View.GONE
+            } else {
+                root.contentDescription = ctx.getString(R.string.br_description, tile.value, tile.label)
             }
-            root.contentDescription = ctx.getString(R.string.br_description, tile.value, status.text)
-        }
-
-        private companion object {
-            const val TENTHS = 10.0
         }
     }
 }

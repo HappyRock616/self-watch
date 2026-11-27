@@ -10,11 +10,9 @@ package app.selfwatch.activity.cards
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.activity.RecoveryHrLoader
 import app.selfwatch.activity.RecoveryInfo
-import app.selfwatch.activity.Sports
 import app.selfwatch.activity.WorkoutDetailFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
@@ -25,23 +23,20 @@ import app.selfwatch.cards.CardView
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
-import app.selfwatch.ui.charts.ChartPalette
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.BarsView
 import app.selfwatch.ui.components.EmptyState
-import app.selfwatch.ui.components.Sparkline
 import app.selfwatch.ui.components.StatTile
-import app.selfwatch.ui.format.Fmt
-import java.time.Instant
-import java.time.ZoneId
 import app.selfwatch.ui.R as UiR
 
 /**
- * Heart-rate recovery: how far the heart rate fell in the first minute (and the first two) after the latest
- * workout with readings after it, and the last 10 workouts' 1-minute drops as a trend (method and limits:
- * [app.selfwatch.activity.RecoveryHrMath]). "A bigger drop in the first minute usually means better
- * fitness", always against the user's own earlier workouts. Opens the workout.
+ * Heart-rate recovery (card design standard), as Garmin defines it: how far the heart rate fell 2
+ * minutes after the latest workout with readings after it (else the 1-minute drop), and the last 10
+ * workouts' drops as bars, the latest in the goal color (method and limits:
+ * [app.selfwatch.activity.RecoveryHrMath]). Always against the user's own earlier workouts. Small form:
+ * the bars. Opens the workout.
  */
 object RecoveryHrCard : Card<RecoveryInfo>("recovery_hr", CardTab.ACTIVITY, R.string.card_recovery_hr, R.string.card_recovery_hr_summary) {
-
     override val tables: Set<Table> = setOf(Table.WORKOUT, Table.METRIC)
 
     override suspend fun load(env: CardEnv): RecoveryInfo = RecoveryHrLoader(env.db).load()
@@ -51,7 +46,7 @@ object RecoveryHrCard : Card<RecoveryInfo>("recovery_hr", CardTab.ACTIVITY, R.st
     override fun small(ctx: Context, data: RecoveryInfo): SmallFace? {
         val r = data.latest ?: return null
         if (data.workout == null) return null
-        val drop = r.oneMinDrop ?: return null
+        val drop = r.twoMinDrop ?: r.oneMinDrop ?: return null
         val mean = data.trendMean
         // Against the user's own recent workouts: as big a drop as usual or bigger is on track.
         val status = when {
@@ -61,11 +56,25 @@ object RecoveryHrCard : Card<RecoveryInfo>("recovery_hr", CardTab.ACTIVITY, R.st
         }
         return SmallFace(
             value = dropText(drop),
-            label = ctx.getString(R.string.small_drop_label),
+            label = ctx.getString(if (r.twoMinDrop != null) R.string.tag_two_min else R.string.tag_one_min),
             unit = ctx.getString(R.string.unit_bpm),
             status = status,
-            note = mean?.takeIf { data.trend.size >= 2 }?.let { ctx.getString(R.string.small_recent_avg, dropText(it)) },
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallBars(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: RecoveryInfo) = bars(graphic as BarsView, data)
+
+    /** The recent drops as bars, oldest first, the latest in the goal color. */
+    private fun bars(chart: BarsView, data: RecoveryInfo) {
+        val ctx = chart.context
+        val c = LevelColors.of(ctx)
+        val last = data.trend.size - 1
+        val dot = ctx.getString(R.string.mark_workout_dot)
+        ActivityVisuals.weekBars(
+            chart, ctx.getString(R.string.card_recovery_hr), data.trend.map { it.coerceAtLeast(0) }, List(data.trend.size) { dot }, null,
+        ) { g, _ -> if (g == last) c.good else c.neutral }
     }
 
     /** A drop as shown on the card: a fall is "−24", a rise "+3". */
@@ -75,27 +84,21 @@ object RecoveryHrCard : Card<RecoveryInfo>("recovery_hr", CardTab.ACTIVITY, R.st
 
     private class Holder(private val host: CardHost, parent: ViewGroup) : CardView<RecoveryInfo>(CardView.inflate(parent, R.layout.card_activity_recovery_hr)) {
         private val tile = find<StatTile>(R.id.rhr_tile)
-        private val two = find<TextView>(R.id.rhr_two)
-        private val workout = find<TextView>(R.id.rhr_workout)
-        private val spark = find<Sparkline>(R.id.rhr_spark)
-        private val trend = find<TextView>(R.id.rhr_trend)
-        private val explain = find<TextView>(R.id.rhr_explain)
-        private val tip = find<TextView>(R.id.rhr_tip)
+        private val chart = find<BarsView>(R.id.rhr_bars)
         private val empty = find<EmptyState>(R.id.rhr_empty)
 
         init {
             tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
-            spark.color = ChartPalette.of(root.context).primary
-            explain.setText(R.string.rhr_explain)
-            tip.setText(R.string.rhr_tip)
         }
 
         override fun bind(data: RecoveryInfo) {
             val ctx = root.context
             val r = data.latest
             val w = data.workout
-            for (v in listOf(tile, two, workout, spark, trend, explain)) v.visibility = if (r == null) View.GONE else View.VISIBLE
-            empty.visibility = if (r == null) View.VISIBLE else View.GONE
+            val shown = r != null && w != null
+            ActivityVisuals.show(shown, tile)
+            ActivityVisuals.show(shown && data.trend.size >= 2, chart)
+            ActivityVisuals.show(!shown, empty)
             if (r == null || w == null) {
                 empty.message = ctx.getString(if (w == null) R.string.rhr_empty_none else R.string.rhr_empty_no_readings)
                 root.contentDescription = empty.message
@@ -104,21 +107,10 @@ object RecoveryHrCard : Card<RecoveryInfo>("recovery_hr", CardTab.ACTIVITY, R.st
                 return
             }
             root.setOnClickListener { host.open(WorkoutDetailFragment.newInstance(w.id)) }
-            tile.value = drop(r.oneMinDrop ?: 0)
-            tile.unit = null
-            tile.label = ctx.getString(R.string.rhr_label)
-            two.text = r.twoMinDrop?.let { ctx.getString(R.string.rhr_two_min, drop(it)) }
-            two.visibility = if (r.twoMinDrop == null) View.GONE else View.VISIBLE
-            val day = Fmt.day(ctx, Fmt.dateToDay(Instant.ofEpochSecond(w.startSec).atZone(ZoneId.systemDefault()).toLocalDate()))
-            workout.text = ctx.getString(R.string.rhr_workout, ctx.getString(Sports.label(w.sport)), day, r.endBpm)
-            spark.values = data.trend.toIntArray()
-            spark.visibility = if (data.trend.size >= 2) View.VISIBLE else View.GONE
-            trend.text = data.trendMean?.let { ctx.getString(R.string.rhr_trend, data.trend.size, drop(it)) }
-            trend.visibility = if (data.trend.size >= 2) View.VISIBLE else View.GONE
-            root.contentDescription = ctx.getString(R.string.rhr_description, tile.value, workout.text)
+            val tag = ctx.getString(if (r.twoMinDrop != null) R.string.tag_two_min else R.string.tag_one_min)
+            ActivityVisuals.number(tile, dropText(r.twoMinDrop ?: r.oneMinDrop ?: 0), ctx.getString(R.string.unit_bpm), tag)
+            bars(chart, data)
+            root.contentDescription = ctx.getString(R.string.design_recovery_hr_description, tile.value, tag)
         }
-
-        /** A drop as shown: a fall is "−24", a rise (heart rate went up) "+3". */
-        private fun drop(bpm: Int): String = if (bpm >= 0) "−$bpm" else "+${-bpm}"
     }
 }

@@ -1,0 +1,309 @@
+<title>Self Watch Card Design</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style id="page-css">
+/* Layout: a design spec page; phone-width card mockups drawn in the app's own dark palette on a neutral page. */
+:root{
+  --bg:#f2f4f5; --surface:#ffffff; --ink:#172026; --muted:#5b6872; --line:#d9dfe3; --accent:#0e7c70; --accent-soft:#dff1ee;
+  --ok:#1f7a3a; --warn:#b8620f;
+  /* The app's own palette (mockups always render dark, as the app). */
+  --app-bg:#0b0d10; --card:#173049; --card-2:#1d3a57; --txt:#f3efe6; --sub:#9fb3c4; --teal:#1fd1c1; --yellow:#ffd23f; --track:#2a4560;
+  --s-rest:#3d8fe0; --s-low:#f5b94f; --s-med:#ef8a2b; --s-high:#d9531e;
+  --deep:#1f5fa8; --light:#4aa9f5; --rem:#9b87f5; --awake:#f3efe6;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1417;--surface:#172025;--ink:#e3eaee;--muted:#9aa9b2;--line:#2b363d;--accent:#4cc3b0;--accent-soft:#1c3631;--ok:#5fc27a;--warn:#e8a056}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1417;--surface:#172025;--ink:#e3eaee;--muted:#9aa9b2;--line:#2b363d;--accent:#4cc3b0;--accent-soft:#1c3631;--ok:#5fc27a;--warn:#e8a056}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1060px;margin:0 auto;padding-block:28px 72px;display:flex;flex-direction:column;gap:34px}
+h1{font-family:var(--display);font-size:2.1rem;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:1.45rem;margin:0 0 4px;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}.lede{color:var(--muted);max-width:68ch;margin-top:6px}
+.muted{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:14px}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;padding:0;margin:0;list-style:none}
+.rules li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.92rem}
+.rules b{display:block;font-size:.98rem;margin-bottom:2px}
+/* Mockup cards: the app's look */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.mock{background:var(--app-bg);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.mock .cap{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#8aa0b2}
+.card{background:var(--card);border-radius:18px;padding:14px 16px;color:var(--txt);display:flex;flex-direction:column;gap:8px}
+.card .t{font-size:.95rem;color:var(--txt);display:flex;justify-content:space-between;align-items:center}
+.card .t i{font-style:normal;color:var(--sub);font-size:.78rem}
+.card svg{display:block;width:100%;height:auto}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.phone{background:var(--app-bg);border-radius:26px;padding:14px;display:flex;flex-direction:column;gap:10px;max-width:400px;width:100%}
+.phones{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.phone h4{color:var(--txt);font-family:var(--display);font-size:1.4rem;margin:2px 4px}
+.ba{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.ba > div{flex:1 1 300px;max-width:400px;display:flex;flex-direction:column;gap:8px}
+.label{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.old{font-size:.85rem;color:var(--txt);line-height:1.35}
+.old .big{font-size:2.6rem;font-weight:600;text-align:center;line-height:1.1}
+.old .c{text-align:center;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border-radius:999px;padding:3px 10px;font-size:.78rem;border:1px solid #3d5a76;color:var(--txt)}
+.chip.on{background:var(--light);border-color:var(--light);color:#0b1a29}
+.chip.hr{background:#ef8a2b;border-color:#ef8a2b;color:#1a0f02}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;background:var(--surface);position:sticky;top:0}
+td.v{white-space:nowrap;font-weight:500;color:var(--accent)}
+.dec{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.dec b{margin-right:4px}
+.dec button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 14px;cursor:pointer;min-height:34px}
+.dec button[aria-pressed="true"].a{background:var(--ok);border-color:var(--ok);color:#fff}
+.dec button[aria-pressed="true"].c{background:var(--warn);border-color:var(--warn);color:#fff}
+.dec input{flex:1 1 240px;font:inherit;font-size:.88rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:34px}
+.status{font-size:.82rem;color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:640px){h1{font-size:1.7rem}}
+</style>
+<main class="wrap" id="app">
+<header>
+  <h1>Self Watch card design</h1>
+  <p class="lede">A new standard for every data card, inspired by Gadgetbridge's dashboard gauges and charts and by Pulse's Today screen. Each card is one picture with the number on it. Text is cut to a title and a few words. Your overlay charts stay exactly as they are and can now sit on the main tabs. Approve or comment on each section; nothing changes in the app until you approve.</p>
+</header>
+
+<section>
+  <h2>The standard</h2>
+  <ul class="rules">
+    <li><b>One picture per card</b>A ring, gauge, range bar, week bars, day strip, split bar or trend line. The picture is the card.</li>
+    <li><b>The number lives on the picture</b>Inside the ring or gauge, or at the end of the line. One big number, its unit, nothing else.</li>
+    <li><b>Four words, no sentences</b>Title plus at most one short tag ("Low", "7-day avg 62"). No explanations on the card; those move to the detail screen.</li>
+    <li><b>Color is the meaning</b>Garmin's colors for levels: stress blue to orange, sleep stages blue and purple, goal met teal, short of goal yellow.</li>
+    <li><b>Every chart is readable</b>Week bars show day letters and a goal line. Day strips show 6, 12, 18. No unlabeled lines.</li>
+    <li><b>Small cards: number and picture only</b>A mini ring, mini gauge or mini bars, with the title. Nothing else.</li>
+    <li><b>Tap for the detail</b>Every card opens its full chart screen. Explanations and history live there.</li>
+    <li><b>Chart cards on the tabs</b>The overlay charts with toggle chips (Sleep, Heart, Activity, Weight) can be placed on Body or Activity as big cards. Unchanged.</li>
+  </ul>
+  <div class="dec" data-id="standard"></div>
+</section>
+
+<section>
+  <h2>The building blocks</h2>
+  <p class="muted">Seven pictures cover every card. Shown with real-looking values.</p>
+  <div class="grid" id="blocks"></div>
+  <div class="dec" data-id="blocks"></div>
+</section>
+
+<section>
+  <h2>Stress, before and after</h2>
+  <div class="ba">
+    <div>
+      <span class="label">Now</span>
+      <div class="card old">
+        <div class="t">Body stress</div>
+        <div class="big">32</div>
+        <div class="c">average · today</div>
+        <div>Rest time 9h 12m</div>
+        <div>Light: your body was working a little</div>
+        <svg viewBox="0 0 300 40"><polyline points="5,30 50,18 95,26 140,10 185,22 230,15 295,24" fill="none" stroke="#ffd23f" stroke-width="3"/></svg>
+        <div class="c" style="font-size:.78rem">Body stress comes from heart-rate variability while you are still. It is not about mood.</div>
+      </div>
+      <p class="muted" style="font-size:.85rem">The bottom line was the last 7 days' averages, with no days or scale shown.</p>
+    </div>
+    <div>
+      <span class="label">New</span>
+      <div id="stress-new"></div>
+      <p class="muted" style="font-size:.85rem">Gauge with today's average and Garmin's level. The day strip shows each 15 minutes colored by level (dim = asleep). The split bar shows time at each level. Tap opens the Heart chart.</p>
+    </div>
+  </div>
+  <div class="dec" data-id="stress"></div>
+</section>
+
+<section>
+  <h2>Body tab, redesigned</h2>
+  <div class="phones" id="body-tab"></div>
+  <div class="dec" data-id="body"></div>
+</section>
+
+<section>
+  <h2>Activity and Food tabs, redesigned</h2>
+  <div class="phones" id="act-tab"></div>
+  <div class="dec" data-id="activity"></div>
+</section>
+
+<section>
+  <h2>Chart cards on the main tabs</h2>
+  <p class="muted">The same overlay chart and toggle chips as the detail screens, placed as a big card. Pick them in Edit cards. Proposed default: Sleep chart on Body (instead of the Sleep card).</p>
+  <div class="phones" id="chart-card"></div>
+  <div class="dec" data-id="chartcards"></div>
+</section>
+
+<section>
+  <h2>Every card</h2>
+  <p class="muted">Each card and its new picture. Cards waiting for data your devices don't record keep their one-line message.</p>
+  <div class="tablewrap"><table id="cards"><thead><tr><th>Tab</th><th>Card</th><th>New picture</th><th>Number shown</th></tr></thead><tbody></tbody></table></div>
+  <div class="dec" data-id="table"></div>
+</section>
+</main>
+<script type="application/json" id="state">{"decisions":{}}</script>
+<script id="app-js">
+const TPL = document.getElementById("app").outerHTML; // the page markup before any drawing
+const C = {teal:"#1fd1c1",yellow:"#ffd23f",track:"#2a4560",txt:"#f3efe6",sub:"#9fb3c4",rest:"#3d8fe0",low:"#f5b94f",med:"#ef8a2b",high:"#d9531e",deep:"#1f5fa8",light:"#4aa9f5",rem:"#9b87f5",awake:"#f3efe6",orange:"#ef8a2b",green:"#5fc27a",red:"#e5534b"};
+const NS="http://www.w3.org/2000/svg";
+function svg(w,h,inner){return `<svg viewBox="0 0 ${w} ${h}" role="img">${inner}</svg>`;}
+function txt(x,y,s,size,fill,anchor="middle",weight=600){return `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" text-anchor="${anchor}" font-weight="${weight}" font-family="IBM Plex Sans,system-ui,sans-serif">${s}</text>`;}
+function ring(cx,cy,r,w,frac,color,val,unit){
+  const c=2*Math.PI*r, f=Math.min(frac,1);
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${C.track}" stroke-width="${w}"/>`+
+   `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${c*f} ${c}" transform="rotate(-90 ${cx} ${cy})"/>`+
+   (val!=null?txt(cx,cy+(unit?2:6),val,r*0.55,C.txt):"")+(unit?txt(cx,cy+r*0.42,unit,r*0.24,C.sub,"middle",400):"");
+}
+function arcPath(cx,cy,r,a0,a1){const p=a=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];const [x0,y0]=p(a0),[x1,y1]=p(a1);return `M${x0},${y0} A${r},${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1},${y1}`;}
+function gauge(cx,cy,r,w,bands,value,big,tag){
+  // 0–100 over a 240° arc, segmented by bands [[upTo,color],...]
+  const A0=Math.PI*5/6, SPAN=Math.PI*4/3; let s="", prev=0;
+  for(const [to,col] of bands){const a0=A0+SPAN*prev/100+0.02,a1=A0+SPAN*to/100-0.02;s+=`<path d="${arcPath(cx,cy,r,a0,a1)}" stroke="${col}" stroke-width="${w}" fill="none" stroke-linecap="butt" opacity=".9"/>`;prev=to;}
+  const a=A0+SPAN*value/100, mx=cx+r*Math.cos(a), my=cy+r*Math.sin(a);
+  s+=`<circle cx="${mx}" cy="${my}" r="${w*0.75}" fill="${C.txt}" stroke="#0b1a29" stroke-width="3"/>`;
+  s+=txt(cx,cy+r*0.12,big,r*0.62,C.txt)+(tag?txt(cx,cy+r*0.48,tag,r*0.22,C.sub,"middle",500):"");
+  return s;
+}
+function rangeBar(x,y,w,h,bands,min,max,value,labels){
+  let s="",prev=min;
+  bands.forEach(([to,col],i)=>{const x0=x+w*(prev-min)/(max-min),x1=x+w*(to-min)/(max-min);s+=`<rect x="${x0+1}" y="${y}" width="${Math.max(0,x1-x0-2)}" height="${h}" rx="${h/2}" fill="${col}" opacity=".85"/>`;prev=to;});
+  const vx=x+w*(Math.min(Math.max(value,min),max)-min)/(max-min);
+  s+=`<path d="M${vx-7},${y-10} L${vx+7},${y-10} L${vx},${y-1} Z" fill="${C.txt}"/>`;
+  if(labels) labels.forEach(([v,l])=>{s+=txt(x+w*(v-min)/(max-min),y+h+15,l,11,C.sub,"middle",400);});
+  return s;
+}
+function weekBars(x,y,w,h,vals,goal,max,colorFn,days="MTWTFSS"){
+  let s="",bw=w/7;
+  vals.forEach((v,i)=>{const bh=h*Math.min(v,max)/max;s+=`<rect x="${x+i*bw+bw*0.18}" y="${y+h-bh}" width="${bw*0.64}" height="${bh}" rx="3" fill="${colorFn(v,i)}"/>`;s+=txt(x+i*bw+bw/2,y+h+14,days[i],11,i===vals.length-1?C.txt:C.sub,"middle",i===vals.length-1?600:400);});
+  if(goal){const gy=y+h-h*goal/max;s+=`<line x1="${x}" y1="${gy}" x2="${x+w}" y2="${gy}" stroke="${C.txt}" stroke-dasharray="4 4" stroke-width="1.2" opacity=".6"/>`;}
+  return s;
+}
+function dayStrip(x,y,w,h,vals,colorFn,asleep){
+  let s="",n=vals.length,bw=w/n;
+  vals.forEach((v,i)=>{if(v<0)return;const bh=Math.max(2,h*v/100);s+=`<rect x="${x+i*bw}" y="${y+h-bh}" width="${bw-0.6}" height="${bh}" fill="${colorFn(v)}" opacity="${asleep&&asleep(i)?0.45:1}"/>`;});
+  [["6",.25],["12",.5],["18",.75]].forEach(([l,f])=>{s+=`<line x1="${x+w*f}" y1="${y}" x2="${x+w*f}" y2="${y+h}" stroke="${C.sub}" stroke-width=".5" opacity=".35"/>`+txt(x+w*f,y+h+13,l,10,C.sub,"middle",400);});
+  return s;
+}
+function split(x,y,w,h,parts){
+  let s="",tot=parts.reduce((a,p)=>a+p[0],0),cx=x;
+  parts.forEach(([v,col,l],i)=>{const pw=w*v/tot;s+=`<rect x="${cx}" y="${y}" width="${Math.max(0,pw-2)}" height="${h}" rx="4" fill="${col}"/>`;if(l&&pw>34)s+=txt(cx+pw/2,y+h+14,l,10.5,C.sub,"middle",400);cx+=pw;});
+  return s;
+}
+function trend(x,y,w,h,vals,color,first,last,band){
+  const mn=Math.min(...vals),mx=Math.max(...vals),pts=vals.map((v,i)=>[x+w*i/(vals.length-1),y+h-(h*(v-mn)/((mx-mn)||1))]);
+  let s="";
+  if(band){const b0=y+h-h*(band[0]-mn)/((mx-mn)||1),b1=y+h-h*(band[1]-mn)/((mx-mn)||1);s+=`<rect x="${x}" y="${Math.min(b0,b1)}" width="${w}" height="${Math.abs(b0-b1)}" fill="${C.teal}" opacity=".12"/>`;}
+  s+=`<path d="M${pts.map(p=>p.join(",")).join(" L")} L${x+w},${y+h} L${x},${y+h} Z" fill="${color}" opacity=".12"/>`;
+  s+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  const e=pts[pts.length-1];s+=`<circle cx="${e[0]}" cy="${e[1]}" r="4.5" fill="${color}" stroke="#173049" stroke-width="2"/>`;
+  if(first)s+=txt(x,y+h+14,first,10.5,C.sub,"start",400);if(last)s+=txt(x+w,y+h+14,last,10.5,C.sub,"end",400);
+  return s;
+}
+const stressCol=v=>v<=25?C.rest:v<=50?C.low:v<=75?C.med:C.high;
+function rnd(seed){let s=seed;return()=>{s=(s*9301+49297)%233280;return s/233280;};}
+const r=rnd(7);
+const stressDay=Array.from({length:96},(_,i)=>{const sleep=i<28;const base=sleep?12:(i<40?38:i<60?30:i<72?55:i<84?28:20);return Math.round(Math.max(0,Math.min(100,base+(r()-0.5)*(sleep?10:30))));});
+function card(title,tag,inner,small){return `<div class="card"><div class="t">${title}${tag?`<i>${tag}</i>`:""}</div>${inner}</div>`;}
+
+/* Building blocks */
+const B=[
+ ["Ring · goals", card("Steps","",svg(220,150,ring(110,75,58,14,0.82,C.yellow,"8,240","of 10,000")))],
+ ["Arc gauge · 0–100 levels", card("Sleep score","",svg(220,150,gauge(110,82,62,13,[[59,C.red],[79,C.yellow],[89,C.light],[100,C.teal]],84,"84","Good")))],
+ ["Range bar · where you sit", card("Blood pressure","",svg(240,92,txt(120,30,"128 / 79",26,C.txt)+rangeBar(12,52,216,10,[[120,C.green],[130,C.yellow],[140,C.orange],[180,C.red],[200,"#8e1f1f"]],90,200,128,[[120,"120"],[130,"130"],[140,"140"],[180,"180"]])))],
+ ["Week bars · with goal line", card("Active minutes","this week 112 / 150",svg(240,120,weekBars(8,10,224,84,[35,0,22,48,7,0,0].map((v,i)=>i<5?v:0).slice(0,5).concat([0,0]),21,50,(v)=>v>=21?C.teal:C.yellow)))],
+ ["Day strip · 24 hours", card("Energy level","",svg(240,96,dayStrip(6,8,228,62,Array.from({length:96},(_,i)=>i<28?20+i*2.6:Math.max(5,93-(i-28)*1.1)),v=>v>75?C.teal:v>50?C.light:v>25?C.yellow:C.red)))],
+ ["Split bar · time spent", card("Sleep","7h 04m",svg(240,60,split(6,14,228,18,[[102,C.deep,"Deep"],[193,C.light,"Light"],[129,C.rem,"REM"],[28,C.awake,""]])))],
+ ["Trend line · labeled ends", card("Weight","182.1 lb",svg(240,96,trend(8,10,224,60,[186,185.6,185.9,185,184.4,184.6,183.8,183.5,183.0,182.6,182.8,182.1],C.teal,"Sep","Today")))]
+];
+document.getElementById("blocks").innerHTML=B.map(([cap,html])=>`<div class="mock"><span class="cap">${cap}</span>${html}</div>`).join("");
+
+/* Stress new */
+const stressNew = `<div class="card"><div class="t">Stress<i>today</i></div>`+
+ svg(300,250,
+   gauge(150,96,72,14,[[25,C.rest],[50,C.low],[75,C.med],[100,C.high]],32,"32","Low")+
+   dayStrip(10,180,280,44,stressDay,stressCol,i=>i<28)
+ )+
+ svg(300,56,split(10,8,280,16,[[552,C.rest,"Rest 9h 12m"],[300,C.low,"Low 5h"],[120,C.med,"Med 2h"],[30,C.high,""]]))+
+ `</div>`;
+document.getElementById("stress-new").innerHTML = stressNew;
+
+/* Body tab */
+function miniRing(label,frac,col,val){return `<g>${ring(0,0,26,7,frac,col,null)}</g>`;}
+function ringsRow(items){let s="";items.forEach(([l,frac,col,val],i)=>{const cx=34+i*62;s+=ring(cx,40,24,7,frac,col,null)+txt(cx,45,val,13,C.txt)+txt(cx,86,l,10.5,C.sub,"middle",400);});return s;}
+const bodyToday = card("Body today","2 of 6",svg(380,96,ringsRow([["Eaten",0.47,C.teal,"982"],["Burned",1,C.teal,"2,294"],["Water",0.02,C.yellow,"0/8"],["Energy",0.05,C.red,"5"],["Sleep",0.88,C.yellow,"7:04"],["Weight",0.6,C.teal,"182"]])));
+const hypno = (()=>{const st=[1,1,2,2,1,3,1,2,2,1,1,3,3,1,0,1,2,1,1,3,1,1,0];let s="";const w=360/st.length;const ys=[8,22,36,50],cols=[C.awake,C.light,C.deep,C.rem];const map=[0,1,2,3];st.forEach((v,i)=>{const row=[0,1,3,2][v];s+=`<rect x="${10+i*w}" y="${[6,40,58,22][v]}" width="${w-1}" height="14" rx="2" fill="${cols[v]}"/>`;});return s;})();
+const sleepCard = `<div class="card"><div class="t">Sleep<i>last night</i></div>`+svg(380,150,txt(190,40,"7h 04m",34,C.txt)+`<g transform="translate(0,52)">${hypno}</g>`+txt(14,145,"11 PM",10.5,C.sub,"start",400)+txt(370,145,"6 AM",10.5,C.sub,"end",400))+svg(380,44,split(10,6,360,14,[[102,C.deep,"Deep 1:42"],[193,C.light,"Light 3:13"],[129,C.rem,"REM 2:09"],[28,C.awake,""]]))+`</div>`;
+const hrvSmall = card("HRV","Balanced",svg(170,110,txt(85,44,"50",34,C.txt)+txt(85,62,"ms · 7-day",11,C.sub,"middle",400)+rangeBar(12,82,146,9,[[38,C.yellow],[55,C.teal],[70,C.light]],25,70,50)));
+const rhrSmall = card("Resting HR","",svg(170,110,txt(85,44,"60",34,C.txt)+txt(85,62,"bpm · 7-day 62",11,C.sub,"middle",400)+trend(12,72,146,24,[64,63,63,62,62,61,62,61,60,61,60,60],C.light)));
+const stressSmall = card("Stress","",svg(170,110,gauge(85,62,44,9,[[25,C.rest],[50,C.low],[75,C.med],[100,C.high]],32,"32","Low")));
+const readySmall = card("Readiness","",svg(170,110,gauge(85,62,44,9,[[24,C.red],[49,C.orange],[74,C.yellow],[94,C.light],[100,C.teal]],68,"68","Moderate")));
+const energySmall = card("Energy","",svg(170,110,gauge(85,62,44,9,[[25,C.red],[50,C.yellow],[75,C.light],[100,C.teal]],64,"64","Medium")));
+const spo2Small = card("Blood oxygen","",svg(170,110,txt(85,44,"95%",30,C.txt)+txt(85,62,"asleep · low 89%",11,C.sub,"middle",400)+rangeBar(12,82,146,9,[[90,C.orange],[94,C.yellow],[100,C.teal]],80,100,95)));
+document.getElementById("body-tab").innerHTML =
+ `<div class="phone"><h4>Body</h4>${bodyToday}${sleepCard}<div class="pair">${hrvSmall}${rhrSmall}</div><div class="pair">${stressSmall}${readySmall}</div><div class="pair">${energySmall}${spo2Small}</div></div>`;
+
+/* Activity + Food */
+const actGoals = card("Activity goals","4 of 5",svg(380,96,ringsRow([["Steps",1,C.teal,"10.1k"],["Active",0.75,C.yellow,"112"],["Calories",1,C.teal,"832"],["Workouts",1,C.teal,"5/3"],["Days",0.6,C.yellow,"3/5"],["Miles",1,C.teal,"4.6"]])));
+const stepsWeek = card("Steps","10,072",svg(380,120,weekBars(10,8,360,84,[8200,11400,6900,10500,12100,7600,10072],7500,13000,v=>v>=7500?C.teal:C.yellow)));
+const recHr = card("HR recovery","2 min",svg(170,110,txt(85,44,"−32",32,C.txt)+txt(85,62,"bpm · avg −28",11,C.sub,"middle",400)+weekBars(12,70,146,24,[24,30,26,31,28,29,32],null,40,(v,i)=>i===6?C.teal:"#3d5a76","·······")));
+const vo2 = card("VO2 max","Good",svg(170,110,txt(85,44,"44.2",30,C.txt)+txt(85,62,"ml/kg/min",11,C.sub,"middle",400)+rangeBar(12,82,146,9,[[38.5,C.red],[42.4,C.yellow],[46.4,C.light],[52.6,C.teal],[58,"#2fb57a"]],34,58,44.2)));
+const recTime = card("Recovery","",svg(170,110,ring(85,52,36,9,0.4,C.yellow,"18","hours")));
+const fitAge = card("Fitness age","",svg(170,110,txt(85,44,"39",32,C.txt)+txt(85,62,"you are 43",11,C.sub,"middle",400)+split(12,80,146,10,[[39,C.teal,""],[4,C.track,""]])));
+const balance = card("Daily balance","",svg(380,140,ring(80,70,54,13,0.47,C.teal,"1,118","kcal left")+
+   txt(170,40,"Protein",12,C.sub,"start",400)+`<rect x="240" y="30" width="130" height="10" rx="5" fill="${C.track}"/><rect x="240" y="30" width="78" height="10" rx="5" fill="${C.teal}"/>`+
+   txt(170,72,"Carbs",12,C.sub,"start",400)+`<rect x="240" y="62" width="130" height="10" rx="5" fill="${C.track}"/><rect x="240" y="62" width="52" height="10" rx="5" fill="${C.yellow}"/>`+
+   txt(170,104,"Fat",12,C.sub,"start",400)+`<rect x="240" y="94" width="130" height="10" rx="5" fill="${C.track}"/><rect x="240" y="94" width="96" height="10" rx="5" fill="${C.teal}"/>`));
+const water = card("Water","3 of 8",svg(170,110,Array.from({length:8},(_,i)=>`<rect x="${14+i*18}" y="${30}" width="13" height="40" rx="3" fill="${i<3?C.light:C.track}"/>`).join("")+txt(85,96,"36 fl oz",12,C.sub,"middle",400)));
+document.getElementById("act-tab").innerHTML =
+ `<div class="phone"><h4>Activity</h4>${actGoals}${stepsWeek}<div class="pair">${recHr}${vo2}</div><div class="pair">${recTime}${fitAge}</div></div>`+
+ `<div class="phone"><h4>Food</h4>${balance}<div class="pair">${water}${card("Protein / meal","",svg(170,110,weekBars(12,14,146,62,[28,34,22,0,0,0,0].slice(0,3).concat([0,0,0,0]),25,40,v=>v>=25?C.teal:C.yellow,"BLD····")))}</div></div>`;
+
+/* Chart card */
+const lines=(seed,base,amp,col)=>{const rr=rnd(seed);let pts=[];for(let i=0;i<60;i++)pts.push([12+i*6,base+Math.sin(i/6)*amp*0.5+(rr()-0.5)*amp]);return `<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;};
+const chartCard = `<div class="card"><div class="t">Sleep chart<i>last night</i></div>`+svg(380,190,`<g transform="translate(0,0)">${hypno}</g>`+`<line x1="10" y1="90" x2="370" y2="90" stroke="#2f4a66"/><line x1="10" y1="170" x2="370" y2="170" stroke="#2f4a66"/>`+lines(3,120,22,C.orange)+lines(5,140,26,"#5fc27a")+lines(9,150,20,C.txt)+txt(14,186,"12 AM",10.5,C.sub,"start",400)+txt(190,186,"2 AM",10.5,C.sub,"middle",400)+txt(370,186,"4 AM",10.5,C.sub,"end",400))+
+ `<div class="chips"><span class="chip on">✓ Stages</span><span class="chip hr">✓ Heart rate</span><span class="chip" style="background:#f3efe6;color:#0b1a29">✓ HRV</span><span class="chip" style="background:#5fc27a;color:#0b1a29;border-color:#5fc27a">✓ Breathing</span><span class="chip">SpO2</span></div></div>`;
+document.getElementById("chart-card").innerHTML = `<div class="phone"><h4>Body</h4>${bodyToday}${chartCard}</div>`;
+
+/* Every card */
+const ROWS=[
+ ["Body","Body today","Row of 6 mini rings","each goal's value"],["Body","Sleep","Big duration + stage timeline + split bar","7h 04m"],["Body","Sleep score","Arc gauge (Excellent / Good / Fair / Poor)","84"],
+ ["Body","HRV","Range bar: your baseline band, marker at 7-day avg","50 ms · Balanced"],["Body","Resting heart rate","Number + 90-day trend line","60 · 7-day 62"],["Body","Stress","Gauge + day strip + split bar","32 · Low"],
+ ["Body","Readiness","Arc gauge (Prime … Poor)","68"],["Body","Body signals","Three mini range bars (temp, resting HR, breathing) with ↑ / ok","—"],["Body","Breathing rate","Number + range bar of your usual","14.1 br/min"],
+ ["Body","Energy level","Gauge + day strip, charged ↑ / drained ↓","64 · Medium"],["Body","Heart rate now","Number + 24 h line","62 bpm"],["Body","Heart rate trends","30 day bars, low to high","daily range"],
+ ["Body","Recovery","Three icon tiles: sleep, resting HR, HRV","values"],["Body","Morning summary","Three icon tiles: sleep, HRV, energy","values"],["Body","Naps","Week bars","min today"],
+ ["Body","Weight","Trend line with goal line","182.1 lb"],["Body","Body fat","Range bar (ACE) + mini trend","22 %"],["Body","Muscle, lean, water, bone","Trend line","value"],
+ ["Body","BMI","Range bar (WHO)","26.8"],["Body","Resting calories","Number + week bars","1,862 kcal"],["Body","Measurements","Small multiples: waist, hips, chest","cm / in"],
+ ["Body","Waist-to-height","Range bar (NICE)","0.52"],["Body","Blood pressure","Range bar (AHA)","128 / 79"],["Body","Fitness age","Two bars: fitness age vs your age","39"],
+ ["Activity","Activity goals","Row of 6 mini rings","each goal"],["Activity","Steps today","Ring (small) / week bars with goal line (large)","10,072"],["Activity","Distance today","Week bars","4.6 mi"],
+ ["Activity","Active minutes","Week bars, moderate and vigorous stacked, goal line","112 / 150"],["Activity","Active days","7 day dots, filled when active","3 / 5"],["Activity","Active calories","Ring","832"],
+ ["Activity","Calories today","Split bar: resting + active","2,694"],["Activity","Today timeline","Day strip of steps and workouts","steps"],["Activity","Today rings","Three rings","steps, minutes, kcal"],
+ ["Activity","Heart-rate recovery","Number + last 10 workouts as bars","−32 bpm"],["Activity","VO2 max","Range bar (Superior … Poor for age and sex) + trend","44.2"],["Activity","Recovery time","Countdown ring","18 h"],
+ ["Activity","Weekly volume","6-week bars","5h 09m"],["Activity","Easy / hard","Split bar with the 75–80 % easy mark","78 % easy"],["Activity","Strength sessions","Week dots","2 / 2"],
+ ["Activity","Workouts, last activity","Sport icon rows with 3 numbers (kept)","—"],["Activity","Streaks","Flame + 14 day dots","14 days"],["Activity","Personal records","Trophy rows (kept)","—"],
+ ["Activity","Trends, sport progress","Chart cards (kept as they are)","—"],["Activity","Weekly review","Mini rings for the week vs last week","—"],["Activity","Live, weather","Kept","—"],
+ ["Food","Daily balance","Calories-left ring + macro bars","1,118 left"],["Food","Weight goal","Trend line to goal date","−10 lb"],["Food","Water","Glasses","3 / 8"],
+ ["Food","Protein per meal","Bars for breakfast, lunch, dinner with 25 g line","g"],["Food","Fiber, sodium, sugar","Ring or range bar against the target","g / mg"],["Food","Food groups","Split bar by group","servings"],
+ ["Both","Chart cards (new)","Sleep, Heart, Activity, Weight overlay charts with toggle chips, unchanged","—"]
+];
+document.querySelector("#cards tbody").innerHTML=ROWS.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="v">${r[3]}</td></tr>`).join("");
+
+/* Decisions (saved into the page) */
+const stateEl=document.getElementById("state"); let state=JSON.parse(stateEl.textContent||"{}"); state.decisions=state.decisions||{};
+let artifact=null,timer=null;
+function renderDec(){document.querySelectorAll(".dec").forEach(box=>{const id=box.dataset.id,d=state.decisions[id]||{};box.textContent="";const b=document.createElement("b");b.textContent="Your call:";box.append(b);
+ [["approve","Approve","a"],["change","Change","c"]].forEach(([v,n,c])=>{const btn=document.createElement("button");btn.className=c;btn.id=id+"-"+v;btn.textContent=n;btn.setAttribute("aria-pressed",String(d.d===v));btn.onclick=()=>{state.decisions[id]={...d,d:d.d===v?undefined:v};save();renderDec();};box.append(btn);});
+ const inp=document.createElement("input");inp.id=id+"-note";inp.placeholder="Comment (optional)";inp.value=d.note||"";inp.setAttribute("aria-label","Comment");inp.onchange=()=>{state.decisions[id]={...(state.decisions[id]||{}),note:inp.value.trim()||undefined};save();};box.append(inp);
+ const st=document.createElement("span");st.className="status";st.dataset.status="1";box.append(st);});}
+function setStatus(t){document.querySelectorAll("[data-status]").forEach(s=>s.textContent=t);}
+function buildDoc(){const reset=':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}';
+ const css=document.getElementById("page-css").textContent,js=document.getElementById("app-js").textContent,main=TPL;
+ return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+reset+'</style></head><body><title>Self Watch Card Design</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">\n<style id="page-css">'+css+'</style>\n'+main+'\n<script type="application/json" id="state">'+JSON.stringify(state).replace(/</g,"\\u003c")+'<\/script>\n<script id="app-js">'+js+'<\/script></body></html>';}
+function save(){try{localStorage.setItem("sw-card-design",JSON.stringify(state));}catch(e){}
+ if(!artifact){setStatus("saved on this device");return;} setStatus("saving…");clearTimeout(timer);
+ timer=setTimeout(async()=>{try{await artifact.publish(buildDoc());setStatus("saved");}catch(e){setStatus(e&&e.code==="conflict"?"updated elsewhere":"couldn't save");}},1500);}
+renderDec();
+(async()=>{try{artifact=await window.claude?.use?.("artifact");}catch(e){artifact=null;}})();
+</script>

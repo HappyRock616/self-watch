@@ -19,12 +19,16 @@ import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
 import app.selfwatch.cards.GoalLine
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
+import app.selfwatch.ui.charts.ChartPalette
+import app.selfwatch.ui.components.SplitPart
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.db.Table
 import app.selfwatch.model.food.DiaryEntry
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.components.EmptyState
-import app.selfwatch.ui.components.ListRow
 import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.format.Fmt
 
@@ -78,8 +82,10 @@ object FoodGroupHook {
 }
 
 /**
- * Food groups (optional, Food): fruits, vegetables, grains, protein foods and dairy logged for the day
- * shown, as portions against a balanced plate. Each logged food counts as one portion of its group.
+ * Food groups (optional, Food; card design standard): fruits, vegetables, grains, protein foods and dairy
+ * logged for the day shown, as a split bar of portions by group, with the groups that reached a balanced
+ * plate's portions as the number. Each logged food counts as one portion of its group. Small form: the
+ * number and the split bar.
  */
 object FoodGroupsCard : Card<FoodGroupsCard.Data>("food_groups", CardTab.FOOD, R.string.card_food_groups, R.string.card_food_groups_summary) {
 
@@ -109,35 +115,62 @@ object FoodGroupsCard : Card<FoodGroupsCard.Data>("food_groups", CardTab.FOOD, R
         )
     }
 
+    /** Portions by group as a split bar ("Fruits 2" under each part that fits); null with no group yet. */
+    fun picture(ctx: Context, data: Data): TrendPicture? {
+        if (data.portions.isEmpty() || data.portions.values.sum() == 0) return null
+        val palette = ChartPalette.of(ctx)
+        return TrendPicture.Split(
+            FoodGroup.entries.mapIndexedNotNull { i, g ->
+                val n = data.portions[g] ?: 0
+                if (n == 0) null else SplitPart(n.toFloat(), palette.series(i), ctx.getString(g.label) + " " + n)
+            },
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = object : CardView<Data>(SwCard(parent.context)) {
         private val ctx = parent.context
-        private val list = android.widget.LinearLayout(ctx).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        private val tile = StatTile(ctx).apply { setValueAppearance(app.selfwatch.ui.R.style.TextAppearance_SelfWatch_Display_Number) }
+        private val split = PictureFrame(ctx, small = false)
         private val empty = EmptyState(ctx)
 
         init {
             (root as SwCard).title = ctx.getString(R.string.card_food_groups)
-            root.addView(list, Views.matchWrap(ctx))
+            root.addView(tile, Views.matchWrap(ctx))
+            root.addView(split, Views.matchWrap(ctx, 8))
             root.addView(empty, Views.matchWrap(ctx))
         }
 
         override fun bind(data: Data) {
-            list.removeAllViews()
             val none = data.portions.isEmpty()
             empty.visibility = if (none) View.VISIBLE else View.GONE
+            tile.visibility = if (none) View.GONE else View.VISIBLE
             empty.message = ctx.getString(if (data.logged) R.string.food_groups_waiting else R.string.food_groups_empty)
-            if (none) return
-            for (g in FoodGroup.entries) {
+            if (none) {
+                split.show(null)
+                root.contentDescription = listOf(ctx.getString(R.string.card_food_groups), empty.message).joinToString(". ")
+                return
+            }
+            val met = groupsMet(data.portions)
+            tile.value = met.toString()
+            tile.unit = ctx.getString(R.string.goal_lines_of_count, FoodGroup.entries.size)
+            tile.label = ctx.getString(R.string.food_groups_label)
+            split.show(picture(ctx, data))
+            val spoken = FoodGroup.entries.map { g ->
                 val n = data.portions[g] ?: 0
                 val line = GoalLine(app.selfwatch.cards.GoalMetric.WORKOUTS, n, g.portions)
-                list.addView(
-                    ListRow(ctx).apply {
-                        title = ctx.getString(g.label)
-                        trailing = ctx.getString(R.string.goal_line_of, Fmt.number(n.toLong()), Fmt.number(g.portions.toLong()))
-                        subtitle = CardStatusColors.spoken(ctx, line.status)
-                    },
-                    Views.matchWrap(ctx),
-                )
+                listOfNotNull(
+                    ctx.getString(g.label),
+                    ctx.getString(R.string.goal_line_of, Fmt.number(n.toLong()), Fmt.number(g.portions.toLong())),
+                    CardStatusColors.spoken(ctx, line.status),
+                ).joinToString(" ")
             }
+            root.contentDescription = (listOf(ctx.getString(R.string.card_food_groups), "${tile.value} ${tile.unit} ${tile.label}") + spoken).joinToString(". ")
         }
     }
 }

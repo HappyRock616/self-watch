@@ -50,14 +50,14 @@ class MonitoringCarry {
  *   baseline.
  * - A message at time t covers the time up to t, so its delta goes to the minute containing t − 1 s
  *   (the message stamped 00:00:00 still belongs to the day before).
- * - Minutes: steps, distance and kcal summed; activity type the last seen.
- * - Intensity minutes are the watch's own: `moderate_activity_minutes` (33) and
- *   `vigorous_activity_minutes` (34), the minutes the watch credited since the previous message (it
- *   rates them from heart rate against resting heart rate, as Garmin Connect shows them). The credited
- *   minutes are marked on the minutes just before the message: vigorous ones last, as
- *   [IntensityLevel.VIGOROUS], moderate ones before them, as [IntensityLevel.MODERATE]. The raw
- *   activity level in field 24 (bits 5–7) is the watch's movement level, not exercise intensity: it is
- *   kept only as 0 (still) or 1 (moving), so walking around never counts as intensity minutes.
+ * - Minutes: steps, distance and kcal summed; activity type the last seen. Cycles of cycling (2) and
+ *   swimming (5) are not counted as steps (they are pedal and stroke counts; the watch's daily steps
+ *   leave them out).
+ * - Intensity: a first mark only. The watch's credited minutes (`moderate_activity_minutes` 33,
+ *   `vigorous_activity_minutes` 34) are marked as [IntensityLevel.MODERATE] / [IntensityLevel.VIGOROUS]
+ *   on the minutes before the message; the raw movement level (field 24, bits 5–7) is kept only as 0
+ *   (still) or 1 (moving). After ingest the service re-marks every minute from its heart-rate zone
+ *   (`IntensityClassifier`: zone 2 and up), which is what the app counts.
  * - Heart rate: the last value in each minute, one [app.selfwatch.model.health.MetricKind.HEART_RATE]
  *   sample stamped at the minute start.
  * - Resting metabolic rate (`monitoring_info` field 5, kcal per day): one
@@ -81,6 +81,8 @@ object MonitoringDecoder {
     private const val F_TYPE_INTENSITY = 24
     private const val F_TIMESTAMP_16 = 26
     private const val F_HEART_RATE = 27
+    /** FIT `activity_type` values whose cycles are not steps: 2 cycling, 5 swimming. */
+    private val NOT_STEPS = setOf(2, 5)
     private const val F_MODERATE_MIN = 33
     private const val F_VIGOROUS_MIN = 34
 
@@ -186,7 +188,8 @@ object MonitoringDecoder {
                     }
                     // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (cycles are cumulative per activity type; steps = raw cycles value, i.e. scaled cycles × 2, summed over types)
                     val curSteps = steps ?: steps16?.let { s16 -> c.steps + ((s16 - (c.steps and 0xFFFF)) and 0xFFFF) }
-                    if (curSteps != null) { b.steps += delta(curSteps, c.steps); c.steps = curSteps }
+                    // Cycling and swimming cycles are pedal or stroke counts, not steps: the watch leaves them out of its daily steps.
+                    if (curSteps != null) { if (type !in NOT_STEPS) b.steps += delta(curSteps, c.steps); c.steps = curSteps }
                     if (dist != null) { b.distCm += delta(dist, c.distCm); c.distCm = dist }
                     if (kcal != null) { b.kcal += delta(kcal, c.kcal); c.kcal = kcal }
                     if (intensity != null && intensity > b.intensity) b.intensity = intensity

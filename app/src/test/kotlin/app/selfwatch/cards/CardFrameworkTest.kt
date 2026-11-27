@@ -11,7 +11,9 @@ package app.selfwatch.cards
 
 import android.app.Application
 import app.selfwatch.activity.cards.ActivityGoalsCard
+import app.selfwatch.activity.cards.DistanceTodayCard
 import app.selfwatch.activity.cards.StepsTodayCard
+import app.selfwatch.activity.cards.TrainingLoadCard
 import app.selfwatch.activity.cards.TrendsCard
 import app.selfwatch.activity.cards.Vo2MaxCard
 import app.selfwatch.activity.cards.WorkoutsCard
@@ -20,6 +22,7 @@ import app.selfwatch.body.cards.BodyTodayCard
 import app.selfwatch.body.cards.EcgCard
 import app.selfwatch.body.cards.HrvBaselineCard
 import app.selfwatch.body.cards.SleepCard
+import app.selfwatch.body.cards.SleepChartCard
 import app.selfwatch.body.cards.Spo2Card
 import app.selfwatch.body.cards.WeightCard
 import app.selfwatch.db.SettingKeys
@@ -120,7 +123,7 @@ class CardFrameworkTest {
         val l = CardSize.LARGE
         assertEquals(
             listOf(
-                "body_today" to l, "sleep" to l, "hrv_baseline" to s, "resting_hr" to s, "body_stress" to s, "readiness" to s,
+                "body_today" to l, "sleep_chart" to l, "hrv_baseline" to s, "resting_hr" to s, "body_stress" to s, "readiness" to s,
                 "body_signals" to s, "spo2" to s,
             ),
             layout(CardTab.BODY),
@@ -151,16 +154,26 @@ class CardFrameworkTest {
         // A band with steps and sleep but no HRV: HRV and readiness wait, the backups take their place.
         val band = Recorded(Recorded.MANUAL + setOf(DataKind.STEPS, DataKind.SLEEP, DataKind.HEART_RATE, DataKind.RESTING_HR))
         val shown = CardStore.shownOf(CardPresets.defaults(CardTab.BODY, band), band).map { it.card.id }
-        assertEquals(listOf("body_today", "sleep", "weight", "resting_hr"), shown.take(4))
+        assertEquals(listOf("body_today", "sleep_chart", "weight", "resting_hr"), shown.take(4))
         assertFalse("hrv_baseline" in shown)
-        // Activity: with VO2 max stored, all defaults show; before the first estimate Steps stands in for it.
-        val activity = CardStore.shownOf(CardPresets.defaults(CardTab.ACTIVITY, Recorded.ALL), Recorded.ALL).map { it.card }
+        // Activity: a watch with training status and VO2 max shows every default, no backup needed.
+        val full = Recorded(Recorded.ALL.kinds + DataKind.TRAINING_STATUS)
+        val activity = CardStore.shownOf(CardPresets.defaults(CardTab.ACTIVITY, full), full).map { it.card }
+        assertTrue(TrainingLoadCard in activity)
         assertTrue(Vo2MaxCard in activity)
         assertFalse(StepsTodayCard in activity)
+        // A normal Garmin watch has no training status: Steps stands in for Weekly effort.
+        val garmin = CardStore.shownOf(CardPresets.defaults(CardTab.ACTIVITY, Recorded.ALL), Recorded.ALL).map { it.card }
+        assertFalse(TrainingLoadCard in garmin)
+        assertTrue(Vo2MaxCard in garmin)
+        assertTrue(StepsTodayCard in garmin)
+        assertFalse(DistanceTodayCard in garmin)
+        // Before the first VO2 max estimate too, Distance (the next backup) stands in for it.
         val noVo2 = Recorded(Recorded.ALL.kinds - DataKind.VO2_MAX)
         val waiting = CardStore.shownOf(CardPresets.defaults(CardTab.ACTIVITY, noVo2), noVo2).map { it.card }
         assertFalse(Vo2MaxCard in waiting)
         assertTrue(StepsTodayCard in waiting)
+        assertTrue(DistanceTodayCard in waiting)
         // Food needs no device at all.
         assertEquals(CardPresets.layout(CardTab.FOOD).map { it.card }, CardStore.shownOf(CardPresets.defaults(CardTab.FOOD, Recorded.NONE), Recorded.NONE).map { it.card })
     }
@@ -287,14 +300,14 @@ class CardFrameworkTest {
         assertEquals(listed.size, listed.toSet().size)
 
         // Move Sleep before Body today, add Water (a Food card) small, make Water large, take Sleep off.
-        vm.move(SleepCard, BodyTodayCard)
-        assertEquals(listOf(SleepCard, BodyTodayCard), vm.state.value.slots.take(2).map { it.card })
+        vm.move(SleepChartCard, BodyTodayCard)
+        assertEquals(listOf(SleepChartCard, BodyTodayCard), vm.state.value.slots.take(2).map { it.card })
         vm.setShown(WaterCard, true)
         assertEquals(CardSlot(WaterCard, WaterCard.defaultSize), vm.state.value.slots.last())
         vm.setSize(WaterCard, CardSize.LARGE)
-        vm.setShown(SleepCard, false)
+        vm.setShown(SleepChartCard, false)
         waitFor { store.slots(CardTab.BODY).let { it.first().card == BodyTodayCard && it.last() == CardSlot(WaterCard, CardSize.LARGE) } }
-        assertFalse(store.slots(CardTab.BODY).any { it.card == SleepCard })
+        assertFalse(store.slots(CardTab.BODY).any { it.card == SleepChartCard })
 
         var done = false
         vm.reset { done = true }

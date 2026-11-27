@@ -26,14 +26,14 @@ import app.selfwatch.model.time.DayRange
 enum class DataKind(val stored: Boolean = true) {
     STEPS, DISTANCE, ACTIVE_CALORIES, ACTIVE_TIME, RESTING_CALORIES,
     HEART_RATE, RESTING_HR, HRV, SPO2, RESPIRATION, STRESS, ENERGY_LEVEL, SKIN_TEMP,
-    SLEEP, SLEEP_SCORE, WORKOUTS, VO2_MAX,
+    SLEEP, SLEEP_SCORE, WORKOUTS, VO2_MAX, RECOVERY_TIME,
     WEIGHT, BODY_FAT, BODY_COMPOSITION, MEASUREMENTS, BLOOD_PRESSURE,
 
     // Live readings while connected, and device data (battery, syncs).
     LIVE, BATTERY, DEVICE_SYNC,
 
     // Not received from any device yet (the cards wait for them).
-    FLOORS(false), ELEVATION(false), TRAINING_STATUS(false), RECOVERY_TIME(false),
+    FLOORS(false), ELEVATION(false), TRAINING_STATUS(false),
     RACE_TIMES(false), ENDURANCE(false), HILL(false), LACTATE_THRESHOLD(false), CYCLING_POWER(false),
     HEAT_ALTITUDE(false), PAI(false), ECG(false), BLOOD_GLUCOSE(false), CYCLING_SENSOR(false),
     SPEED_ZONES(false), SLEEP_NEED(false), NAPS(false), HEALTH_CHECK(false), FITNESS_AGE(false),
@@ -121,6 +121,7 @@ class RecordedLoader(private val db: SelfWatchDb, private val clock: Clock) {
             // VO2 max counts once an estimate is stored: no capability flag says a watch sends it.
             MetricKind.VO2_MAX_RUNNING to DataKind.VO2_MAX,
             MetricKind.VO2_MAX_CYCLING to DataKind.VO2_MAX,
+            MetricKind.RECOVERY_MIN to DataKind.RECOVERY_TIME,
         )
 
         private val BODY_KINDS: Map<BodyKind, DataKind> = mapOf(

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: vigorous minutes, last 7 days, as a ring (IntensityCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/intensity_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_intensity">
+    <app.selfwatch.ui.components.RingView
+        android:id="@+id/iv_ring"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/card_ring_height"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/iv_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/intensity_empty" />
+</app.selfwatch.ui.components.SwCard>

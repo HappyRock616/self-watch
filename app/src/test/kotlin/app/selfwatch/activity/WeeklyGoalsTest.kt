@@ -73,8 +73,8 @@ class WeeklyGoalsTest {
         val db = TestDb.fresh(ctx)
         assertEquals(0, ActiveGoalMigration.run(db))
         assertEquals("1", db.settings.get(ActiveGoalMigration.DONE_KEY))
-        assertEquals(300, ActivityGoals.activeMinWeek(db, today))
-        assertEquals(10_000, ActivityGoals.steps(db, today))
+        assertEquals(150, ActivityGoals.activeMinWeek(db, today))
+        assertEquals(7_500, ActivityGoals.steps(db, today))
     }
 
     @Test
@@ -87,9 +87,9 @@ class WeeklyGoalsTest {
         val loader = ActivityLoader(db, clock)
         val r = loader.rings()
         assertEquals(80, r.activeMin)
-        assertEquals(300, r.activeMinGoal)
+        assertEquals(150, r.activeMinGoal)
         assertEquals(4_000, r.steps)
-        assertEquals(10_000, r.stepGoal)
+        assertEquals(7_500, r.stepGoal)
         db.goals.set(Goal(GoalKind.ACTIVE_MIN, 160, monday))
         assertEquals(160, loader.rings().activeMinGoal)
         assertEquals(0.5f, loader.rings().let { it.progress(it.activeMin, it.activeMinGoal) }, 1e-4f)
@@ -99,18 +99,18 @@ class WeeklyGoalsTest {
     fun trendGoalLineIsASeventhOfTheWeeklyGoal() = runBlocking {
         val db = TestDb.fresh(ctx)
         val loader = ActivityLoader(db, clock)
-        assertEquals(43, loader.trend(TrendRange.WEEK).goals[TrendMetric.ACTIVE_MIN])
-        assertEquals(43, loader.trend(TrendRange.YEAR).goals[TrendMetric.ACTIVE_MIN])
+        assertEquals(21, loader.trend(TrendRange.WEEK).goals[TrendMetric.ACTIVE_MIN])
+        assertEquals(21, loader.trend(TrendRange.YEAR).goals[TrendMetric.ACTIVE_MIN])
         db.goals.set(Goal(GoalKind.ACTIVE_MIN, 210, monday))
         assertEquals(30, loader.trend(TrendRange.MONTH).goals[TrendMetric.ACTIVE_MIN])
-        assertEquals(10_000, loader.trend(TrendRange.MONTH).goals[TrendMetric.STEPS])
+        assertEquals(7_500, loader.trend(TrendRange.MONTH).goals[TrendMetric.STEPS])
     }
 
     @Test
     fun intensityCardTargetIsTheWeeklyGoal() = runBlocking {
         val db = TestDb.fresh(ctx)
         val env = CardEnv(db, clock, today, Units.METRIC)
-        assertEquals(300, IntensityMinutesCard.load(env).target)
+        assertEquals(150, IntensityMinutesCard.load(env).target)
         db.goals.set(Goal(GoalKind.ACTIVE_MIN, 420, monday))
         assertEquals(420, IntensityMinutesCard.load(env).target)
     }
@@ -122,9 +122,9 @@ class WeeklyGoalsTest {
         db.summaries.upsertDay(summary(today, steps = 6_000, activeMin = 20), clock.nowSec())
         val s = BodyLoader(db, clock).steps()
         assertEquals(6_000, s.steps)
-        assertEquals(10_000, s.stepsGoal)
+        assertEquals(7_500, s.stepsGoal)
         assertEquals(70, s.activeMin)
-        assertEquals(300, s.activeMinGoal)
+        assertEquals(150, s.activeMinGoal)
     }
 
     @Test
@@ -132,8 +132,8 @@ class WeeklyGoalsTest {
         assertEquals(R.string.goal_unit_min_week, GoalField.ACTIVE_MIN.unit(Units.METRIC))
         assertEquals(10_080, GoalField.ACTIVE_MIN.parse("10080", Units.METRIC))
         assertNull(GoalField.ACTIVE_MIN.parse("10081", Units.METRIC))
-        assertEquals(300, GoalField.ACTIVE_MIN.defaultValue(Units.METRIC))
-        assertEquals(10_000, GoalField.STEPS.defaultValue(Units.IMPERIAL))
+        assertEquals(150, GoalField.ACTIVE_MIN.defaultValue(Units.METRIC))
+        assertEquals(7_500, GoalField.STEPS.defaultValue(Units.IMPERIAL))
         assertNull(GoalField.DISTANCE.defaultValue(Units.METRIC))
         // Water: 8 glasses, 96 fl oz or 2.8 L.
         assertEquals("96", GoalField.WATER.toText(GoalField.WATER.defaultValue(Units.IMPERIAL)!!, Units.IMPERIAL))

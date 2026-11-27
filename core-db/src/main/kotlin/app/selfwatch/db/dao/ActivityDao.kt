@@ -19,6 +19,7 @@ import app.selfwatch.db.inList
 import app.selfwatch.db.intOrNull
 import app.selfwatch.db.offsetSegments
 import app.selfwatch.db.queryList
+import app.selfwatch.db.queryOne
 import app.selfwatch.db.read
 import app.selfwatch.db.withStatement
 import app.selfwatch.db.write
@@ -52,6 +53,35 @@ public class ActivityDao internal constructor(private val db: SelfWatchDb) {
     public suspend fun insert(minutes: List<ActivityMinute>, importId: Long? = null): Int {
         if (minutes.isEmpty()) return 0
         return db.write(setOf(Table.ACTIVITY)) { insertIn(it, minutes, importId) }
+    }
+
+    /**
+     * Sets the intensity of each of [minutes] (matched by device and minute) in one transaction, keeping
+     * the rest of the row; a minute not stored yet is added as given. Returns how many rows changed.
+     */
+    public suspend fun setIntensity(minutes: List<ActivityMinute>): Int {
+        if (minutes.isEmpty()) return 0
+        return db.write(setOf(Table.ACTIVITY)) { d ->
+            var n = 0
+            d.withStatement("UPDATE activity_minute SET intensity = ? WHERE device_id = ? AND t_sec = ?") { up ->
+                val missing = ArrayList<ActivityMinute>()
+                for (m in minutes) {
+                    up.bindLong(1, m.intensity.toLong())
+                    up.bindLong(2, m.deviceId)
+                    up.bindLong(3, m.tSec)
+                    if (up.executeUpdateDelete() > 0) n++ else missing += m
+                }
+                if (missing.isNotEmpty()) n += insertIn(d, missing)
+            }
+            n
+        }
+    }
+
+    /** From the first stored minute to one minute after the last, or null when none is stored. */
+    public suspend fun span(): TimeRange? = db.read { d ->
+        d.queryOne("SELECT MIN(t_sec), MAX(t_sec) FROM activity_minute", null) { c ->
+            if (c.isNull(0)) null else TimeRange(c.getLong(0), c.getLong(1) + 60)
+        }
     }
 
     /** Minutes in [range], oldest first; all devices unless [deviceId] is given. */

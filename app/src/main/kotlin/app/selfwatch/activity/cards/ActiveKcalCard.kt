@@ -8,6 +8,7 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityRules
@@ -17,18 +18,21 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.me.GoalField
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingView
 import app.selfwatch.ui.format.Fmt
-import kotlin.math.roundToLong
 
 /**
- * Active calories today (C12) against about 400 kcal a day, what long-term weight-loss maintainers report
- * (WP-15, C12), or the user's own active-calorie goal; the last 7 days as bars. Labelled as an estimate.
+ * Active calories today (C12, card design standard): a ring toward about 400 kcal a day, what long-term
+ * weight-loss maintainers report (WP-15, C12), or the user's own active-calorie goal, the kcal inside.
+ * Small form: the same ring. Watch calories are estimates.
  */
 object ActiveKcalCard : Card<ActiveKcalCard.Data>("active_kcal", CardTab.ACTIVITY, R.string.card_active_kcal, R.string.card_active_kcal_summary) {
 
@@ -59,17 +63,37 @@ object ActiveKcalCard : Card<ActiveKcalCard.Data>("active_kcal", CardTab.ACTIVIT
 
     override val needs: Set<DataKind> = setOf(DataKind.ACTIVE_CALORIES)
 
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
     override fun small(ctx: Context, data: Data): SmallFace? {
         if (data.isEmpty) return null
         val kcal = data.kcal ?: 0
         val target = Fmt.number(data.target.toLong())
         return SmallFace(
             value = Fmt.number(kcal.toLong()),
-            label = ctx.getString(if (data.ownGoal) R.string.small_goal else R.string.small_reference, target),
+            label = ctx.getString(R.string.activity_of_goal, target),
             unit = ctx.getString(R.string.unit_kcal),
             status = CardStatusColors.ofProgress(kcal.toDouble(), data.target.toDouble()),
             progress = if (data.target > 0) kcal.toFloat() / data.target else null,
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallRing(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: Data) = ring(graphic as RingView, data)
+
+    /** Shows today's kcal against the target on [ring]. */
+    private fun ring(ring: RingView, data: Data) {
+        val kcal = data.kcal ?: 0
+        ring.progress = if (data.target > 0) kcal.toFloat() / data.target else 0f
+        ring.color = ActivityVisuals.goalColor(ring.context, kcal, data.target)
+        ring.centerText = Fmt.number(kcal.toLong())
+        ring.subText = ring.context.getString(R.string.activity_of_goal, Fmt.number(data.target.toLong()))
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)
@@ -78,25 +102,22 @@ object ActiveKcalCard : Card<ActiveKcalCard.Data>("active_kcal", CardTab.ACTIVIT
     private const val HALF = 5L
     private const val TENTHS = 10L
 
-    private class Holder(parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_active_kcal,
-        StatIds(R.id.ak_tile, R.id.ak_bar, R.id.ak_bars, R.id.ak_caption, R.id.ak_note, R.id.ak_empty),
-    ) {
+    private class Holder(parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_active_kcal)) {
+        private val ringView = find<RingView>(R.id.ak_ring)
+        private val empty = find<EmptyState>(R.id.ak_empty)
+
         override fun bind(data: Data) {
             val ctx = root.context
-            showEmpty(data.isEmpty)
-            if (data.isEmpty) return
-            val kcal = data.kcal ?: 0
-            val target = Fmt.number(data.target.toLong())
-            tile.value = Fmt.number(kcal.toLong())
-            tile.unit = null
-            tile.label = ctx.getString(if (data.ownGoal) R.string.ak_label_own else R.string.ak_label, target)
-            progress(kcal, data.target)
-            val present = data.week.filterNotNull()
-            text(caption, if (present.isEmpty()) null else ctx.getString(R.string.ak_caption, Fmt.number(present.average().roundToLong())))
-            bars(ctx.getString(R.string.card_active_kcal), data.week.map { it ?: 0 }, weekdayLabels(data.days.map { it.yyyymmdd }), data.target)
-            note.setText(R.string.ak_note)
-            root.contentDescription = ctx.getString(R.string.ak_description, tile.value, target)
+            ActivityVisuals.show(!data.isEmpty, ringView)
+            ActivityVisuals.show(data.isEmpty, empty)
+            if (data.isEmpty) {
+                root.contentDescription = empty.message
+                return
+            }
+            ring(ringView, data)
+            root.contentDescription = ctx.getString(
+                R.string.design_active_kcal_description, Fmt.number((data.kcal ?: 0).toLong()), Fmt.number(data.target.toLong()),
+            )
         }
     }
 }

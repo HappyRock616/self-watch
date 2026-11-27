@@ -103,7 +103,7 @@ data class StepsInfo(val steps: Int?, val stepsGoal: Int?, val activeMin: Int?, 
 }
 
 /** Blood oxygen: the latest night's average (%), the day that night ended, and up to 30 nightly averages (oldest first). */
-data class Spo2Info(val lastPct: Int, val lastDay: Day, val nights: List<Int>)
+data class Spo2Info(val lastPct: Int, val lastDay: Day, val nights: List<Int>, val lowestPct: Int? = null)
 
 /** The watch chip at the top of Body. */
 data class WatchChip(val name: String, val batteryPct: Int?, val lastSyncSec: Long?, val connected: Boolean)
@@ -238,9 +238,18 @@ class BodyLoader(private val db: SelfWatchDb, private val clock: Clock) {
         val zone = clock.zone()
         val from = today.plusDays(-(SPARK_DAYS - 1)).startSec(zone) - NIGHT_SHIFT_SEC
         val samples = db.metrics.series(MetricKind.SPO2, TimeRange(from, today.plusDays(1).startSec(zone)))
-        val nights = nightlyAverages(samples, zone)
+        // As Garmin: the night's value is the average during sleep, with the lowest reading. Without a
+        // recorded sleep, the readings from 18:00 to 18:00 stand in.
+        val sessions = db.sleep.sessions(DayRange(today.plusDays(-(SPARK_DAYS - 1)), today), zone)
+        val asleep = samples.filter { s -> sessions.any { s.tSec >= it.startSec && s.tSec < it.endSec } }
+        val byNight = if (asleep.isNotEmpty()) {
+            asleep.groupBy { s -> Day.of(sessions.first { s.tSec >= it.startSec && s.tSec < it.endSec }.endSec, zone) }.toSortedMap()
+        } else {
+            samples.groupBy { Day.of(it.tSec + NIGHT_SHIFT_SEC, zone) }.toSortedMap()
+        }
+        val nights = byNight.map { (day, list) -> day to ((list.sumOf { it.value.toLong() } * 2 + list.size) / (2L * list.size)).toInt() }
         val last = nights.lastOrNull() ?: return null
-        return Spo2Info(last.second, last.first, nights.map { it.second })
+        return Spo2Info(last.second, last.first, nights.map { it.second }, byNight[last.first]?.minOf { it.value })
     }
 
     /** Pure helpers. */

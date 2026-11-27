@@ -8,7 +8,10 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.R
 import app.selfwatch.body.WeightDetailFragment
 import app.selfwatch.cards.Card
@@ -72,6 +75,22 @@ object CarbsPerKgCard : Card<InUnits<CarbsPerKg>>(
         )
     }
 
+    /** Carbs per kg on a range bar: the training band marked with its edges; null without a value. */
+    fun picture(ctx: Context, data: InUnits<CarbsPerKg>): TrendPicture? {
+        val c = data.value
+        val perKg = c.perKg ?: return null
+        if (c.kgX100 == null || c.carbsG == null) return null
+        val t = c.band.target
+        val ticks = listOfNotNull(t.low, t.high).map { it.toFloat() to FoodCardText.perKg(it, data.units) }
+        return FoodPictures.target(ctx, perKg, t.low, t.high, ticks)
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: InUnits<CarbsPerKg>) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<InUnits<CarbsPerKg>> = Holder(host, parent)
 
     private class Holder(host: CardHost, parent: ViewGroup) :
@@ -95,27 +114,20 @@ object CarbsPerKgCard : Card<InUnits<CarbsPerKg>>(
                 showEmpty(ctx.getString(R.string.carbs_kg_empty))
                 return
             }
-            showContent()
             val t = c.band.target
             tile.value = FoodCardText.perKg(perKg, data.units)
             tile.unit = FoodCardText.gramsUnit(ctx, data.units)
             val target = FoodCardText.target(ctx, t, data.units)
-            tile.label = target
-            val inBand = perKg >= t.low && perKg <= (t.high ?: Double.MAX_VALUE)
-            bar.set(
-                perKg.toFloat(), FoodCardText.barMax(perKg, t), if (inBand) palette.primary else palette.secondary,
-                low = t.low.toFloat(), high = t.high?.toFloat(),
-            )
-            show(bar, true)
+            tile.label = ProteinPerKgCard.aim(ctx, t, data.units)
+            showContent(picture(ctx, data))
             val training = if (c.avgTrainingMin <= 0) {
                 ctx.getString(R.string.carbs_kg_training_none)
             } else {
                 ctx.getString(R.string.carbs_kg_training, Fmt.duration(c.avgTrainingMin * 60L, Locale.getDefault(), FmtLabels.from(ctx)))
             }
-            text(note, training)
-            text(coverage, ctx.getString(R.string.carbs_kg_inputs, Fmt.number(c.carbsG.toLong()), Fmt.weight(kg, data.units)))
+            val inputs = ctx.getString(R.string.carbs_kg_inputs, Fmt.number(c.carbsG.toLong()), Fmt.weight(kg, data.units))
             card.contentDescription = ctx.getString(
-                R.string.food_card_description, ctx.getString(R.string.card_carbs_per_kg), "${tile.value} ${tile.unit}", "$target. $training",
+                R.string.food_card_description, ctx.getString(R.string.card_carbs_per_kg), "${tile.value} ${tile.unit}", "$target. $training. $inputs",
             )
         }
     }

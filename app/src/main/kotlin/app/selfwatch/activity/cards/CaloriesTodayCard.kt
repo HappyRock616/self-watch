@@ -8,6 +8,7 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.TodayLoader
@@ -20,12 +21,17 @@ import app.selfwatch.cards.CardView
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.SplitBarView
+import app.selfwatch.ui.components.SplitPart
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
-import kotlin.math.roundToLong
+import app.selfwatch.ui.R as UiR
 
 /**
- * Calories today: the total burned so far (active from the watch plus resting), split into its two
- * parts, with the last 7 days as bars. Labeled as an estimate; active calories alone are `active_kcal`.
+ * Calories today (card design standard): the total burned so far with a split bar of its two parts,
+ * resting and active. Estimates; active calories alone are `active_kcal`. Small form: the split bar.
  */
 object CaloriesTodayCard : Card<CaloriesTodayCard.Data>("calories_today", CardTab.ACTIVITY, R.string.card_calories_today, R.string.card_calories_today_summary) {
 
@@ -41,6 +47,11 @@ object CaloriesTodayCard : Card<CaloriesTodayCard.Data>("calories_today", CardTa
 
     override val needs: Set<DataKind> = setOf(DataKind.ACTIVE_CALORIES, DataKind.RESTING_CALORIES)
 
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
     override fun small(ctx: Context, data: Data): SmallFace? {
         val w = data.week
         if (w.isEmpty) return null
@@ -48,35 +59,53 @@ object CaloriesTodayCard : Card<CaloriesTodayCard.Data>("calories_today", CardTa
             value = Fmt.number((w.today ?: 0).toLong()),
             label = ctx.getString(R.string.small_burned_so_far),
             unit = ctx.getString(R.string.unit_kcal),
-            note = ctx.getString(
-                R.string.small_kcal_parts,
-                Fmt.number((data.activeKcal ?: 0).toLong()),
-                Fmt.number((data.restingKcal ?: 0).toLong()),
-            ),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallSplit(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) = split(graphic as SplitBarView, data, labels = false)
+
+    /** Resting (neutral) then active (good), labeled with their kcal when [labels]. */
+    private fun split(bar: SplitBarView, data: Data, labels: Boolean) {
+        val ctx = bar.context
+        val c = LevelColors.of(ctx)
+        val resting = data.restingKcal ?: 0
+        val active = data.activeKcal ?: 0
+        fun label(name: Int, v: Int) = if (labels) ctx.getString(R.string.part_value, ctx.getString(name), Fmt.number(v.toLong())) else null
+        bar.parts = listOf(
+            SplitPart(resting.toFloat(), c.neutral, label(R.string.part_resting, resting)),
+            SplitPart(active.toFloat(), c.good, label(R.string.part_active, active)),
         )
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)
 
-    private class Holder(parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_calories_today,
-        StatIds(R.id.ct_tile, R.id.ct_bar, R.id.ct_bars, R.id.ct_caption, R.id.ct_note, R.id.ct_empty),
-    ) {
+    private class Holder(parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_calories_today)) {
+        private val tile = find<StatTile>(R.id.ct_tile)
+        private val bar = find<SplitBarView>(R.id.ct_split)
+        private val empty = find<EmptyState>(R.id.ct_empty)
+
+        init {
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
+        }
+
         override fun bind(data: Data) {
             val ctx = root.context
             val w = data.week
-            showEmpty(w.isEmpty)
-            if (w.isEmpty) return
-            tile.value = Fmt.number((w.today ?: 0).toLong())
-            tile.unit = null
-            tile.label = ctx.getString(R.string.ct_label, Fmt.number((data.activeKcal ?: 0).toLong()), Fmt.number((data.restingKcal ?: 0).toLong()))
-            progress(0, null)
-            // Today is not over: the average leaves it out.
-            val earlier = w.values.dropLast(1).filterNotNull()
-            text(caption, earlier.takeIf { it.isNotEmpty() }?.let { ctx.getString(R.string.ct_caption, Fmt.number(it.average().roundToLong())) })
-            bars(ctx.getString(R.string.card_calories_today), w.values.map { it ?: 0 }, weekdayLabels(w.days.map { it.yyyymmdd }), null)
-            note.setText(R.string.ct_note)
-            root.contentDescription = ctx.getString(R.string.ct_description, tile.value)
+            ActivityVisuals.show(!w.isEmpty, tile, bar)
+            ActivityVisuals.show(w.isEmpty, empty)
+            if (w.isEmpty) {
+                root.contentDescription = empty.message
+                return
+            }
+            ActivityVisuals.number(tile, Fmt.number((w.today ?: 0).toLong()), ctx.getString(R.string.unit_kcal), ctx.getString(R.string.tag_today))
+            split(bar, data, labels = true)
+            ActivityVisuals.show((data.restingKcal ?: 0) + (data.activeKcal ?: 0) > 0, bar)
+            root.contentDescription = ctx.getString(
+                R.string.design_calories_description, tile.value,
+                Fmt.number((data.restingKcal ?: 0).toLong()), Fmt.number((data.activeKcal ?: 0).toLong()),
+            )
         }
     }
 }

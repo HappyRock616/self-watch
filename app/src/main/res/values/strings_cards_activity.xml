@@ -93,7 +93,7 @@
     <string name="eh_hint_hard">More of your time was hard than the usual mix. Easy sessions help you recover and build a base.</string>
     <string name="eh_hint_mix">Close to the usual mix of mostly easy time with some hard.</string>
     <string name="eh_hint_easy">Mostly easy. A little hard time now and then adds variety.</string>
-    <string name="eh_note">Easy is under %1$s bpm, 80%% of your maximum heart rate.</string>
+    <string name="eh_note">Easy is below zone 4 (under %1$s bpm); hard is zone 4 and up.</string>
     <string name="eh_empty">No workouts with heart rate in the last 4 weeks. Workouts from your watch show up here.</string>
     <string name="eh_description">%1$s of workout time easy in the last 4 weeks.</string>
 
@@ -126,7 +126,8 @@
     <string name="card_recovery_hr">Heart rate recovery</string>
     <string name="card_recovery_hr_summary">How fast your heart rate drops after a workout</string>
     <string name="rhr_label">bpm drop in the first minute</string>
-    <string name="rhr_two_min">%1$s bpm after 2 minutes</string>
+    <string name="rhr_label_two">bpm drop 2 minutes after you stopped</string>
+    <string name="rhr_one_min">%1$s bpm after 1 minute</string>
     <string name="rhr_workout">%1$s, %2$s · ended at %3$d bpm</string>
     <string name="rhr_trend">Last %1$d workouts: %2$s bpm in the first minute on average</string>
     <string name="rhr_explain">A bigger drop in the first minute usually means better fitness. Compare it with your own earlier workouts.</string>

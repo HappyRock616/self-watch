@@ -8,6 +8,7 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityGoals
@@ -20,21 +21,29 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
+import app.selfwatch.ui.components.BarsView
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingView
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
+import app.selfwatch.ui.R as UiR
 
 /**
- * Intensity minutes this week (C10): moderate minutes plus vigorous minutes counted twice, Monday to
- * Sunday, against the weekly active-minutes goal (default 300), with WHO 2020's minimum of 150 as a note.
- * Bars per day; the wording stays "some is better than none". Opens the exercise-and-sleep overlay (O5).
+ * Intensity minutes this week (C10, card design standard): moderate minutes plus vigorous minutes
+ * counted twice, Monday to Sunday, against the weekly active-minutes goal (default 150). Bars per day,
+ * met / short against the daily share of the goal, which is the goal line. Small form: a ring toward the
+ * weekly goal. Opens the exercise-and-sleep overlay (O5).
  */
 object IntensityMinutesCard : Card<IntensityMinutesCard.Data>(
     "intensity_minutes", CardTab.ACTIVITY, R.string.card_intensity_minutes, R.string.card_intensity_minutes_summary,
 ) {
+
     /**
      * @property days the week, Monday first.
      * @property perDay intensity minutes per day of [days] (null: nothing recorded or still to come).
@@ -44,6 +53,9 @@ object IntensityMinutesCard : Card<IntensityMinutesCard.Data>(
     data class Data(val days: List<Day>, val perDay: List<Int?>, val target: Int, val hasData: Boolean) {
         /** Intensity minutes this week. */
         val weekMin: Int get() = perDay.sumOf { it ?: 0 }
+
+        /** The goal line: the daily share of [target]. */
+        val dailyShare: Int get() = ActivityGoals.dailyShare(target)
     }
 
     override val tables: Set<Table> = setOf(Table.ACTIVITY, Table.DAY_SUMMARY, Table.GOAL)
@@ -64,16 +76,25 @@ object IntensityMinutesCard : Card<IntensityMinutesCard.Data>(
         val week = data.weekMin
         return SmallFace(
             value = Fmt.number(week.toLong()),
-            label = ctx.getString(R.string.small_of_week_target, Fmt.number(data.target.toLong())),
+            label = ctx.getString(R.string.activity_of_goal, Fmt.number(data.target.toLong())),
             unit = ctx.getString(R.string.unit_min),
             status = CardStatusColors.ofProgress(week.toDouble(), data.target.toDouble()),
-            note = if (week >= data.target) {
-                ctx.getString(R.string.small_target_reached)
-            } else {
-                ctx.getString(R.string.small_min_to_go, Fmt.number((data.target - week).toLong()))
-            },
             progress = if (data.target > 0) week.toFloat() / data.target else null,
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallRing(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        val week = data.weekMin
+        (graphic as RingView).apply {
+            progress = if (data.target > 0) week.toFloat() / data.target else 0f
+            color = ActivityVisuals.goalColor(context, week, data.target)
+            centerText = Fmt.number(week.toLong())
+            subText = context.getString(R.string.activity_of_goal, Fmt.number(data.target.toLong()))
+        }
     }
 
     override fun openDetail(host: CardHost): Boolean {
@@ -85,40 +106,31 @@ object IntensityMinutesCard : Card<IntensityMinutesCard.Data>(
 
     private const val HISTORY_DAYS = 27
 
-    private class Holder(host: CardHost, parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_intensity_minutes,
-        StatIds(R.id.im_tile, R.id.im_bar, R.id.im_bars, R.id.im_caption, R.id.im_note, R.id.im_empty),
-    ) {
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_intensity_minutes)) {
+        private val tile = find<StatTile>(R.id.im_tile)
+        private val bars = find<BarsView>(R.id.im_bars)
+        private val empty = find<EmptyState>(R.id.im_empty)
+
         init {
-            root.isClickable = true
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
             root.setOnClickListener { host.open(ExerciseSleepDetailFragment()) }
         }
 
         override fun bind(data: Data) {
             val ctx = root.context
-            showEmpty(!data.hasData)
-            if (!data.hasData) return
-            val week = data.weekMin
+            ActivityVisuals.show(data.hasData, tile, bars)
+            ActivityVisuals.show(!data.hasData, empty)
+            if (!data.hasData) {
+                root.contentDescription = empty.message
+                return
+            }
             val target = Fmt.number(data.target.toLong())
-            tile.value = Fmt.number(week.toLong())
-            tile.unit = ctx.getString(R.string.unit_min)
-            tile.label = if (data.target > ActivityGoals.WHO_MIN_WEEK) {
-                ctx.getString(R.string.im_label_who, target, Fmt.number(ActivityGoals.WHO_MIN_WEEK.toLong()))
-            } else {
-                ctx.getString(R.string.im_label, target)
-            }
-            progress(week, data.target)
-            caption.text = when {
-                week == 0 -> ctx.getString(R.string.im_caption_none)
-                week < data.target -> ctx.getString(R.string.im_caption_left, Fmt.number((data.target - week).toLong()))
-                else -> ctx.getString(R.string.im_caption_done)
-            }
-            bars(
-                ctx.getString(R.string.card_intensity_minutes),
-                data.perDay.map { it ?: 0 }, weekdayLabels(data.days.map { it.yyyymmdd }), null,
+            ActivityVisuals.number(tile, Fmt.number(data.weekMin.toLong()), ctx.getString(R.string.unit_min), ctx.getString(R.string.activity_of_goal, target))
+            ActivityVisuals.weekBars(
+                bars, ctx.getString(R.string.card_intensity_minutes), data.perDay.map { it ?: 0 },
+                StatCardView.weekdayLabels(data.days.map { it.yyyymmdd }), data.dailyShare,
             )
-            note.setText(R.string.im_note)
-            root.contentDescription = ctx.getString(R.string.im_description, tile.value, target)
+            root.contentDescription = ctx.getString(R.string.design_intensity_minutes_description, tile.value, target)
         }
     }
 }

@@ -44,9 +44,10 @@ internal class MetricExtractor(private val deviceId: Long) {
                 if (v in 50..100) add(MetricKind.SPO2, t, v)
             }
             FitMsg.MONITORING_HR_DATA -> {
-                // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (prefer current_day_resting_heart_rate, else resting_heart_rate)
+                // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (current_day_resting_heart_rate, field 1)
+                // Field 0 (resting_heart_rate) is the watch's 7-day average, not today's value: not used.
                 val t = rec.tSec ?: return true
-                val v = rec.int(1)?.takeIf { it in 20..250 } ?: rec.int(0)?.takeIf { it in 20..250 } ?: return true
+                val v = rec.int(1)?.takeIf { it in 20..250 } ?: return true
                 add(MetricKind.RESTING_HR, t, v)
             }
             FitMsg.SKIN_TEMP_OVERNIGHT -> {
@@ -61,6 +62,29 @@ internal class MetricExtractor(private val deviceId: Long) {
                 if (ms in 1..1000) add(MetricKind.HRV_RMSSD, t, ms.toInt())
             }
             FitMsg.MAX_MET_DATA -> Vo2Max.fromMaxMet(rec)?.let { (kind, t, x10) -> add(kind, t, x10) }
+            FitMsg.HRV_STATUS_SUMMARY -> {
+                // Ref: Gadgetbridge 160beab41 FitCodeGenerator/src/main/resources/fit_profile.json (hrv_status_summary: 0 weekly_average, 1 last_night_average, 4/5 baseline_balanced_lower/upper, scale 128; 6 status)
+                val t = rec.tSec ?: return true
+                hrvMs(rec.long(1))?.let { add(MetricKind.HRV_NIGHT_AVG, t, it) }
+                hrvMs(rec.long(0))?.let { add(MetricKind.HRV_WEEK_AVG, t, it) }
+                hrvMs(rec.long(4))?.let { add(MetricKind.HRV_BASELINE_LOW, t, it) }
+                hrvMs(rec.long(5))?.let { add(MetricKind.HRV_BASELINE_HIGH, t, it) }
+                rec.int(6)?.takeIf { it in 1..4 }?.let { add(MetricKind.HRV_STATUS, t, it) }
+            }
+            FitMsg.METRIC_RECOVERY -> {
+                // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (metric_recovery: 0 recovery_minutes, 1 recovery_start; 0 means recovered)
+                val t = rec.time(1) ?: rec.tSec ?: return true
+                val min = rec.int(0) ?: return true
+                if (min in 0..MAX_RECOVERY_MIN) add(MetricKind.RECOVERY_MIN, t, min)
+            }
+            FitMsg.NAP_EVENT -> {
+                // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (nap_event start_time 0, end_time 2); deleted naps (5) skipped
+                if (rec.int(5) == 1) return true
+                val s = rec.time(0) ?: return true
+                val e = rec.time(2) ?: return true
+                val min = ((e - s) / 60).toInt()
+                if (min in 1..MAX_NAP_MIN) add(MetricKind.NAP_MIN, s, min)
+            }
             else -> return false
         }
         return true
@@ -73,8 +97,18 @@ internal class MetricExtractor(private val deviceId: Long) {
     fun addRestingKcal(dayStartSec: Long, kcalPerDay: Int) = add(MetricKind.RESTING_KCAL, dayStartSec, kcalPerDay)
 
     private fun add(kind: MetricKind, tSec: Long, value: Int) {
-        // One map key per (second, kind): the kind code takes the low 4 bits, so codes must stay below 16.
-        samples[(tSec shl 4) or kind.code.toLong()] = MetricSample(deviceId, kind, tSec, value)
+        // One map key per (second, kind): the kind code takes the low 6 bits, so codes must stay below 64.
+        samples[(tSec shl 6) or kind.code.toLong()] = MetricSample(deviceId, kind, tSec, value)
+    }
+
+    private fun hrvMs(raw: Long?): Int? = raw?.let { (it / 128.0).roundToInt() }?.takeIf { it in 1..1000 }
+
+    private companion object {
+        /** Garmin caps recovery time at 4 days. */
+        const val MAX_RECOVERY_MIN = 4 * 24 * 60
+
+        /** Garmin naps are under 3 hours; allow some slack. */
+        const val MAX_NAP_MIN = 4 * 60
     }
 
     /** All samples, sorted by time then kind. */

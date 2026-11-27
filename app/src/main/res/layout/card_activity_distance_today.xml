@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Activity card: distance today (DistanceTodayCard). -->
+<!-- Activity card: distance today, week bars (DistanceTodayCard), card design standard. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/distance_today_card"
@@ -11,36 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:swValue="@string/dash" />
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/dt_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="8dp" />
-
-    <TextView
-        android:id="@+id/dt_caption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-
     <app.selfwatch.ui.components.BarsView
         android:id="@+id/dt_bars"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_2" />
-
-    <TextView
-        android:id="@+id/dt_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/dt_empty"
         android:layout_width="match_parent"

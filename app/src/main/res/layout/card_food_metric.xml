@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Food card: one number against a target or band, optional dots, notes and an empty state (FoodMetricView). -->
+<!-- Food card: one number and one picture (card design standard), or an empty state (FoodMetricView). -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     style="@style/Widget.SelfWatch.TabCard"
@@ -11,48 +11,11 @@
         android:layout_height="wrap_content"
         app:swValue="@string/dash" />
 
-    <app.selfwatch.food.cards.RangeBarView
-        android:id="@+id/metric_bar"
+    <app.selfwatch.cards.PictureFrame
+        android:id="@+id/metric_picture"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        android:visibility="gone" />
-
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/metric_dots"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        android:visibility="gone"
-        app:chipSpacingHorizontal="0dp"
-        app:chipSpacingVertical="0dp" />
-
-    <TextView
-        android:id="@+id/metric_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/metric_coverage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption"
-        android:textColor="@color/sw_muted"
-        android:visibility="gone" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/metric_link"
-        style="?attr/borderlessButtonStyle"
-        android:textAllCaps="false"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/sw_touch_target"
         android:visibility="gone" />
 
     <app.selfwatch.ui.components.EmptyState

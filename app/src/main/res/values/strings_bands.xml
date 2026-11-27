@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Garmin band names (field review, 0.0.4): sleep score, energy, readiness, HRV, BMI, body fat, blood pressure, VO2 max. -->
+<resources>
+    <string name="band_rest">Rest</string>
+    <string name="stress_split">%1$s %2$s</string>
+    <string name="band_excellent">Excellent</string>
+    <string name="band_good">Good</string>
+    <string name="band_fair">Fair</string>
+    <string name="band_poor">Poor</string>
+    <string name="band_superior">Superior</string>
+    <string name="band_high">High</string>
+    <string name="band_medium">Medium</string>
+    <string name="band_moderate">Moderate</string>
+    <string name="band_low">Low</string>
+    <string name="band_very_low">Very low</string>
+    <string name="band_prime">Prime</string>
+    <string name="band_balanced">Balanced</string>
+    <string name="band_unbalanced">Unbalanced</string>
+    <string name="band_underweight">Underweight</string>
+    <string name="band_normal">Normal</string>
+    <string name="band_overweight">Overweight</string>
+    <string name="band_obesity_1">Obesity class I</string>
+    <string name="band_obesity_2">Obesity class II</string>
+    <string name="band_obesity_3">Obesity class III</string>
+    <string name="band_essential">Essential fat</string>
+    <string name="band_athletes">Athletes</string>
+    <string name="band_fitness">Fitness</string>
+    <string name="band_acceptable">Acceptable</string>
+    <string name="band_obese">Obese</string>
+    <string name="band_bp_elevated">Elevated</string>
+    <string name="band_bp_stage_1">High, stage 1</string>
+    <string name="band_bp_stage_2">High, stage 2</string>
+    <string name="band_bp_crisis">Hypertensive crisis: see a doctor now</string>
+</resources>

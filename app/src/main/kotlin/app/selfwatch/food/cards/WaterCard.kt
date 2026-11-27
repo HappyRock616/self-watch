@@ -20,6 +20,8 @@ import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.food.FoodViews
@@ -34,7 +36,7 @@ import com.google.android.material.chip.ChipGroup
 import app.selfwatch.ui.R as UiR
 
 /**
- * Water for the diary day shown, in glasses of the user's units ([WaterGlass]: 12 fl oz or 350 ml): one
+ * Water (card design standard: glasses) for the diary day shown, in glasses of the user's units ([WaterGlass]: 12 fl oz or 350 ml): one
  * square per glass up to the goal (8 glasses until one is set); tapping an empty square adds a glass,
  * tapping the last full one takes it back.
  */
@@ -61,6 +63,19 @@ object WaterCard : Card<WaterCard.Data>("water", CardTab.FOOD, R.string.card_wat
             status = if (data.water.goalMl != null || total > 0) CardStatusColors.ofProgress(total.toDouble(), goal.toDouble()) else CardStatus.NONE,
             progress = total.toFloat() / goal,
         )
+    }
+
+    /** The small form's glasses: one dot per glass up to the goal, filled for each glass drunk. */
+    fun picture(d: Data): TrendPicture {
+        val glasses = WaterGlass.glasses(d.water.totalMl, d.units)
+        val n = WaterGlass.goalGlasses(d.goalMl, d.units).coerceIn(1, MAX_SQUARES)
+        return TrendPicture.Dots(BooleanArray(n) { it < glasses }, emptyList())
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        (graphic as PictureFrame).show(picture(data))
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)

@@ -42,8 +42,8 @@ data class DayIntensity(val moderateMin: Int, val vigorousMin: Int) {
 /**
  * Intensity minutes and active days (catalogue C10 and C15).
  *
- * Intensity minutes are the ones the watch credits (FIT fields 33/34, as in Garmin Connect): 2 marks a
- * moderate minute, 3 a vigorous one; 0 and 1 are still and moving. A minute recorded by two
+ * Intensity minutes are minutes in heart-rate zone 2 and up (`IntensityClassifier`): 2 marks a moderate
+ * minute (zones 2–3), 3 a vigorous one (zones 4–5); 0 and 1 are still and moving. A minute recorded by two
  * watches counts once, at the higher intensity. The weekly target is the user's active-minutes goal
  * (minutes per week, default 300; [ActivityGoals]); WHO 2020's minimum of 150 is shown as a note.
  */
@@ -148,12 +148,25 @@ enum class MaxHrSource {
 }
 
 /** The maximum heart rate used for the zones and where it came from. */
-data class MaxHr(val bpm: Int, val source: MaxHrSource)
+data class MaxHr(val bpm: Int, val source: MaxHrSource) {
+    /** Conversions. */
+    companion object {
+        /** The maximum heart rate of [zones]. */
+        fun of(zones: app.selfwatch.model.health.HrZoneSet): MaxHr = MaxHr(
+            zones.maxHr,
+            when (zones.maxOrigin) {
+                app.selfwatch.model.health.MaxHrOrigin.MANUAL -> MaxHrSource.STORED
+                app.selfwatch.model.health.MaxHrOrigin.AGE -> MaxHrSource.AGE
+                app.selfwatch.model.health.MaxHrOrigin.DEFAULT -> MaxHrSource.DEFAULT
+            },
+        )
+    }
+}
 
 /**
- * Heart-rate zones as a share of maximum heart rate: under 50% is zone 0 (rest), then 50–60% zone 1,
- * 60–70% zone 2, 70–80% zone 3, 80–90% zone 4 and 90% and up zone 5. Maximum heart rate is the setting
- * [MAX_HR_KEY] when present, else 220 − age, else 180.
+ * Heart-rate zones: the zones in use (`HrZoneStore`, Garmin-style: auto % of max HR by default, % of
+ * heart-rate reserve or bounds set by hand in Goals › Heart-rate zones). The bounds-free forms take a
+ * maximum heart rate and use the default % of max (50, 60, 70, 80, 90%).
  *
  * **Training load** (C19) is the zone-weighted minutes: minutes in zone 1 × 1 + … + zone 5 × 5 (zone 0
  * counts 0), the heart-rate-zone method of the catalogue. **Easy** (C21) is time under 80% of maximum
@@ -198,7 +211,7 @@ object HrZones {
         else -> MaxHr(DEFAULT_MAX_HR, MaxHrSource.DEFAULT)
     }
 
-    /** The zone (0..5) of [bpm] for [maxHr]. */
+    /** The zone (0..5) of [bpm] for [maxHr] (default % of max). */
     fun zoneOf(bpm: Int, maxHr: Int): Int {
         if (maxHr <= 0) return 0
         val pct = bpm * 100 / maxHr
@@ -212,6 +225,10 @@ object HrZones {
         }
     }
 
+    /** [zoneSeconds] with the default % of max zones for [maxHr]. */
+    fun zoneSeconds(readings: List<Pair<Long, Int>>, startSec: Long, endSec: Long, durationSec: Int, avgHr: Int?, maxHr: Int): IntArray? =
+        zoneSeconds(readings, startSec, endSec, durationSec, avgHr) { zoneOf(it, maxHr) }
+
     /**
      * Seconds in each zone (index 0..5) of a workout from [startSec] to [endSec] lasting [durationSec]
      * (moving time). Heart-rate [readings] (epoch second to bpm, any order) inside the workout each stand
@@ -219,7 +236,7 @@ object HrZones {
      * workout, the zone times are scaled to [durationSec]. Otherwise the whole duration goes to the zone
      * of [avgHr]. Null when neither is available.
      */
-    fun zoneSeconds(readings: List<Pair<Long, Int>>, startSec: Long, endSec: Long, durationSec: Int, avgHr: Int?, maxHr: Int): IntArray? {
+    fun zoneSeconds(readings: List<Pair<Long, Int>>, startSec: Long, endSec: Long, durationSec: Int, avgHr: Int?, zoneOf: (Int) -> Int): IntArray? {
         val end = if (endSec > startSec) endSec else startSec + durationSec
         val window = end - startSec
         val inside = readings.filter { it.first in startSec until end && it.second > 0 }.sortedBy { it.first }
@@ -230,7 +247,7 @@ object HrZones {
             val next = if (i + 1 < inside.size) inside[i + 1].first else end
             val sec = minOf(next, end, t + SAMPLE_CAP_SEC) - t
             if (sec <= 0) continue
-            acc[zoneOf(inside[i].second, maxHr)] += sec
+            acc[zoneOf(inside[i].second)] += sec
             covered += sec
         }
         if (window > 0 && covered * 100 >= window * MIN_COVERAGE_PCT) {
@@ -238,7 +255,7 @@ object HrZones {
             return IntArray(ZONES) { (acc[it].toDouble() * target / covered).roundToInt() }
         }
         val avg = avgHr?.takeIf { it > 0 } ?: return null
-        return IntArray(ZONES).also { it[zoneOf(avg, maxHr)] = maxOf(durationSec, 0) }
+        return IntArray(ZONES).also { it[zoneOf(avg)] = maxOf(durationSec, 0) }
     }
 
     /** Training load of [zoneSec]: minutes in each zone times the zone number, rounded. */

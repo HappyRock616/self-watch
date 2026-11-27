@@ -8,13 +8,14 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityStatsLoader
 import app.selfwatch.activity.ActivityWeek
 import app.selfwatch.activity.LongSession
 import app.selfwatch.activity.LongSessionCheck
-import app.selfwatch.activity.Sports
+import app.selfwatch.activity.WorkoutListFragment
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
@@ -25,17 +26,21 @@ import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.BarsView
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.FmtLabels
 import app.selfwatch.ui.format.Units
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.util.Locale
+import app.selfwatch.ui.R as UiR
 
 /**
- * Workout time this week (C20, formerly "Weekly volume"): workout time (and distance) this week and the 5 weeks before as bars, plus the
- * long-session check ([LongSessionCheck]): a run, walk or hike in the last 7 days more than 10% longer
- * than the longest of its kind in the 30 days before it is pointed out, gently.
+ * Workout time this week (C20, card design standard): workout time this week and the 5 weeks before as
+ * bars (this week in the goal color). The long-session check ([LongSessionCheck]: a run, walk or hike
+ * in the last 7 days more than 10% longer than the longest of its kind in the 30 days before) is still
+ * loaded for the detail screens; the card itself carries no notes. Small form: the bars. Opens Workouts.
  */
 object WeeklyVolumeCard : Card<WeeklyVolumeCard.Data>("weekly_volume", CardTab.ACTIVITY, R.string.card_weekly_volume, R.string.card_weekly_volume_summary) {
 
@@ -86,63 +91,63 @@ object WeeklyVolumeCard : Card<WeeklyVolumeCard.Data>("weekly_volume", CardTab.A
 
     override fun small(ctx: Context, data: Data): SmallFace? {
         if (data.isEmpty) return null
-        val loc = Locale.getDefault()
-        val labels = FmtLabels.from(ctx)
-        val metres = data.distancesM.lastOrNull() ?: 0
         return SmallFace(
-            value = Fmt.duration((data.durationsSec.lastOrNull() ?: 0).toLong(), loc, labels),
+            value = Fmt.duration((data.durationsSec.lastOrNull() ?: 0).toLong(), Locale.getDefault(), FmtLabels.from(ctx)),
             label = ctx.getString(R.string.wv_label),
-            note = if (metres > 0) Fmt.distance(metres.toDouble(), data.units, loc, labels) else null,
         )
     }
 
-    override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallBars(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        bars(graphic as BarsView, data)
+        // Six date labels don't fit half a card: the small bars go without them.
+        graphic.labels = emptyList()
+    }
+
+    /** Minutes per week, oldest first, this week in the goal color. */
+    private fun bars(chart: BarsView, data: Data) {
+        val ctx = chart.context
+        val c = LevelColors.of(ctx)
+        val last = data.durationsSec.size - 1
+        ActivityVisuals.weekBars(
+            chart, ctx.getString(R.string.card_weekly_volume), data.durationsSec.map { it / MINUTE_SEC },
+            StatCardView.weekLabels(data.weekStarts.map { it.yyyymmdd }), null,
+        ) { g, _ -> if (g == last) c.good else c.neutral }
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(WorkoutListFragment())
+        return true
+    }
+
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 
     private const val DAY_SEC = 86_400L
     private const val MINUTE_SEC = 60
 
-    private class Holder(parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_weekly_volume,
-        StatIds(R.id.wv_tile, R.id.wv_bar, R.id.wv_bars, R.id.wv_caption, R.id.wv_note, R.id.wv_empty),
-    ) {
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_weekly_volume)) {
+        private val tile = find<StatTile>(R.id.wv_tile)
+        private val chart = find<BarsView>(R.id.wv_bars)
+        private val empty = find<EmptyState>(R.id.wv_empty)
+
+        init {
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
+            root.setOnClickListener { host.open(WorkoutListFragment()) }
+        }
+
         override fun bind(data: Data) {
             val ctx = root.context
-            showEmpty(data.isEmpty)
-            if (data.isEmpty) return
-            val loc = Locale.getDefault()
-            val labels = FmtLabels.from(ctx)
-            val time = Fmt.duration((data.durationsSec.lastOrNull() ?: 0).toLong(), loc, labels)
-            val metres = data.distancesM.lastOrNull() ?: 0
-            tile.value = time
-            tile.unit = null
-            tile.label = if (metres > 0) {
-                ctx.getString(R.string.wv_label_distance, Fmt.distance(metres.toDouble(), data.units, loc, labels))
-            } else {
-                ctx.getString(R.string.wv_label)
+            ActivityVisuals.show(!data.isEmpty, tile, chart)
+            ActivityVisuals.show(data.isEmpty, empty)
+            if (data.isEmpty) {
+                root.contentDescription = empty.message
+                return
             }
-            progress(0, null)
-            val flag = data.longSession
-            text(
-                caption,
-                when {
-                    flag != null -> {
-                        val day = DateTimeFormatter.ofPattern(android.text.format.DateFormat.getBestDateTimePattern(loc, "EEEMMMd"), loc)
-                            .format(Instant.ofEpochSecond(flag.workout.startSec).atZone(java.time.ZoneId.systemDefault()))
-                        ctx.getString(
-                            R.string.wv_caption_flag,
-                            ctx.getString(Sports.label(flag.workout.sport)).lowercase(loc), day, Fmt.number(flag.pctLonger.toLong()),
-                        )
-                    }
-                    data.checked -> ctx.getString(R.string.wv_caption_ok)
-                    else -> null
-                },
-            )
-            bars(
-                ctx.getString(R.string.card_weekly_volume),
-                data.durationsSec.map { it / MINUTE_SEC }, weekLabels(data.weekStarts.map { it.yyyymmdd }), null,
-            )
-            note.setText(R.string.wv_note)
-            root.contentDescription = ctx.getString(R.string.wv_description, time)
+            val time = Fmt.duration((data.durationsSec.lastOrNull() ?: 0).toLong(), Locale.getDefault(), FmtLabels.from(ctx))
+            ActivityVisuals.number(tile, time, null, ctx.getString(R.string.tag_this_week))
+            bars(chart, data)
+            root.contentDescription = ctx.getString(R.string.design_weekly_volume_description, time)
         }
     }
 }

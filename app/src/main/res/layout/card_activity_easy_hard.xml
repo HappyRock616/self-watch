@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Activity card: share of easy workout time (EasyHardCard). -->
+<!-- Activity card: easy and hard time, split bar with the usual easy mark (EasyHardCard), card design standard. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/easy_hard_card"
@@ -11,30 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:swValue="@string/dash" />
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/eh_bar"
+    <app.selfwatch.ui.components.SplitBarView
+        android:id="@+id/eh_split"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="8dp" />
-
-    <TextView
-        android:id="@+id/eh_caption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-
-    <TextView
-        android:id="@+id/eh_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-
+        android:importantForAccessibility="no" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/eh_empty"
         android:layout_width="match_parent"

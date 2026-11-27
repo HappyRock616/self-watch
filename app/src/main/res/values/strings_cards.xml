@@ -62,6 +62,7 @@
 
     <!-- Blood oxygen card -->
     <string name="spo2_last_night">last night</string>
+    <string name="spo2_label_lowest">%1$s average asleep · lowest %2$s%%</string>
     <string name="spo2_empty">No blood oxygen readings yet. Turn on Pulse Ox during sleep on your watch.</string>
     <string name="spo2_description">Blood oxygen %1$s, %2$s. Double tap to open Sleep.</string>
 

@@ -22,7 +22,9 @@ import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
 import app.selfwatch.food.SleepCaloriesFragment
 import app.selfwatch.food.budget.EnergyBudget
@@ -63,11 +65,10 @@ enum class BalanceNutrient(@field:StringRes @get:StringRes val label: Int, val m
 }
 
 /**
- * Daily balance (the first card on Food; it replaced the fixed calories-left header): calories eaten,
- * burned (resting + active) and left as a ring; protein, carbs and fat against their targets with the
- * share of calories each gives against a balanced range; the fat types; fiber against its target;
- * sodium, saturated fat and added sugar against their limits. Tap a line for the foods behind it. For
- * the diary day shown.
+ * Daily balance (the first card on Food; card design standard): calories left as a ring (eaten against the
+ * goal plus active calories) and protein, carbs and fat as bars against their targets. Tap a bar for the
+ * foods behind it, the card for how the numbers are worked out. The data also holds the fat types, fiber,
+ * sodium and sugar lines (for the foods lists). For the diary day shown. Small form: the ring.
  */
 object DailyBalanceCard : Card<DailyBalanceCard.Data>("daily_balance", CardTab.FOOD, R.string.card_daily_balance, R.string.card_daily_balance_summary) {
 
@@ -148,35 +149,51 @@ object DailyBalanceCard : Card<DailyBalanceCard.Data>("daily_balance", CardTab.F
         )
     }
 
+    /** The calories-left ring: eaten toward the budget, the kcal left (or over) inside. */
+    fun picture(ctx: Context, data: Data): TrendPicture.Ring {
+        val budget = data.goalKcal + data.activeKcal
+        val palette = ChartPalette.of(ctx)
+        return TrendPicture.Ring(
+            progress = if (budget > 0) (data.eatenKcal.toFloat() / budget).coerceIn(0f, 1f) else 0f,
+            color = if (data.leftKcal >= 0) palette.primary else palette.secondary,
+            center = Fmt.number(kotlin.math.abs(data.leftKcal).toLong()),
+            sub = ctx.getString(if (data.leftKcal >= 0) R.string.balance_left else R.string.balance_over),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
+    /** The macros drawn as bars. */
+    private val barNutrients = listOf(BalanceNutrient.PROTEIN, BalanceNutrient.CARBS, BalanceNutrient.FAT)
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 
     private class Holder(private val host: CardHost, parent: ViewGroup) : CardView<Data>(SwCard(parent.context)) {
         private val ctx = parent.context
         private val sw = root as SwCard
         private val ring = RingView(ctx).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
-        private val eaten = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_Body)
-        private val burned = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_Body)
-        private val goal = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_Caption)
         private val lines = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
 
         init {
             sw.id = R.id.daily_balance_card
             sw.title = ctx.getString(R.string.card_daily_balance)
-            sw.actionText = ctx.getString(R.string.balance_how)
-            sw.onAction = { explain() }
+            sw.isClickable = true
+            sw.isFocusable = true
+            sw.setOnClickListener { explain() }
             val top = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
             }
             val size = ctx.resources.getDimensionPixelSize(R.dimen.daily_balance_ring)
             top.addView(ring, LinearLayout.LayoutParams(size, size))
-            val numbers = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-            numbers.addView(eaten, Views.matchWrap(ctx))
-            numbers.addView(burned, Views.matchWrap(ctx, 4))
-            numbers.addView(goal, Views.matchWrap(ctx, 4))
-            top.addView(numbers, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = Views.dp(ctx, 16) })
+            top.addView(lines, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = Views.dp(ctx, 16) })
             sw.addView(top, Views.matchWrap(ctx))
-            sw.addView(lines, Views.matchWrap(ctx, 8))
         }
 
         private fun explain() {
@@ -189,32 +206,33 @@ object DailyBalanceCard : Card<DailyBalanceCard.Data>("daily_balance", CardTab.F
         }
 
         override fun bind(data: Data) {
-            val budget = data.goalKcal + data.activeKcal
-            val palette = ChartPalette.of(ctx)
-            ring.progress = if (budget > 0) (data.eatenKcal.toFloat() / budget).coerceIn(0f, 1f) else 0f
-            ring.color = if (data.leftKcal >= 0) palette.primary else palette.secondary
-            ring.centerText = Fmt.number(kotlin.math.abs(data.leftKcal).toLong())
-            ring.subText = ctx.getString(if (data.leftKcal >= 0) R.string.balance_left else R.string.balance_over)
-            eaten.text = ctx.getString(R.string.balance_eaten, Fmt.number(data.eatenKcal.toLong()))
-            burned.text = ctx.getString(R.string.balance_burned, Fmt.number(data.burnedKcal.toLong()), Fmt.number(data.activeKcal.toLong()))
-            goal.text = ctx.getString(R.string.balance_goal, Fmt.number(data.goalKcal.toLong()))
+            this.data = data
+            val p = picture(ctx, data)
+            ring.progress = p.progress
+            ring.color = p.color
+            ring.centerText = p.center
+            ring.subText = p.sub
             lines.removeAllViews()
-            for ((n, line) in data.lines) {
-                val v = line(n, line, data)
-                lines.addView(v, Views.matchWrap(ctx, 10))
+            for (n in barNutrients) {
+                val line = data.lines[n] ?: continue
+                lines.addView(line(n, line), Views.matchWrap(ctx, if (lines.childCount == 0) 0 else 6))
             }
             sw.contentDescription = listOf(
-                sw.title, ring.centerText.toString() + " " + ring.subText, eaten.text, burned.text, goal.text,
+                sw.title,
+                ring.centerText.toString() + " " + ring.subText,
+                ctx.getString(R.string.balance_eaten, Fmt.number(data.eatenKcal.toLong())),
+                ctx.getString(R.string.balance_burned, Fmt.number(data.burnedKcal.toLong()), Fmt.number(data.activeKcal.toLong())),
+                ctx.getString(R.string.balance_goal, Fmt.number(data.goalKcal.toLong())),
             ).joinToString(". ")
         }
 
-        private fun line(n: BalanceNutrient, line: NutrientLine, data: Data): View {
+        private fun line(n: BalanceNutrient, line: NutrientLine): View {
             val row = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
                 isClickable = true
                 isFocusable = true
                 minimumHeight = ctx.resources.getDimensionPixelSize(UiR.dimen.sw_touch_target)
-                setOnClickListener { showFoods(n, data) }
+                setOnClickListener { showFoods(n) }
             }
             val top = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -246,23 +264,7 @@ object DailyBalanceCard : Card<DailyBalanceCard.Data>("daily_balance", CardTab.F
                     Views.matchWrap(ctx, 4),
                 )
             }
-            val macro = when (n) {
-                BalanceNutrient.PROTEIN -> Macro.PROTEIN
-                BalanceNutrient.CARBS -> Macro.CARBS
-                BalanceNutrient.FAT -> Macro.FAT
-                else -> null
-            }
-            val share = macro?.let { m -> data.shares[m]?.let { pct -> m to pct } }
-            var shareText: String? = null
-            if (share != null) {
-                val (m, pct) = share
-                shareText = ctx.getString(
-                    if (DailyBalanceMath.balanced(m, pct)) R.string.balance_share_ok else R.string.balance_share_off,
-                    pct, m.range.first, m.range.last,
-                )
-                row.addView(Views.caption(ctx, shareText), Views.matchWrap(ctx, 2))
-            }
-            row.contentDescription = listOfNotNull(name, text, shareText, CardStatusColors.spoken(ctx, status), ctx.getString(R.string.balance_tap_foods)).joinToString(". ")
+            row.contentDescription = listOfNotNull(name, text, CardStatusColors.spoken(ctx, status), ctx.getString(R.string.balance_tap_foods)).joinToString(". ")
             for (i in 0 until row.childCount) row.getChildAt(i).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             return row
         }
@@ -281,8 +283,10 @@ object DailyBalanceCard : Card<DailyBalanceCard.Data>("daily_balance", CardTab.F
             }
         }
 
-        private fun showFoods(n: BalanceNutrient, data: Data) {
-            val foods = data.top[n].orEmpty()
+        private var data: Data? = null
+
+        private fun showFoods(n: BalanceNutrient) {
+            val foods = data?.top?.get(n).orEmpty()
             val unit = ctx.getString(if (n.mg) R.string.balance_unit_mg else R.string.balance_unit_g)
             val message = if (foods.isEmpty()) {
                 ctx.getString(R.string.balance_no_foods)

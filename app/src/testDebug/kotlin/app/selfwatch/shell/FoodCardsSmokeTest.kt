@@ -23,8 +23,10 @@ import app.selfwatch.food.SleepCaloriesLayers
 import app.selfwatch.food.cards.FoodCards
 import app.selfwatch.ui.charts.OverlayChartView
 import app.selfwatch.ui.components.ToggleChipGroup
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.ui.components.BarsView
+import app.selfwatch.ui.components.DotsView
 import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -94,13 +96,15 @@ class FoodCardsSmokeTest {
                     val card = view.findViewById<View>(id)
                     card?.isShown == true && card.findViewById<View>(R.id.metric_empty).visibility == View.GONE
                 } &&
-                view.findViewById<View>(R.id.food_logging_days_card)?.findViewById<ChipGroup>(R.id.metric_dots)?.childCount == 7
+                (picture(view, R.id.food_logging_days_card) as? DotsView)?.filled?.size == 7
         }
-        // The logging days card shows the week as seven dots, the protein card one dot per meal.
-        val week = view.findViewById<View>(R.id.food_logging_days_card).findViewById<ChipGroup>(R.id.metric_dots)
-        assertEquals(7, week.childCount)
-        val meals = view.findViewById<View>(R.id.food_protein_per_meal_card).findViewById<ChipGroup>(R.id.metric_dots)
-        assertEquals(4, meals.childCount)
+        // The logging days card shows the week as seven day dots, the protein card one bar per meal with the threshold line.
+        val week = picture(view, R.id.food_logging_days_card) as DotsView
+        assertEquals(7, week.filled.size)
+        assertEquals(7, week.labels.size)
+        val meals = picture(view, R.id.food_protein_per_meal_card) as BarsView
+        assertEquals(4, meals.series.single().values.size)
+        assertTrue(meals.goalLine != null)
         // Partial sodium data is said, not hidden.
         val sodium = view.findViewById<View>(R.id.food_sodium_card)
         assertTrue(sodium.contentDescription.isNotBlank())
@@ -114,7 +118,7 @@ class FoodCardsSmokeTest {
         assertEquals(AddFoodActivity::class.java.name, started.component?.className)
 
         // The sleep and calories chart opens from the logging days card, both layers on.
-        assertTrue(view.findViewById<View>(R.id.sleep_calories_link).performClick())
+        assertTrue(view.findViewById<View>(R.id.food_logging_days_card).performClick())
         activity.supportFragmentManager.executePendingTransactions()
         idle()
         val shown = activity.supportFragmentManager.findFragmentById(R.id.detail_container)
@@ -140,6 +144,9 @@ class FoodCardsSmokeTest {
     fun foodCardsInLandscapeAtDoubleFont() {
         foodCardsShowDemoDataAndMealsStayUsable()
     }
+
+    /** The picture drawn on the Food number card [id]. */
+    private fun picture(view: View, id: Int): View? = view.findViewById<View>(id)?.findViewById<PictureFrame>(R.id.metric_picture)?.content
 
     private fun View.findViewsWithText(text: String): View {
         val out = ArrayList<View>()

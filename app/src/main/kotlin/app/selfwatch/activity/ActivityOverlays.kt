@@ -130,7 +130,7 @@ class TrainingOverlay(
             val first = today.plusDays(-(DAYS - 1))
             val loader = ActivityStatsLoader(db, clock)
             val range = DayRange(first, today)
-            val load = loader.dailyLoad(range, loader.maxHr().bpm)
+            val load = loader.dailyLoad(range, loader.zoneSet())
             val zone = clock.zone()
             val minutes = db.activity.minutes(TimeRange(first.startSec(zone), today.plusDays(1).startSec(zone)))
             val intensity = IntensityMath.byDay(minutes, zone).mapValues { it.value.intensityMin }
@@ -215,4 +215,13 @@ object OverlayLayers {
 
     /** O5, exercise and sleep. */
     val EXERCISE_SLEEP: ChartChoice = ChartChoice(ChartId.EXERCISE_SLEEP)
+
+    /** Daily activity layers. */
+    const val STEPS: String = "steps"
+    const val DISTANCE: String = "distance"
+    const val ACTIVE_KCAL: String = "active_kcal"
+    const val ACTIVE_MIN: String = "active_min"
+
+    /** Daily activity (steps, distance, calories, minutes per day). */
+    val DAILY_ACTIVITY: ChartChoice = ChartChoice(ChartId.DAILY_ACTIVITY)
 }

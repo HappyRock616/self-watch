@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: minutes moving today, week bars (ActiveTimeCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/active_time_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_active_time">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/at_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swValue="@string/dash" />
+    <app.selfwatch.ui.components.BarsView
+        android:id="@+id/at_bars"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/at_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/trend_empty" />
+</app.selfwatch.ui.components.SwCard>

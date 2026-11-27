@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Heart with a pulse: HRV (Morning summary card icon). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,21.4l-1.5,-1.3C5.4,15.4 2,12.3 2,8.5C2,5.4 4.4,3 7.5,3c1.7,0 3.4,0.8 4.5,2.1C13.1,3.8 14.8,3 16.5,3C19.6,3 22,5.4 22,8.5c0,0.5 -0.1,1 -0.2,1.5h-5.2l-1.6,-3.2c-0.2,-0.4 -0.8,-0.4 -1,0l-2.3,5.4l-1.2,-2.4C10.4,9.6 10.2,9.5 10,9.5H5v1.5h4.6l1.7,3.4c0.2,0.4 0.8,0.4 1,0l2.3,-5.4l1,2c0.1,0.3 0.4,0.5 0.7,0.5h4.7c-1.6,2.8 -4.6,5.5 -7.5,8.1L12,21.4z" />
+</vector>

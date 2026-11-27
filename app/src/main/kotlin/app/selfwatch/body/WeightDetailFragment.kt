@@ -20,7 +20,6 @@ import app.selfwatch.graph
 import app.selfwatch.model.health.BodyKind
 import app.selfwatch.model.health.BodyMeasure
 import app.selfwatch.model.time.Day
-import app.selfwatch.model.time.TimeRange
 import app.selfwatch.shell.DetailFragment
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.charts.Axis
@@ -30,10 +29,8 @@ import app.selfwatch.ui.charts.DotTrendLayer
 import app.selfwatch.ui.charts.LayerValue
 import app.selfwatch.ui.charts.LineLayer
 import app.selfwatch.ui.charts.OverlayChartView
-import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.ListRow
 import app.selfwatch.ui.components.SwCard
-import app.selfwatch.ui.components.ToggleChipGroup
 import app.selfwatch.ui.format.Fmt
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -124,6 +121,33 @@ object WeightChart {
         return out
     }
 
+    /** The chart's view name for [ChartCard.bind]. */
+    const val VIEW: String = "weight"
+
+    /**
+     * Shows [s] in [card] (the empty state without weigh-ins): range, layers, chips with the stored choice
+     * ([WeightUiState.hiddenLayers]; chip changes go to [onSave]), the read-out and the smoothing note.
+     * Shared by the Weight screen and the Weight chart card on the tabs.
+     */
+    fun bind(card: ChartCard, s: WeightUiState, onSave: (Set<String>) -> Unit) {
+        val ctx = card.chart.context
+        val first = s.firstDay
+        val last = s.lastDay
+        if (s.entries.isEmpty() || first == null || last == null) {
+            card.bind(0, 0, emptyList(), VIEW, s.hiddenLayers, WeightLayers.TOGGLEABLE, hasData = false, onSave = onSave)
+            return
+        }
+        val zone = ZoneId.systemDefault()
+        card.chart.zone = zone
+        card.readoutText = { t, values -> readout(ctx, t, values) }
+        card.bind(
+            first.startSec(zone), last.plusDays(1).startSec(zone), layers(ctx, s, zone),
+            VIEW, s.hiddenLayers, WeightLayers.TOGGLEABLE, hasData = true, onSave = onSave,
+        )
+        card.note.visibility = if (s.overlay?.hasData == true) View.VISIBLE else View.GONE
+        card.note.setText(if ((s.overlay?.bucketDays ?: 1) > 1) R.string.weight_overlay_weekly else R.string.weight_overlay_rolling)
+    }
+
     /** "Nov 20 · 181.6 lb · net -310 · 52 active min · in 1,920 · out 2,230" for the layers shown at [tSec]. */
     fun readout(ctx: Context, tSec: Long, values: List<LayerValue>): String {
         val locale = Locale.getDefault()
@@ -169,25 +193,12 @@ class WeightDetailFragment : DetailFragment(R.menu.menu_weight) {
             listOf(getString(R.string.range_30d), getString(R.string.range_90d), getString(R.string.range_1y), getString(R.string.range_all)),
         ) { vm.setRange(WeightRange.entries[it]) }
         column.addView(segments, Views.matchWrap(ctx))
-        val chartCard = Views.card(column, getString(R.string.weight_chart))
-        chartCard.actionText = getString(R.string.body_log)
-        chartCard.onAction = { WeightEditor.log(this, vm.state.value.units) }
-        val chart = OverlayChartView(ctx).apply { id = R.id.weight_chart }
-        val chips = ToggleChipGroup(ctx)
-        val readout = Views.caption(ctx, getString(R.string.chart_scrub_hint))
-        val smoothingNote = Views.caption(ctx, getString(R.string.weight_overlay_weekly))
-        chartCard.addView(chart, Views.matchWrap(ctx))
-        chartCard.addView(chips, Views.matchWrap(ctx, 8))
-        chartCard.addView(readout, Views.matchWrap(ctx, 4))
-        chartCard.addView(smoothingNote, Views.matchWrap(ctx, 4))
-        chart.onScrub = { t, values -> readout.text = WeightChart.readout(ctx, t, values) }
-        var savedLayersApplied = false
-        val empty = EmptyState(ctx).apply {
-            message = getString(R.string.weight_empty)
-            buttonText = getString(R.string.body_log_weight)
-            onButton = { WeightEditor.log(this@WeightDetailFragment, vm.state.value.units) }
-        }
-        column.addView(empty, Views.matchWrap(ctx, 16))
+        val chart = ChartCard(column, R.id.weight_chart, getString(R.string.weight_empty))
+        chart.card.title = getString(R.string.weight_chart)
+        chart.card.actionText = getString(R.string.body_log)
+        chart.card.onAction = { WeightEditor.log(this, vm.state.value.units) }
+        chart.empty.buttonText = getString(R.string.body_log_weight)
+        chart.empty.onButton = { WeightEditor.log(this@WeightDetailFragment, vm.state.value.units) }
         val tiles = ChartScreens.tiles(
             column,
             listOf(getString(R.string.weight_latest), getString(R.string.weight_trend), getString(R.string.weight_goal), getString(R.string.weight_bmi)),
@@ -199,28 +210,9 @@ class WeightDetailFragment : DetailFragment(R.menu.menu_weight) {
         collectWhileStarted(vm.state) { s ->
             Views.selectSegment(segments, s.range.ordinal)
             val has = s.entries.isNotEmpty()
-            chartCard.visibility = if (has) View.VISIBLE else View.GONE
             listCard.visibility = if (has) View.VISIBLE else View.GONE
-            empty.visibility = if (has || s.loading) View.GONE else View.VISIBLE
-            val zone = ZoneId.systemDefault()
-            if (has && s.firstDay != null && s.lastDay != null) {
-                if (!savedLayersApplied) {
-                    // The remembered choice, once per screen; after that the chips drive the chart.
-                    for (id in WeightLayers.TOGGLEABLE) chart.setVisible(id, id !in s.hiddenLayers)
-                    savedLayersApplied = true
-                }
-                chart.zone = zone
-                val range = TimeRange(s.firstDay.startSec(zone), s.lastDay.plusDays(1).startSec(zone))
-                if (chart.range != range) chart.range = range // keeps the zoom when only the data changed
-                chart.layers = WeightChart.layers(ctx, s, zone)
-                chart.bindChips(chips)
-                chips.onChange = { id, on, _ ->
-                    chart.setVisible(id, on)
-                    vm.saveHiddenLayers(WeightLayers.TOGGLEABLE.filterNot { chart.isLayerVisible(it) }.toSet())
-                }
-                smoothingNote.visibility = if (s.overlay?.hasData == true) View.VISIBLE else View.GONE
-                smoothingNote.setText(if ((s.overlay?.bucketDays ?: 1) > 1) R.string.weight_overlay_weekly else R.string.weight_overlay_rolling)
-            }
+            WeightChart.bind(chart, s, vm::saveHiddenLayers)
+            if (s.loading) chart.empty.visibility = View.GONE
             val latest = s.entries.lastOrNull()
             ChartScreens.set(tiles[0], latest?.let { BodyUnits.number(BodyKind.WEIGHT, it.valueX100, s.units) }, BodyUnits.unit(BodyKind.WEIGHT, s.units))
             ChartScreens.set(tiles[1], s.trendKgX100?.let { BodyUnits.number(BodyKind.WEIGHT, it, s.units) }, BodyUnits.unit(BodyKind.WEIGHT, s.units))

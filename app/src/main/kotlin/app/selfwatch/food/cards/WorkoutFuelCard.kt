@@ -8,7 +8,10 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.R
 import app.selfwatch.activity.Sports
 import app.selfwatch.activity.WorkoutDetailFragment
@@ -61,6 +64,23 @@ object WorkoutFuelCard : Card<WorkoutFuel>(
         )
     }
 
+    /** Carbs per hour on a range bar with the aim band marked; null without a workout. */
+    fun picture(ctx: Context, data: WorkoutFuel): TrendPicture? {
+        if (data.workout == null) return null
+        val low = data.band.first.toDouble()
+        val high = data.band.last.toDouble()
+        return FoodPictures.target(
+            ctx, data.gPerHour.toDouble(), low, high,
+            listOf(low.toFloat() to Fmt.number(low.toLong()), high.toFloat() to Fmt.number(high.toLong())),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: WorkoutFuel) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<WorkoutFuel> = Holder(host, parent)
 
     private class Holder(private val host: CardHost, parent: ViewGroup) :
@@ -80,21 +100,12 @@ object WorkoutFuelCard : Card<WorkoutFuel>(
                 showEmpty(ctx.getString(R.string.workout_fuel_none))
                 return
             }
-            showContent()
             val labels = FmtLabels.from(ctx)
             tile.value = Fmt.number(data.gPerHour.toLong())
             tile.unit = ctx.getString(R.string.food_card_unit_g_per_h)
             val aim = ctx.getString(R.string.workout_fuel_aim, Fmt.number(data.band.first.toLong()), Fmt.number(data.band.last.toLong()))
             tile.label = aim
-            val inBand = data.gPerHour >= data.band.first
-            bar.set(
-                data.gPerHour.toFloat(),
-                maxOf(data.gPerHour, data.band.last + BAR_EXTRA_G).toFloat(),
-                if (inBand) palette.primary else palette.secondary,
-                low = data.band.first.toFloat(),
-                high = data.band.last.toFloat(),
-            )
-            show(bar, true)
+            showContent(picture(ctx, data))
             val what = ctx.getString(
                 R.string.workout_fuel_workout,
                 ctx.getString(Sports.label(w.sport)),
@@ -106,25 +117,17 @@ object WorkoutFuelCard : Card<WorkoutFuel>(
             } else {
                 ctx.getString(R.string.workout_fuel_carbs, Fmt.number(data.carbsG.toLong()))
             }
-            text(note, what + "\n" + carbs)
-            text(
-                coverage,
-                if (data.unknown > 0) {
-                    ctx.resources.getQuantityString(R.plurals.workout_fuel_coverage, data.entries, data.entries - data.unknown, data.entries)
-                } else {
-                    null
-                },
-            )
+            val cov = if (data.unknown > 0) {
+                ctx.resources.getQuantityString(R.plurals.workout_fuel_coverage, data.entries, data.entries - data.unknown, data.entries)
+            } else {
+                null
+            }
             card.contentDescription = ctx.getString(
                 R.string.food_card_description,
                 ctx.getString(R.string.card_workout_fuel),
                 "${tile.value} ${tile.unit}, $aim",
-                "$what. $carbs",
+                listOfNotNull(what, carbs, cov).joinToString(". "),
             )
-        }
-
-        private companion object {
-            const val BAR_EXTRA_G = 15
         }
     }
 }

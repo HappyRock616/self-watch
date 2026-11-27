@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -85,32 +86,11 @@ class SleepDetailFragment : DetailFragment() {
         stepper.bind(dayText, s.canGoNext)
         val n = s.night
         toolbar.subtitle = n?.let { getString(R.string.sleep_subtitle, dayText, duration(it.asleepMin) ?: "") }
+        SleepChart.bindNight(card, n, s.hidden, units) { vm.saveHidden(true, it) }
         if (n == null) {
-            card.bind(0, 0, emptyList(), NIGHT, s.hidden, SleepLayers.NIGHT, hasData = false) { vm.saveHidden(true, it) }
             (nightTiles + moreTiles).forEach { ChartScreens.set(it, null) }
             return
         }
-        val layers = ArrayList<ChartLayer>()
-        layers += StageLayer(SleepLayers.STAGES, getString(R.string.sleep_stages), ChartPalette.of(ctx).secondary, StageSpan.fromSamples(n.stages, n.endSec))
-        if (n.hr.size > 0) {
-            layers += LineLayer(SleepLayers.HR, getString(R.string.series_hr), ChartScreens.series(ctx, 0), Axis.LEFT, n.hr.t, n.hr.v, unit = getString(R.string.unit_bpm))
-        }
-        if (n.hrv.size > 0) {
-            layers += LineLayer(SleepLayers.HRV, getString(R.string.body_hrv), ChartScreens.series(ctx, 1), Axis.RIGHT, n.hrv.t, n.hrv.v, gapSec = HRV_GAP_SEC, unit = getString(R.string.unit_ms))
-        }
-        if (n.breathing.size > 0) {
-            layers += LineLayer(SleepLayers.BREATHING, getString(R.string.series_breathing), ChartScreens.series(ctx, 2), Axis.HIDDEN, n.breathing.t, n.breathing.v, scale = 10, unit = getString(R.string.unit_br_min))
-        }
-        if (n.spo2.size > 0) {
-            layers += LineLayer(SleepLayers.SPO2, getString(R.string.series_spo2), ChartScreens.series(ctx, 3), Axis.HIDDEN, n.spo2.t, n.spo2.v, gapSec = HRV_GAP_SEC, unit = getString(R.string.unit_percent))
-        }
-        if (n.skinTemp.size > 0) {
-            // A change of 1 °C is 1.8 °F.
-            val temp = n.skinTemp.v.let { v -> IntArray(v.size) { Fmt.temperatureDelta(v[it].toDouble(), units).roundToInt() } }
-            layers += LineLayer(SleepLayers.TEMP, getString(R.string.series_temp), ChartScreens.series(ctx, 4), Axis.HIDDEN, n.skinTemp.t, temp, scale = 100, gapSec = HRV_GAP_SEC, unit = Fmt.temperatureUnit(units, FmtLabels.from(ctx)))
-        }
-        card.chart.zone = ZoneId.systemDefault()
-        card.bind(n.startSec, n.endSec, layers, NIGHT, s.hidden, SleepLayers.NIGHT, hasData = true) { vm.saveHidden(true, it) }
         val stages = listOf(SleepStage.DEEP, SleepStage.LIGHT, SleepStage.REM, SleepStage.AWAKE)
         stages.forEachIndexed { i, st -> ChartScreens.set(nightTiles[i], duration(n.stageMin[st] ?: 0)) }
         ChartScreens.set(moreTiles[0], duration(n.asleepMin))
@@ -155,8 +135,55 @@ class SleepDetailFragment : DetailFragment() {
 
     private companion object {
         const val DAY_SEC = 86_400L
-        const val HRV_GAP_SEC = 1_800L
-        const val NIGHT = "night"
         const val PERIOD = "period"
+    }
+}
+
+/**
+ * The Sleep chart's Night view: the layers of one night and how they are shown, shared by the Sleep screen
+ * and the Sleep chart card on the tabs so both draw the same chart with the same stored chip choice
+ * ([SleepLayers.NIGHT_CHOICE]).
+ */
+object SleepChart {
+    /** The Night view's name for [ChartCard.bind]. */
+    const val NIGHT: String = "night"
+
+    private const val GAP_SEC = 1_800L
+
+    /**
+     * The layers of night [n] in chip order: the hypnogram, heart rate (left axis), HRV (right axis),
+     * breathing, SpO2 and skin temperature change in [units] (own scales). Series without samples are left out.
+     */
+    fun nightLayers(ctx: Context, n: SleepNightData, units: Units): List<ChartLayer> {
+        val layers = ArrayList<ChartLayer>()
+        layers += StageLayer(SleepLayers.STAGES, ctx.getString(R.string.sleep_stages), ChartPalette.of(ctx).secondary, StageSpan.fromSamples(n.stages, n.endSec))
+        if (n.hr.size > 0) {
+            layers += LineLayer(SleepLayers.HR, ctx.getString(R.string.series_hr), ChartScreens.series(ctx, 0), Axis.LEFT, n.hr.t, n.hr.v, unit = ctx.getString(R.string.unit_bpm))
+        }
+        if (n.hrv.size > 0) {
+            layers += LineLayer(SleepLayers.HRV, ctx.getString(R.string.body_hrv), ChartScreens.series(ctx, 1), Axis.RIGHT, n.hrv.t, n.hrv.v, gapSec = GAP_SEC, unit = ctx.getString(R.string.unit_ms))
+        }
+        if (n.breathing.size > 0) {
+            layers += LineLayer(SleepLayers.BREATHING, ctx.getString(R.string.series_breathing), ChartScreens.series(ctx, 2), Axis.HIDDEN, n.breathing.t, n.breathing.v, scale = 10, unit = ctx.getString(R.string.unit_br_min))
+        }
+        if (n.spo2.size > 0) {
+            layers += LineLayer(SleepLayers.SPO2, ctx.getString(R.string.series_spo2), ChartScreens.series(ctx, 3), Axis.HIDDEN, n.spo2.t, n.spo2.v, gapSec = GAP_SEC, unit = ctx.getString(R.string.unit_percent))
+        }
+        if (n.skinTemp.size > 0) {
+            // A change of 1 °C is 1.8 °F.
+            val temp = n.skinTemp.v.let { v -> IntArray(v.size) { Fmt.temperatureDelta(v[it].toDouble(), units).roundToInt() } }
+            layers += LineLayer(SleepLayers.TEMP, ctx.getString(R.string.series_temp), ChartScreens.series(ctx, 4), Axis.HIDDEN, n.skinTemp.t, temp, scale = 100, gapSec = GAP_SEC, unit = Fmt.temperatureUnit(units, FmtLabels.from(ctx)))
+        }
+        return layers
+    }
+
+    /** Shows night [n] (null: the empty state) in [card] with the stored choice [hidden]; chip changes go to [onSave]. */
+    fun bindNight(card: ChartCard, n: SleepNightData?, hidden: Set<String>, units: Units, onSave: (Set<String>) -> Unit) {
+        if (n == null) {
+            card.bind(0, 0, emptyList(), NIGHT, hidden, SleepLayers.NIGHT, hasData = false, onSave = onSave)
+            return
+        }
+        card.chart.zone = ZoneId.systemDefault()
+        card.bind(n.startSec, n.endSec, nightLayers(card.chart.context, n, units), NIGHT, hidden, SleepLayers.NIGHT, hasData = true, onSave = onSave)
     }
 }

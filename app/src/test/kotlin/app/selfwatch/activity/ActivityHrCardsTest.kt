@@ -104,7 +104,7 @@ class ActivityHrCardsTest {
         val db = TestDb.fresh(ctx)
         clock.set(at(20))
         val samples = ArrayList<MetricSample>()
-        // Five earlier runs with recoveries of 20, 22, 24, 26, 28 bpm.
+        // Five earlier runs with 1-minute drops of 20..28 and 2-minute drops of 30, 32, 34, 36, 38 bpm.
         for (i in 0 until 5) {
             val w = workout(at(7, day = today.plusDays(-6 + i)), 30)
             db.workouts.insert(w)
@@ -119,8 +119,9 @@ class ActivityHrCardsTest {
         val info = RecoveryHrCard.load(env(db))
         assertEquals(at(7, day = today.plusDays(-2)), info.workout?.startSec)
         assertEquals(HrRecovery(150, 28, 38), info.latest)
-        assertEquals(listOf(20, 22, 24, 26, 28), info.trend)
-        assertEquals(24, info.trendMean)
+        // The trend is the 2-minute drop (Garmin's definition).
+        assertEquals(listOf(30, 32, 34, 36, 38), info.trend)
+        assertEquals(34, info.trendMean)
     }
 
     @Test
@@ -149,7 +150,7 @@ class ActivityHrCardsTest {
         )
         val d = StepsTodayCard.load(env(db))
         assertEquals(3_000, d.steps)
-        assertEquals(10_000, d.target)
+        assertEquals(7_500, d.target)
         assertEquals(2_300, d.distanceM)
         assertEquals(120, d.activeKcal)
         assertEquals(9_000, d.week[5])

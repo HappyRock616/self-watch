@@ -30,8 +30,19 @@ import kotlin.math.roundToInt
  * @property avgMin the average of the last 7 nights that have a value.
  * @property stageMin minutes per stage of the latest night (empty when the watch gave no stages).
  * @property nights minutes asleep for each of the last 14 days, oldest first (-1 for no value).
+ * @property timeline the latest night's stage changes, oldest first (when each stage started; empty without stages).
+ * @property startSec when the latest night started; [endSec] when it ended (null without a stored night).
  */
-data class SleepInfo(val lastMin: Int?, val lastDay: Day?, val avgMin: Int?, val stageMin: Map<SleepStage, Int>, val nights: List<Int>) {
+data class SleepInfo(
+    val lastMin: Int?,
+    val lastDay: Day?,
+    val avgMin: Int?,
+    val stageMin: Map<SleepStage, Int>,
+    val nights: List<Int>,
+    val timeline: List<Pair<Long, SleepStage>> = emptyList(),
+    val startSec: Long? = null,
+    val endSec: Long? = null,
+) {
     /** True with no sleep in the last 14 days. */
     val isEmpty: Boolean get() = lastMin == null && nights.all { it < 0 }
 }
@@ -70,7 +81,24 @@ data class BodyFatInfo(val latestX100: Int, val latestSec: Long, val trendX100: 
  * @property restMin minutes at rest (score 0–25) that day.
  * @property daily the average of each of the last 7 days, oldest first (-1 for no readings).
  */
-data class StressInfo(val day: Day, val avg: Int, val restMin: Int, val daily: List<Int>)
+data class StressInfo(
+    val day: Day,
+    val avg: Int,
+    val restMin: Int,
+    val daily: List<Int>,
+    /** The day in 96 slots of 15 minutes: the average stress, −1 without a reading. */
+    val slots: IntArray = IntArray(0),
+    /** Which of [slots] fell in a sleep session. */
+    val asleep: BooleanArray = BooleanArray(0),
+    /** Minutes at rest, low, medium and high stress. */
+    val levelMin: IntArray = IntArray(4),
+) {
+    override fun equals(other: Any?): Boolean = other is StressInfo && other.day == day && other.avg == avg &&
+        other.restMin == restMin && other.daily == daily && other.slots.contentEquals(slots) &&
+        other.asleep.contentEquals(asleep) && other.levelMin.contentEquals(levelMin)
+
+    override fun hashCode(): Int = ((day.hashCode() * 31 + avg) * 31 + restMin) * 31 + slots.contentHashCode()
+}
 
 /** Reads the phase-2 Body cards' numbers. */
 class BodyTrendLoader(private val db: SelfWatchDb, private val clock: Clock) {
@@ -92,6 +120,9 @@ class BodyTrendLoader(private val db: SelfWatchDb, private val clock: Clock) {
             avgMin = if (week.isEmpty()) null else week.average().roundToInt(),
             stageMin = stages.filterKeys { it != SleepStage.UNMEASURABLE },
             nights = nights,
+            timeline = night?.stages.orEmpty().sortedBy { it.tSec }.map { it.tSec to it.stage },
+            startSec = night?.session?.startSec,
+            endSec = night?.session?.endSec,
         )
     }
 
@@ -136,8 +167,24 @@ class BodyTrendLoader(private val db: SelfWatchDb, private val clock: Clock) {
         return DayRange(first, today).days().map { byDay[it]?.hrvAvgMs }
     }
 
-    /** HRV's 7-day average against the user's usual band. */
-    suspend fun hrv(): HrvInfo = HrvMath.evaluate(hrvDaily(HrvMath.BASELINE_DAYS))
+    /** HRV: the watch's own status summary when it sent one in the last 2 days, plus Self Watch's own band. */
+    suspend fun hrv(): HrvInfo = HrvMath.evaluate(hrvDaily(HrvMath.BASELINE_DAYS)).copy(watch = watchHrv())
+
+    /** The latest watch HRV summary from the last 2 days, or null. */
+    suspend fun watchHrv(): WatchHrv? {
+        val now = clock.nowSec()
+        val range = TimeRange(now - WATCH_HRV_MAX_AGE_SEC, now + 1)
+        val week = db.metrics.series(MetricKind.HRV_WEEK_AVG, range).lastOrNull()
+        val night = db.metrics.series(MetricKind.HRV_NIGHT_AVG, range).lastOrNull()
+        if (week == null && night == null) return null
+        return WatchHrv(
+            nightMs = night?.value,
+            weekMs = week?.value,
+            lowMs = db.metrics.series(MetricKind.HRV_BASELINE_LOW, range).lastOrNull()?.value,
+            highMs = db.metrics.series(MetricKind.HRV_BASELINE_HIGH, range).lastOrNull()?.value,
+            status = db.metrics.series(MetricKind.HRV_STATUS, range).lastOrNull()?.value,
+        )
+    }
 
     /**
      * Resting heart rate per day of [days]: the day summary's value, else the watch's daily resting
@@ -171,11 +218,24 @@ class BodyTrendLoader(private val db: SelfWatchDb, private val clock: Clock) {
         val day = byDay.keys.max()
         val list = byDay.getValue(day)
         val daily = range.days().map { d -> byDay[d]?.let { l -> l.map { it.value }.average().roundToInt() } ?: -1 }
+        val t = LongArray(list.size) { list[it].tSec }
+        val v = IntArray(list.size) { list[it].value }
+        val start = day.startSec(zone)
+        val end = day.plusDays(1).startSec(zone)
+        val sessions = db.sleep.sessions(DayRange(day.plusDays(-1), day.plusDays(1)), zone)
+        val slotSec = (end - start) / STRESS_SLOTS
+        val asleep = BooleanArray(STRESS_SLOTS) { i ->
+            val mid = start + i * slotSec + slotSec / 2
+            sessions.any { mid >= it.startSec && mid < it.endSec }
+        }
         return StressInfo(
             day = day,
             avg = list.map { it.value }.average().roundToInt(),
-            restMin = BodyCardMath.restMinutes(LongArray(list.size) { list[it].tSec }, IntArray(list.size) { list[it].value }),
+            restMin = BodyCardMath.restMinutes(t, v),
             daily = daily,
+            slots = BodyCardMath.slots(t, v, start, end, STRESS_SLOTS),
+            asleep = asleep,
+            levelMin = BodyCardMath.levelMinutes(t, v),
         )
     }
 
@@ -241,6 +301,8 @@ class BodyTrendLoader(private val db: SelfWatchDb, private val clock: Clock) {
 
     private companion object {
         const val SLEEP_DAYS = 14
+        const val STRESS_SLOTS = 96
+        const val WATCH_HRV_MAX_AGE_SEC = 2 * 86_400L
         const val LONG_DAYS = 90
         const val CHANGE_DAYS = 30
         const val WEEK = 7

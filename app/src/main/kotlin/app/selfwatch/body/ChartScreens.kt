@@ -10,13 +10,16 @@ package app.selfwatch.body
 import android.content.Context
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.model.time.Day
+import app.selfwatch.model.time.TimeRange
 import app.selfwatch.shell.Views
 import app.selfwatch.ui.charts.ChartLayer
 import app.selfwatch.ui.charts.ChartPalette
+import app.selfwatch.ui.charts.LayerValue
 import app.selfwatch.ui.charts.OverlayChartView
 import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.StatTile
@@ -67,12 +70,25 @@ class DayStepper(ctx: Context, onPrevious: () -> Unit, onNext: () -> Unit) {
     }
 }
 
-/** An overlay chart card: chart, toggle chips and a scrub read-out, plus an empty state below it. */
-class ChartCard(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) {
-    private val ctx: Context = parent.context
-
+/**
+ * An overlay chart card: chart, toggle chips, a scrub read-out and an optional [note]. On a detail screen
+ * (the public constructor) the empty state sits below the card and replaces it when there is no data; as a
+ * card on a tab ([onTab]) the card has a tappable title row and the empty state shows inside it.
+ */
+class ChartCard private constructor(
+    private val ctx: Context,
     /** The card. */
-    val card: SwCard = Views.card(parent, null)
+    val card: SwCard,
+    chartId: Int,
+    emptyMessage: CharSequence,
+    /** The title row of a card on a tab, or null on a detail screen. */
+    private val header: ChartCardHeader?,
+) {
+    /** A chart card added to [parent] on a detail screen, the empty state below it. */
+    constructor(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) :
+        this(parent.context, Views.card(parent, null), chartId, emptyMessage, null) {
+        parent.addView(empty, Views.matchWrap(ctx, 16))
+    }
 
     /** The chart. */
     val chart: OverlayChartView = OverlayChartView(ctx).apply { id = chartId }
@@ -82,21 +98,46 @@ class ChartCard(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) 
 
     private val readout: TextView = Views.caption(ctx, ctx.getString(R.string.chart_scrub_hint))
 
-    /** Shown instead of the card when there is no data. */
+    /** A caption under the read-out (how the series are smoothed); hidden until given text. */
+    val note: TextView = Views.caption(ctx).apply { visibility = View.GONE }
+
+    /** Shown instead of the card (on a tab: instead of the chart) when there is no data. */
     val empty: EmptyState = EmptyState(ctx).apply { message = emptyMessage }
 
+    /** The read-out text for the time under the finger and the values there. */
+    var readoutText: (tSec: Long, values: List<LayerValue>) -> String = { t, values ->
+        ctx.getString(R.string.chart_scrub_values, Fmt.time(ctx, t), values.joinToString(" · ") { "${it.label} ${it.text}" })
+    }
+
+    // On a tab, everything but the title row and the empty state, hidden together when there is no data.
+    private val plot: LinearLayout? = header?.let { LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL } }
+
     init {
-        card.addView(chart, Views.matchWrap(ctx))
-        card.addView(chips, Views.matchWrap(ctx, 8))
-        card.addView(readout, Views.matchWrap(ctx, 4))
-        parent.addView(empty, Views.matchWrap(ctx, 16))
+        val box: ViewGroup = plot ?: card
+        header?.let { card.addView(it.view, Views.matchWrap(ctx)) }
+        plot?.let { card.addView(it, Views.matchWrap(ctx)) }
+        box.addView(chart, Views.matchWrap(ctx))
+        box.addView(chips, Views.matchWrap(ctx, 8))
+        box.addView(readout, Views.matchWrap(ctx, 4))
+        box.addView(note, Views.matchWrap(ctx, 4))
+        if (header != null) card.addView(empty, Views.matchWrap(ctx, 8))
+        // On a tab the how-to hint is left out (card design standard: no sentences); the read-out shows once the chart is touched.
+        if (header != null) readout.visibility = View.GONE
         chart.onScrub = { t, values ->
-            readout.text = ctx.getString(
-                R.string.chart_scrub_values,
-                Fmt.time(ctx, t),
-                values.joinToString(" · ") { "${it.label} ${it.text}" },
-            )
+            readout.text = readoutText(t, values)
+            readout.visibility = View.VISIBLE
         }
+    }
+
+    /** The short tag in the title row of a card on a tab ("7 h 40 min"); null hides it. */
+    fun setTag(text: CharSequence?) {
+        header?.tag = text
+    }
+
+    private fun show(hasData: Boolean) {
+        val shown = plot ?: card
+        shown.visibility = if (hasData) View.VISIBLE else View.GONE
+        empty.visibility = if (hasData) View.GONE else View.VISIBLE
     }
 
     /**
@@ -104,24 +145,26 @@ class ChartCard(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) 
      * layers start switched off. With no data the empty state shows instead.
      */
     fun bind(start: Long, end: Long, layers: List<ChartLayer>, chipsKey: String, hiddenByDefault: Set<String>, hasData: Boolean) {
-        card.visibility = if (hasData) View.VISIBLE else View.GONE
-        empty.visibility = if (hasData) View.GONE else View.VISIBLE
+        show(hasData)
         if (!hasData) return
         for (id in hiddenByDefault) {
             if (chips.chartId != chipsKey) chart.setVisible(id, false)
         }
-        chart.range = app.selfwatch.model.time.TimeRange(start, end)
+        chart.range = TimeRange(start, end)
         chart.layers = layers
         chips.chartId = chipsKey
         chart.bindChips(chips)
     }
 
-    private var appliedChoice: String? = null
+    // The view name and the hidden set last applied to the chart (stored or chosen with the chips).
+    private var applied: Pair<String, Set<String>>? = null
 
     /**
      * Shows [layers] over [start]..[end] with the choice kept in settings: [hidden] is the stored choice
-     * among [toggleable] for the view named [view] (applied once each time the view changes; after that
-     * the chips drive the chart); a chip change calls [onSave] with the new hidden set.
+     * among [toggleable] for the view named [view] (applied when the view changes or the stored choice
+     * changes elsewhere, e.g. on the detail screen while this card waits on its tab; otherwise the chips
+     * drive the chart); a chip change calls [onSave] with the new hidden set. The zoom is kept when only
+     * the data changed.
      */
     fun bind(
         start: Long,
@@ -133,22 +176,76 @@ class ChartCard(parent: LinearLayout, chartId: Int, emptyMessage: CharSequence) 
         hasData: Boolean,
         onSave: (Set<String>) -> Unit,
     ) {
-        card.visibility = if (hasData) View.VISIBLE else View.GONE
-        empty.visibility = if (hasData) View.GONE else View.VISIBLE
+        show(hasData)
         if (!hasData) return
-        if (appliedChoice != view) {
+        if (applied != view to hidden) {
             for (id in toggleable) chart.setVisible(id, id !in hidden)
-            appliedChoice = view
+            applied = view to hidden
         }
-        chart.range = app.selfwatch.model.time.TimeRange(start, end)
+        val range = TimeRange(start, end)
+        if (chart.range != range) chart.range = range
         chart.layers = layers
         chips.chartId = null
         chart.bindChips(chips)
         chips.onChange = { id, on, _ ->
             chart.setVisible(id, on)
-            onSave(toggleable.filterNot { chart.isLayerVisible(it) }.toSet())
+            val now = toggleable.filterNot { chart.isLayerVisible(it) }.toSet()
+            applied = view to now
+            onSave(now)
         }
     }
+
+    /** Chart cards on the main tabs. */
+    companion object {
+        /**
+         * A chart card for a tab (not attached): [title] in a row that calls [onOpen] when tapped (the chart
+         * itself scrubs and zooms), then the chart, chips and read-out, and [emptyMessage] inside the card
+         * when there is no data. The chart has no view id ([View.NO_ID]): the detail screen's chart may be
+         * shown above the tab.
+         */
+        fun onTab(ctx: Context, title: CharSequence, emptyMessage: CharSequence, onOpen: () -> Unit): ChartCard =
+            ChartCard(ctx, SwCard(ctx), View.NO_ID, emptyMessage, ChartCardHeader(ctx, title, onOpen))
+    }
+}
+
+/** The title row of a chart card on a tab: title, an optional short tag and a chevron; tapping it opens the detail. */
+class ChartCardHeader(ctx: Context, title: CharSequence, onOpen: () -> Unit) {
+    /** The row. */
+    val view: LinearLayout = Views.row(ctx).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        minimumHeight = resources.getDimensionPixelSize(UiR.dimen.sw_touch_target)
+        isClickable = true
+        isFocusable = true
+        val ripple = android.util.TypedValue()
+        ctx.theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
+        if (ripple.resourceId != 0) setBackgroundResource(ripple.resourceId)
+        contentDescription = ctx.getString(R.string.chart_card_open, title)
+        setOnClickListener { onOpen() }
+    }
+
+    private val titleView = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_BodyLarge, title).apply {
+        androidx.core.view.ViewCompat.setAccessibilityHeading(this, true)
+    }
+    private val tagView = Views.caption(ctx).apply { visibility = View.GONE }
+    private val chevron = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_BodyLarge, ctx.getString(R.string.chart_next_symbol)).apply {
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    init {
+        view.addView(titleView, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        view.addView(tagView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        view.addView(chevron, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            marginStart = Views.dp(ctx, 8)
+        })
+    }
+
+    /** The short tag before the chevron; null hides it. */
+    var tag: CharSequence?
+        get() = tagView.text
+        set(value) {
+            tagView.text = value
+            tagView.visibility = if (value.isNullOrEmpty()) View.GONE else View.VISIBLE
+        }
 }
 
 /** The [SwCard] that holds this view (the view itself when none). */

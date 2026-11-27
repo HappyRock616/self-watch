@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Self Watch contributors
+  SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<resources>
+    <string name="zones_title">Heart-rate zones</string>
+    <string name="zones_intro">Like your Garmin watch: on Auto your zones are percentages of your maximum heart rate, 220 minus your age. Change any number to set it yourself.</string>
+    <string name="zones_method">Zones as</string>
+    <string name="zones_method_max">% of max HR</string>
+    <string name="zones_method_hrr">% of HR reserve</string>
+    <string name="zones_method_hrr_help">HR reserve uses your resting heart rate too, so the zones move with your fitness.</string>
+    <string name="zones_max_hr">Max heart rate</string>
+    <string name="zones_resting_hr">Resting heart rate</string>
+    <string name="zones_bpm">bpm</string>
+    <string name="zones_auto_value">Leave empty for auto: %1$s bpm (%2$s)</string>
+    <string name="zones_suggest">Your workouts reached %1$s bpm, higher than your maximum. Use it?</string>
+    <string name="zones_suggest_use">Use %1$s bpm</string>
+    <string name="zones_max_age">220 minus your age</string>
+    <string name="zones_max_default">add your birth year in Profile</string>
+    <string name="zones_rest_measured">watch, 7-day average</string>
+    <string name="zones_rest_default">no reading yet</string>
+    <string name="zones_card">Zones</string>
+    <string name="zones_status_auto">Auto</string>
+    <string name="zones_status_manual">Set by you</string>
+    <string name="zones_zone_1">Zone 1 · Warm up</string>
+    <string name="zones_zone_2">Zone 2 · Easy</string>
+    <string name="zones_zone_3">Zone 3 · Aerobic</string>
+    <string name="zones_zone_4">Zone 4 · Threshold</string>
+    <string name="zones_zone_5">Zone 5 · Maximum</string>
+    <string name="zones_range">%1$s–%2$s bpm</string>
+    <string name="zones_range_top">%1$s bpm and up</string>
+    <string name="zones_active_note">Active minutes count time in zone 2 and up: zones 2 and 3 count 1 minute, zones 4 and 5 count 2. A raised heart rate below zone 2 (stress, coffee, nerves) does not count.</string>
+    <string name="zones_back_to_auto">Back to auto</string>
+    <string name="zones_bad_order">Each zone must start higher than the one before.</string>
+    <string name="zones_row_sub_auto">Auto · active from %1$s bpm (zone 2)</string>
+    <string name="zones_row_sub_manual">Set by you · active from %1$s bpm (zone 2)</string>
+</resources>

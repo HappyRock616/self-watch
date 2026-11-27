@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Activity card: total calories today, active plus resting (CaloriesTodayCard). -->
+<!-- Activity card: calories today, split bar resting + active (CaloriesTodayCard), card design standard. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/calories_today_card"
@@ -11,36 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:swValue="@string/dash" />
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/ct_bar"
+    <app.selfwatch.ui.components.SplitBarView
+        android:id="@+id/ct_split"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="8dp" />
-
-    <TextView
-        android:id="@+id/ct_caption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-
-    <app.selfwatch.ui.components.BarsView
-        android:id="@+id/ct_bars"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_2" />
-
-    <TextView
-        android:id="@+id/ct_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-
+        android:importantForAccessibility="no" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/ct_empty"
         android:layout_width="match_parent"

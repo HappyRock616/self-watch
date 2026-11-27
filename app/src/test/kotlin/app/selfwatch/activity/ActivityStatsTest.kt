@@ -71,8 +71,8 @@ class ActivityStatsTest {
         assertEquals(21, IntensityMath.activeDayMin(150))
         assertEquals(1, IntensityMath.activeDayMin(1))
         assertEquals(43, ActivityGoals.dailyShare(300))
-        assertEquals(300, ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK)
-        assertEquals(10_000, ActivityGoals.DEFAULT_STEPS)
+        assertEquals(150, ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK)
+        assertEquals(7_500, ActivityGoals.DEFAULT_STEPS)
     }
 
     @Test

@@ -74,6 +74,12 @@ enum class ChartId(
 
     /** Activity › the Today card (hour by hour). */
     TODAY_TIMELINE("chart.today_timeline.layers", TimelineLayers.ALL),
+
+    /** Activity › Daily activity (steps, distance, calories, minutes per day). */
+    DAILY_ACTIVITY(
+        "chart.daily_activity.layers",
+        listOf(OverlayLayers.STEPS, OverlayLayers.DISTANCE, OverlayLayers.ACTIVE_KCAL, OverlayLayers.ACTIVE_MIN),
+    ),
 }
 
 /**
@@ -115,6 +121,7 @@ object ChartDefaults {
             else -> setOf(TrendMetric.STEPS.id, TrendMetric.ACTIVE_MIN.id)
         }
         ChartId.TRAINING -> setOf(OverlayLayers.LOAD, OverlayLayers.HRV)
+        ChartId.DAILY_ACTIVITY -> setOf(OverlayLayers.STEPS, OverlayLayers.ACTIVE_KCAL)
         ChartId.BODY_COMP ->
             if (goal == MainGoal.BUILD_MUSCLE) setOf(BodyCompLayers.PROTEIN, BodyCompLayers.STRENGTH) else setOf(BodyCompLayers.PROTEIN)
         // Every layer: the three signals with their usual band, both lines of the two-layer charts.

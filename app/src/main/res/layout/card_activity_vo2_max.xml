@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: VO2 max, range bar of the ratings for age and sex + trend (Vo2MaxCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/vo2_max_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_vo2_max">
+
+    <app.selfwatch.ui.components.StatTile
+        android:id="@+id/vo2_tile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swValue="@string/dash" />
+    <app.selfwatch.ui.components.RangeBarView
+        android:id="@+id/vo2_range"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.TrendLineView
+        android:id="@+id/vo2_trend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/vo2_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/vo2_max_empty" />
+</app.selfwatch.ui.components.SwCard>

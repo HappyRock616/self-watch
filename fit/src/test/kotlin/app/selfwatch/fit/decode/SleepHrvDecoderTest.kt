@@ -83,8 +83,14 @@ class SleepHrvDecoderTest {
     fun hrvValuesAndNightly() {
         val bytes = Synth.hrvNight()
         val batch = HrvDecoder.decode(ByteArrayInputStream(bytes), dev).valueOrNull()!!
-        assertEquals(90, batch.metrics.size)
-        assertTrue(batch.metrics.all { it.kind == MetricKind.HRV_RMSSD && it.value in 40..54 })
+        val values = batch.metrics.filter { it.kind == MetricKind.HRV_RMSSD }
+        assertEquals(90, values.size)
+        assertTrue(values.all { it.value in 40..54 })
+        // The watch's own summary (as Garmin shows HRV status): last night 46, 7-day 47, balanced.
+        assertEquals(46, batch.metrics.single { it.kind == MetricKind.HRV_NIGHT_AVG }.value)
+        assertEquals(47, batch.metrics.single { it.kind == MetricKind.HRV_WEEK_AVG }.value)
+        assertEquals(4, batch.metrics.single { it.kind == MetricKind.HRV_STATUS }.value)
+        assertEquals(93, batch.metrics.size)
         val n = HrvDecoder.nightly(ByteArrayInputStream(bytes)).valueOrNull()!!.single()
         assertEquals(HrvNight(Synth.T0 - Synth.TZ_SEC - 3600 + 27_000, 46, 47, 4), n)
     }

@@ -1,0 +1,1 @@
+Follows Garmin's definitions: heart-rate zones in Goals, active minutes zone 2+, Auto step goal, HRV status, Garmin ranges for sleep score, energy, VO2 max, BMI, body fat, blood pressure. New: recovery time, fitness age.

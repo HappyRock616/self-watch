@@ -15,6 +15,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.lifecycleScope
 import app.selfwatch.R
+import app.selfwatch.body.ChartCard
 import app.selfwatch.cards.ChartChoice
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
@@ -186,15 +187,41 @@ class TrainingDetailFragment : ActivityOverlayFragment<TrainingOverlay>() {
 
     override fun hasData(data: TrainingOverlay): Boolean = data.hasData
 
-    override fun range(data: TrainingOverlay, zone: ZoneId): TimeRange =
-        TimeRange(data.firstDay.startSec(zone), data.firstDay.plusDays(data.size).startSec(zone))
+    override fun range(data: TrainingOverlay, zone: ZoneId): TimeRange = rangeOf(data, zone)
 
     override fun layers(ctx: Context, data: TrainingOverlay, zone: ZoneId): List<ChartLayer> = layersOf(ctx, data, zone)
 
-    /** Layer assembly, public for tests. */
+    /** Layer assembly (public for tests) and the Activity chart card's binding. */
     companion object {
         private const val INTENSITY_HEIGHT = 0.5f
         private const val MORNING_SEC = 7 * 3_600L
+
+        /** The chart's view name for [ChartCard.bind]. */
+        const val VIEW: String = "training"
+
+        /** The 12 weeks of [o]. */
+        fun rangeOf(o: TrainingOverlay, zone: ZoneId): TimeRange =
+            TimeRange(o.firstDay.startSec(zone), o.firstDay.plusDays(o.size).startSec(zone))
+
+        /**
+         * Shows [o] in [card] as this screen does (same layers, read-out and note) with the stored choice
+         * [hidden] ([OverlayLayers.TRAINING]); chip changes go to [onSave]. Used by the Activity chart card.
+         */
+        fun bind(card: ChartCard, o: TrainingOverlay, hidden: Set<String>, onSave: (Set<String>) -> Unit) {
+            val ctx = card.chart.context
+            val toggleable = OverlayLayers.TRAINING.toggleable
+            if (!o.hasData) {
+                card.bind(0, 0, emptyList(), VIEW, hidden, toggleable, hasData = false, onSave = onSave)
+                return
+            }
+            val zone = ZoneId.systemDefault()
+            card.chart.zone = zone
+            card.readoutText = { t, values -> readoutText(ctx, t, values) }
+            card.note.setText(R.string.training_note)
+            card.note.visibility = View.VISIBLE
+            val r = rangeOf(o, zone)
+            card.bind(r.startSec, r.endSec, layersOf(ctx, o, zone), VIEW, hidden, toggleable, hasData = true, onSave = onSave)
+        }
 
         /**
          * The O4 layers in chip order: load (left axis), intensity minutes (low bars on their own scale),

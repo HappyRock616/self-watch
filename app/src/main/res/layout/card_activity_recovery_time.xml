@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: recovery time as a countdown ring (RecoveryTimeCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recovery_time_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_recovery_time">
+    <app.selfwatch.ui.components.RingView
+        android:id="@+id/rt_ring"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/card_ring_height"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/rt_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/recovery_time_empty" />
+</app.selfwatch.ui.components.SwCard>

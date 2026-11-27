@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.4
+
+Every data field was reviewed against Garmin and Gadgetbridge; Self Watch now follows Garmin's definitions.
+
+- Heart-rate zones, Garmin style (Me › Goals › Heart-rate zones). Auto by default: zones as % of maximum heart rate (50/60/70/80/90%), maximum 220 minus your age, as on the vívoactive 5. When a workout goes higher, Self Watch offers that value instead of changing your zones. Switch to % of heart-rate reserve (uses your watch's resting heart rate), type your own maximum or resting heart rate, or set each zone by hand; Back to auto undoes it.
+- Active minutes are time in zone 2 and up: zones 2 and 3 count 1 minute, zones 4 and 5 count 2. A raised heart rate below zone 2, such as from stress or nerves, no longer counts. Past days are worked out again from your stored heart rate, and again whenever you change your zones.
+- Workout zone charts, Weekly effort and Easy/hard use the same zones.
+- Goals: Auto step goal like Garmin's (starts at 7,500 and goes up after days you reach it; it never goes down), or type a fixed goal. Active minutes goal 150 a week by default (Garmin and WHO). A floors goal of 0 means no goal.
+- Steps: cycling and swimming movement no longer counts as steps, as on the watch.
+- Resting heart rate: the watch's value for today (no longer its 7-day average by mistake), else the lowest 30-minute average of the day; the card shows today with the 7-day average.
+- HRV: the watch's own status (Balanced, Unbalanced, Low, Poor), 7-day average, last night and baseline.
+- Blood oxygen: the night's value is the average while asleep, with the lowest reading.
+- Heart-rate recovery: the drop 2 minutes after you stop (Garmin's definition).
+- Garmin's names and ranges for sleep score (Excellent, Good, Fair, Poor), energy level (with charged and drained today), readiness (Prime to Poor), VO2 max (Superior to Poor for your age and sex), BMI (WHO), body fat (ACE) and blood pressure (the five AHA categories).
+- New from the watch: Recovery time, and naps from the watch's own nap records.
+- New card: Fitness age, worked out from your VO2 max as Garmin does.
+- Workout time is labeled as such, with the time including stops when it differs.
+- Hidden on watches that can't measure them: floors, skin temperature and Weekly effort. The Day clock card is gone.
+
 ## 0.0.3
 
 - Sleep: a night that the watch hands over in two parts (before and after a sync at midnight) is now one night. It starts when you fell asleep, not at midnight, counts all of it, and belongs to the day you wake up. Sleep stages are read from every watch file, not only the sleep file. The watch's original sleep files are kept on the phone for 14 days so an odd night can be checked.

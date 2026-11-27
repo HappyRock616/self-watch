@@ -8,6 +8,7 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
@@ -16,13 +17,17 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
 import app.selfwatch.ui.format.Fmt
 
 /**
- * Sodium (C25) for the day shown against 2,300 mg. Foods without a sodium value are counted, not
- * guessed: "4 of 6 foods have sodium data", and the total is then a floor.
+ * Sodium (C25, card design standard) for the day shown: the milligrams on a range bar against the
+ * 2,300 mg limit (under 90 % good, up to the limit close, over it off). Foods without a sodium value are
+ * counted, not guessed, and said to TalkBack ("4 of 6 foods have sodium data"; the total is then a
+ * floor). Small form: the number and the range bar.
  */
 object SodiumCard : Card<SodiumDay>("sodium", CardTab.FOOD, R.string.card_sodium, R.string.card_sodium_summary) {
 
@@ -51,6 +56,18 @@ object SodiumCard : Card<SodiumDay>("sodium", CardTab.FOOD, R.string.card_sodium
         )
     }
 
+    /** The day's sodium on the limit's range bar, or null with nothing known. */
+    fun picture(ctx: Context, data: SodiumDay): TrendPicture? {
+        val total = data.coverage.sum ?: return null
+        return FoodPictures.limit(ctx, total.toDouble(), data.limitMg.toDouble(), Fmt.number(data.limitMg.toLong()))
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: SodiumDay) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     private const val NEAR_LIMIT = 0.9
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<SodiumDay> = Holder(parent)
@@ -64,34 +81,21 @@ object SodiumCard : Card<SodiumDay>("sodium", CardTab.FOOD, R.string.card_sodium
                 c.entries == 0 -> return showEmpty(ctx.getString(R.string.sodium_empty))
                 mg == null -> return showEmpty(ctx.getString(R.string.sodium_none_known))
             }
-            showContent()
             val total: Long = mg
             tile.value = Fmt.number(total)
             tile.unit = ctx.getString(R.string.food_card_unit_mg)
             val limit = ctx.getString(R.string.sodium_limit, Fmt.number(data.limitMg.toLong()))
             tile.label = limit
+            showContent(picture(ctx, data))
             val over = total > data.limitMg
-            bar.set(
-                total.toFloat(),
-                maxOf(total.toFloat(), data.limitMg * BAR_HEADROOM),
-                if (over) palette.alarm else palette.primary,
-                limit = data.limitMg.toFloat(),
-            )
-            show(bar, true)
             val line = if (over) ctx.getString(R.string.sodium_over) else ctx.getString(R.string.sodium_left, Fmt.number(data.limitMg - total))
-            text(note, line)
-            val cov = FoodCardText.coverage(ctx, R.plurals.sodium_coverage, c)
-            text(coverage, cov?.let { it + ". " + ctx.getString(R.string.nutrient_partial) })
+            val cov = FoodCardText.coverage(ctx, R.plurals.sodium_coverage, c)?.let { it + ". " + ctx.getString(R.string.nutrient_partial) }
             card.contentDescription = ctx.getString(
                 R.string.food_card_description,
                 ctx.getString(R.string.card_sodium),
                 "${tile.value} ${tile.unit}, $limit",
                 listOfNotNull(line, cov).joinToString(". "),
             )
-        }
-
-        private companion object {
-            const val BAR_HEADROOM = 1.25f
         }
     }
 }

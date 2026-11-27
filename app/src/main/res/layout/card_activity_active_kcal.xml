@@ -1,46 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Activity card: active calories today against the reference (ActiveKcalCard). -->
+<!-- Activity card: active calories today as a ring (ActiveKcalCard), card design standard. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/active_kcal_card"
     style="@style/Widget.SelfWatch.TabCard"
     app:swTitle="@string/card_active_kcal">
-
-    <app.selfwatch.ui.components.StatTile
-        android:id="@+id/ak_tile"
+    <app.selfwatch.ui.components.RingView
+        android:id="@+id/ak_ring"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:swValue="@string/dash" />
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/ak_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/card_ring_height"
         android:layout_marginTop="@dimen/sw_space_1"
-        android:importantForAccessibility="no"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="8dp" />
-
-    <TextView
-        android:id="@+id/ak_caption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_1"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-
-    <app.selfwatch.ui.components.BarsView
-        android:id="@+id/ak_bars"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_2" />
-
-    <TextView
-        android:id="@+id/ak_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-
+        android:importantForAccessibility="no" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/ak_empty"
         android:layout_width="match_parent"

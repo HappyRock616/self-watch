@@ -10,7 +10,6 @@ package app.selfwatch.body.cards
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.body.HeartCardLoader
 import app.selfwatch.body.HeartDetailFragment
@@ -20,25 +19,26 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Clock
 import app.selfwatch.model.time.SystemClock
 import app.selfwatch.service.live.LiveReading
-import app.selfwatch.ui.charts.ChartPalette
+import app.selfwatch.ui.charts.LevelColors
 import app.selfwatch.ui.components.EmptyState
-import app.selfwatch.ui.components.Sparkline
 import app.selfwatch.ui.components.StatTile
+import app.selfwatch.ui.components.TrendLineView
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.watch.LiveVitals
 import app.selfwatch.ui.R as UiR
 
 /**
- * Heart rate now: live from the watch while this card is on screen and the watch is connected (the live
- * readings are turned on only then, see [LiveVitals]); otherwise the newest stored reading and how long
- * ago it was taken ("62 bpm · 3 minutes ago"). Below: today's low, high and resting heart rate and a
- * sparkline of the last 24 hours. Opens Heart (the full day with a day picker).
+ * Heart rate now (card design standard): live from the watch while this card is on screen and the watch
+ * is connected (the live readings are turned on only then, see [LiveVitals]); otherwise the newest stored
+ * reading with how long ago it was taken as its tag. Below: a trend line of the last 24 hours. Small form:
+ * the number and the line. Opens Heart (the full day with a day picker).
  */
 object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.string.card_heart_rate_now, R.string.card_heart_rate_now_summary) {
 
@@ -57,6 +57,23 @@ object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.s
             unit = ctx.getString(R.string.unit_bpm),
             note = data.restingBpm?.let { ctx.getString(R.string.small_hr_resting, it.toString()) },
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = BodyVisuals.smallTrend(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: HeartNowInfo) {
+        val line = graphic as TrendLineView
+        CardVisuals.show(line, data.spark.size >= 2)
+        if (data.spark.size >= 2) bindTrend(line, data)
+    }
+
+    /** The last 24 hours (15-minute averages) on [line], labeled "24 h ago" and "Now". */
+    fun bindTrend(line: TrendLineView, data: HeartNowInfo) {
+        val ctx = line.context
+        line.color = LevelColors.of(ctx).stressMedium
+        line.values = FloatArray(data.spark.size) { data.spark[it].toFloat() }
+        line.startLabel = ctx.getString(R.string.body1_24h_ago)
+        line.endLabel = ctx.getString(R.string.body1_now)
     }
 
     override fun openDetail(host: CardHost): Boolean {
@@ -91,9 +108,7 @@ object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.s
     private class Holder(host: CardHost, parent: ViewGroup, private val clock: Clock = SystemClock) :
         CardView<HeartNowInfo>(CardView.inflate(parent, R.layout.card_body_heart_rate_now)) {
         private val tile = find<StatTile>(R.id.hrn_tile)
-        private val today = find<TextView>(R.id.hrn_today)
-        private val spark = find<Sparkline>(R.id.hrn_spark)
-        private val sparkCaption = find<TextView>(R.id.hrn_spark_caption)
+        private val trend = find<TrendLineView>(R.id.hrn_trend)
         private val empty = find<EmptyState>(R.id.hrn_empty)
         private var stored: HeartNowInfo? = null
         private var live: LiveReading? = null
@@ -101,7 +116,6 @@ object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.s
         init {
             root.setOnClickListener { host.open(HeartDetailFragment()) }
             tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
-            spark.color = ChartPalette.of(root.context).primary
             LiveVitals.follow(host, root) { r ->
                 live = r
                 show()
@@ -120,8 +134,8 @@ object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.s
             val l = live?.takeIf { it.bpm != null && now - it.tSec <= LIVE_SEC }
             val bpm = l?.bpm ?: data.latestBpm
             val hasAny = bpm != null
-            for (v in listOf(tile, today, spark, sparkCaption)) v.visibility = if (hasAny) View.VISIBLE else View.GONE
-            empty.visibility = if (hasAny) View.GONE else View.VISIBLE
+            for (v in listOf(tile, trend)) CardVisuals.show(v, hasAny)
+            CardVisuals.show(empty, !hasAny)
             if (bpm == null) {
                 root.contentDescription = ctx.getString(R.string.hrn_empty)
                 return
@@ -129,20 +143,9 @@ object HeartRateNowCard : Card<HeartNowInfo>("heart_rate_now", CardTab.BODY, R.s
             tile.value = bpm.toString()
             tile.unit = ctx.getString(R.string.unit_bpm)
             tile.label = ageText(ctx, l?.tSec ?: data.latestSec ?: now, now, live = l != null)
-            val dash = ctx.getString(R.string.dash)
-            val resting = data.restingBpm ?: l?.restingBpm
-            today.text = ctx.getString(
-                R.string.hrn_today,
-                data.lowBpm?.toString() ?: dash,
-                data.highBpm?.toString() ?: dash,
-                resting?.toString() ?: dash,
-            )
-            spark.values = data.spark.toIntArray()
-            val showSpark = data.spark.size >= 2
-            spark.visibility = if (showSpark) View.VISIBLE else View.GONE
-            sparkCaption.visibility = spark.visibility
-            sparkCaption.setText(R.string.hrn_spark_caption)
-            root.contentDescription = ctx.getString(R.string.hrn_description, tile.value, tile.label, today.text)
+            CardVisuals.show(trend, data.spark.size >= 2)
+            if (data.spark.size >= 2) bindTrend(trend, data)
+            root.contentDescription = ctx.getString(R.string.body1_hrn_description, tile.value, tile.label)
         }
     }
 }

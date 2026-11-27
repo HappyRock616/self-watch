@@ -27,7 +27,7 @@ data class HrRecovery(val endBpm: Int, val oneMinDrop: Int?, val twoMinDrop: Int
  *
  * @property workout the newest of the last workouts with a recovery, else the newest workout (null: none yet).
  * @property latest its recovery (null: none of them has enough heart-rate readings around its end).
- * @property trend the 1-minute drop of each of the last [RecoveryHrMath.TREND_WORKOUTS] workouts that has
+ * @property trend the 2-minute drop (Garmin's recovery heart rate) of each of the last [RecoveryHrMath.TREND_WORKOUTS] workouts that has
  *   one, oldest first.
  */
 data class RecoveryInfo(val workout: Workout?, val latest: HrRecovery?, val trend: List<Int>) {
@@ -84,14 +84,15 @@ object RecoveryHrMath {
 /** Reads the recovery card's numbers. */
 class RecoveryHrLoader(private val db: SelfWatchDb) {
 
-    /** The latest workout's recovery and the last workouts' 1-minute drops. */
+    /** The latest workout's recovery and the last workouts' 2-minute drops. */
     suspend fun load(): RecoveryInfo {
         val workouts = db.workouts.list(RecoveryHrMath.TREND_WORKOUTS)
         if (workouts.isEmpty()) return RecoveryInfo(null, null, emptyList())
         val results = workouts.map { it to recovery(it) }
         // The newest workout with readings after it (a strength set or a swim often has none).
         val (latest, recovery) = results.firstOrNull { it.second != null } ?: results.first()
-        return RecoveryInfo(latest, recovery, results.reversed().mapNotNull { it.second?.oneMinDrop })
+        // Garmin's recovery heart rate is the drop 2 minutes after you stop: the trend uses it.
+        return RecoveryInfo(latest, recovery, results.reversed().mapNotNull { it.second?.twoMinDrop })
     }
 
     private suspend fun recovery(w: Workout): HrRecovery? {

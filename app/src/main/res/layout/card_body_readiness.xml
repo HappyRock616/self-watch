@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Body card: readiness (ReadinessCard), card design standard: arc gauge with Garmin's bands Poor … Prime. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/readiness_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    android:clickable="true"
+    android:focusable="true"
+    app:swTitle="@string/card_readiness">
+
+    <app.selfwatch.ui.components.ArcGaugeView
+        android:id="@+id/readiness_gauge"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/card_gauge_height"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/readiness_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/readiness_empty" />
+</app.selfwatch.ui.components.SwCard>

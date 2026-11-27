@@ -7,6 +7,7 @@
  */
 package app.selfwatch.body
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -71,22 +72,10 @@ class HeartDetailFragment : DetailFragment() {
 
     private fun bindDay(s: HeartUiState, stepper: DayStepper, card: ChartCard, tiles: List<StatTile>) {
         val ctx = requireContext()
-        val zone = ZoneId.systemDefault()
         val dayText = Fmt.day(ctx, s.day.yyyymmdd)
         stepper.bind(dayText, s.canGoNext)
         toolbar.subtitle = dayText
-        val layers = ArrayList<ChartLayer>()
-        if (s.hr.size > 0) {
-            layers += LineLayer("hr", getString(R.string.series_hr), ChartScreens.series(ctx, 0), Axis.LEFT, s.hr.t, s.hr.v, unit = getString(R.string.unit_bpm))
-        }
-        if (s.stress.size > 0) {
-            layers += LineLayer("stress", getString(R.string.heart_stress_series), ChartScreens.series(ctx, 1), Axis.RIGHT, s.stress.t, s.stress.v, gapSec = GAP_SEC)
-        }
-        if (s.hrv.size > 0) {
-            layers += LineLayer("hrv", getString(R.string.body_hrv), ChartScreens.series(ctx, 2), Axis.HIDDEN, s.hrv.t, s.hrv.v, gapSec = GAP_SEC, unit = getString(R.string.unit_ms))
-        }
-        val start = minOf(s.day.startSec(zone), s.hrv.t.firstOrNull() ?: Long.MAX_VALUE)
-        card.bind(start, s.day.plusDays(1).startSec(zone), layers, "heart_day", emptySet(), hasData = !s.isEmpty)
+        HeartChart.bindDay(card, s)
         val bpm = getString(R.string.unit_bpm)
         ChartScreens.set(tiles[0], s.restingHr?.toString(), bpm)
         ChartScreens.set(tiles[1], s.hr.v.minOrNull()?.toString(), bpm)
@@ -147,6 +136,41 @@ class HeartDetailFragment : DetailFragment() {
     private companion object {
         const val DAY_SEC = 86_400L
         val TREND_TABLES: Set<Table> = setOf(Table.ACTIVITY, Table.METRIC, Table.DAY_SUMMARY)
-        const val GAP_SEC = 1_800L
+    }
+}
+
+/**
+ * The Heart chart's Day view: one day's layers and how they are shown, shared by the Heart screen and the
+ * Heart chart card on the tabs (same chips, remembered under [DAY_CHIPS]).
+ */
+object HeartChart {
+    /** Where the Day view's chips are remembered ([ChartCard.bind] chips key). */
+    const val DAY_CHIPS: String = "heart_day"
+
+    private const val GAP_SEC = 1_800L
+
+    /** The Day view layers of [s] in chip order: heart rate (left axis), stress (right axis), HRV (own scale). */
+    fun dayLayers(ctx: Context, s: HeartUiState): List<ChartLayer> {
+        val layers = ArrayList<ChartLayer>()
+        if (s.hr.size > 0) {
+            layers += LineLayer("hr", ctx.getString(R.string.series_hr), ChartScreens.series(ctx, 0), Axis.LEFT, s.hr.t, s.hr.v, unit = ctx.getString(R.string.unit_bpm))
+        }
+        if (s.stress.size > 0) {
+            layers += LineLayer("stress", ctx.getString(R.string.heart_stress_series), ChartScreens.series(ctx, 1), Axis.RIGHT, s.stress.t, s.stress.v, gapSec = GAP_SEC)
+        }
+        if (s.hrv.size > 0) {
+            layers += LineLayer("hrv", ctx.getString(R.string.body_hrv), ChartScreens.series(ctx, 2), Axis.HIDDEN, s.hrv.t, s.hrv.v, gapSec = GAP_SEC, unit = ctx.getString(R.string.unit_ms))
+        }
+        return layers
+    }
+
+    /** The Day view's time range: the day, from the night before when HRV was measured then. */
+    fun dayRange(s: HeartUiState, zone: ZoneId): TimeRange =
+        TimeRange(minOf(s.day.startSec(zone), s.hrv.t.firstOrNull() ?: Long.MAX_VALUE), s.day.plusDays(1).startSec(zone))
+
+    /** Shows the single day [s] in [card] (the empty state when it has nothing to draw). */
+    fun bindDay(card: ChartCard, s: HeartUiState) {
+        val r = dayRange(s, ZoneId.systemDefault())
+        card.bind(r.startSec, r.endSec, dayLayers(card.chart.context, s), DAY_CHIPS, emptySet(), hasData = !s.isEmpty)
     }
 }

@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
+import java.time.ZoneId
 import kotlin.math.roundToInt
 
 /** A time series: epoch seconds and raw values (scaled as the metric kind says). */
@@ -263,12 +264,7 @@ class SleepViewModel(db: SelfWatchDb, clock: Clock) :
     override suspend fun load(range: PeriodRange, day: Day, canGoNext: Boolean): SleepUiState {
         val zone = clock.zone()
         if (range == PeriodRange.SINGLE) {
-            val night = db.sleep.night(day, zone)
-            val data = night?.let { n ->
-                val r = TimeRange(n.session.startSec, n.session.endSec)
-                val metrics = SleepNights.NIGHT_KINDS.associateWith { db.metrics.series(it, r, n.session.deviceId) }
-                SleepNights.assemble(day, n, metrics)
-            }
+            val data = loadNight(db, day, zone)
             return SleepUiState(range, day, canGoNext, data, emptyList(), loading = false, hidden = SleepLayers.NIGHT_CHOICE.load(db))
         }
         val today = clock.today()
@@ -293,6 +289,14 @@ class SleepViewModel(db: SelfWatchDb, clock: Clock) :
     companion object {
         /** Tables that refresh the screen. */
         val TABLES: Set<Table> = setOf(Table.SLEEP_SESSION, Table.SLEEP_STAGE, Table.METRIC, Table.DAY_SUMMARY)
+
+        /** The night ending on [day] with its overnight series (the Night view and the Sleep chart card), or null. */
+        suspend fun loadNight(db: SelfWatchDb, day: Day, zone: ZoneId): SleepNightData? {
+            val n = db.sleep.night(day, zone) ?: return null
+            val r = TimeRange(n.session.startSec, n.session.endSec)
+            val metrics = SleepNights.NIGHT_KINDS.associateWith { db.metrics.series(it, r, n.session.deviceId) }
+            return SleepNights.assemble(day, n, metrics)
+        }
 
         /** Builds the view model from [graph]. */
         fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {
@@ -339,19 +343,7 @@ class HeartViewModel(db: SelfWatchDb, clock: Clock) :
 
     override suspend fun load(range: PeriodRange, day: Day, canGoNext: Boolean): HeartUiState {
         val zone = clock.zone()
-        if (range == PeriodRange.SINGLE) {
-            val r = day.toTimeRange(zone)
-            return HeartUiState(
-                range = range,
-                day = day,
-                canGoNext = canGoNext,
-                hr = Series.of(db.metrics.series(MetricKind.HEART_RATE, r).filter { it.value > 0 }),
-                hrv = Series.of(db.metrics.series(MetricKind.HRV_RMSSD, TimeRange(r.startSec - NIGHT_LEAD_SEC, r.endSec))),
-                stress = Series.of(db.metrics.series(MetricKind.STRESS, r).filter { it.value in 0..100 }),
-                restingHr = db.summaries.day(day)?.restingHr,
-                loading = false,
-            )
-        }
+        if (range == PeriodRange.SINGLE) return loadDay(db, day, zone, canGoNext)
         val today = clock.today()
         val days = DayRange(today.plusDays(1 - range.days), today)
         val hr = db.metrics.dailyStats(MetricKind.HEART_RATE, days, zone).associateBy { it.day }
@@ -372,6 +364,21 @@ class HeartViewModel(db: SelfWatchDb, clock: Clock) :
 
         /** Tables that refresh the screen. */
         val TABLES: Set<Table> = setOf(Table.METRIC, Table.DAY_SUMMARY)
+
+        /** The single-day view of [day] (the Day view and the Heart chart card). */
+        suspend fun loadDay(db: SelfWatchDb, day: Day, zone: ZoneId, canGoNext: Boolean = false): HeartUiState {
+            val r = day.toTimeRange(zone)
+            return HeartUiState(
+                range = PeriodRange.SINGLE,
+                day = day,
+                canGoNext = canGoNext,
+                hr = Series.of(db.metrics.series(MetricKind.HEART_RATE, r).filter { it.value > 0 }),
+                hrv = Series.of(db.metrics.series(MetricKind.HRV_RMSSD, TimeRange(r.startSec - NIGHT_LEAD_SEC, r.endSec))),
+                stress = Series.of(db.metrics.series(MetricKind.STRESS, r).filter { it.value in 0..100 }),
+                restingHr = db.summaries.day(day)?.restingHr,
+                loading = false,
+            )
+        }
 
         /** Builds the view model from [graph]. */
         fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {

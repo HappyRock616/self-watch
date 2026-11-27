@@ -3,4 +3,9 @@
     <!-- Room below the last card so the + button never covers it. -->
     <dimen name="tab_bottom_space">96dp</dimen>
     <dimen name="tab_card_gap">8dp</dimen>
+    <!-- Card design standard (docs/CARD_DESIGN.md): picture sizes. -->
+    <dimen name="card_gauge_height">150dp</dimen>
+    <dimen name="card_gauge_small_height">96dp</dimen>
+    <dimen name="card_ring_height">140dp</dimen>
+    <dimen name="card_ring_small_height">96dp</dimen>
 </resources>

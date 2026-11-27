@@ -35,9 +35,9 @@ import app.selfwatch.db.Table
 import app.selfwatch.food.DietFragment
 import app.selfwatch.food.NutrientUi
 import app.selfwatch.food.WaterGlass
-import app.selfwatch.food.nutrition.DietPrefs
 import app.selfwatch.food.cards.BurnSource
 import app.selfwatch.food.cards.WeightGoalMath
+import app.selfwatch.food.nutrition.DietPrefs
 import app.selfwatch.graph
 import app.selfwatch.model.food.Goal
 import app.selfwatch.model.food.GoalKind
@@ -50,30 +50,36 @@ import app.selfwatch.model.health.DataSource
 import app.selfwatch.model.time.Clock
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.SystemClock
+import app.selfwatch.service.health.HrZoneStore
+import app.selfwatch.service.health.StepAutoGoal
 import app.selfwatch.shell.DetailFragment
 import app.selfwatch.shell.DisplayUnits
 import app.selfwatch.shell.Nav
 import app.selfwatch.shell.Views
+import app.selfwatch.ui.R as UiR
 import app.selfwatch.ui.components.ListRow
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.Units
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.DateValidatorPointForward
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import java.time.LocalDate
+import java.time.ZoneOffset
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.ZoneOffset
-import kotlin.math.roundToInt
-import app.selfwatch.ui.R as UiR
 
 /** The Goals screen's groups, in screen order. */
 enum class GoalSection(@field:StringRes @get:StringRes val title: Int) {
@@ -138,7 +144,6 @@ enum class GoalField(
         ACTIVE_MIN -> ActivityGoals.DEFAULT_ACTIVE_MIN_WEEK
         WORKOUTS -> ActivityGoals.DEFAULT_WORKOUTS_WEEK
         ACTIVE_DAYS -> ActivityGoals.DEFAULT_ACTIVE_DAYS
-        FLOORS -> ActivityGoals.DEFAULT_FLOORS
         // 8 glasses: 96 fl oz, or 2,800 ml.
         WATER -> WaterGlass.defaultGoalMl(units)
         else -> null
@@ -169,6 +174,8 @@ enum class GoalField(
     fun parse(text: String, units: Units): Int? {
         if (this == WEIGHT_DATE) return null
         val x100 = Fmt.parseX100(text) ?: return null
+        // Floors: 0 means no goal (watches without a barometer can't count floors).
+        if (this == FLOORS && x100 == 0L) return 0
         if (x100 <= 0) return null
         val v = when (this) {
             WEIGHT -> if (units == Units.METRIC) x100.toInt() else (x100 * KG_PER_LB).roundToInt()
@@ -234,6 +241,8 @@ data class GoalsUiState(
     val burnSource: BurnSource = BurnSource.ESTIMATED,
     /** The profile (sex for the safe minimum; height and age for the estimated burn). */
     val profile: Profile = Profile(null, null, Sex.UNSPECIFIED, UnitSystem.FOLLOW_PHONE),
+    /** True while the step goal is automatic (Garmin-style Auto Goal, only going up). */
+    val stepsAuto: Boolean = true,
 )
 
 /** Goals view model: reads the goals in force today and saves changed ones as new dated rows. */
@@ -267,6 +276,7 @@ class GoalsViewModel(private val db: SelfWatchDb, private val clock: Clock) : Vi
         return GoalsUiState(
             units, out, loading = false, mainGoal = cards.mainGoal(), diet = diet,
             latestWeightX100 = weight, burnKcal = burn, burnSource = source, profile = db.settings.profile(),
+            stepsAuto = StepAutoGoal.isOn(db),
         )
     }
 
@@ -297,6 +307,22 @@ class GoalsViewModel(private val db: SelfWatchDb, private val clock: Clock) : Vi
             if (k == null) f.key?.let { db.settings.setInt(it, v) } else db.goals.set(Goal(k, v, today))
             // A calorie goal typed here replaces the automatic one on every screen.
             if (k == GoalKind.KCAL_IN) db.settings.set(SettingKeys.FOOD_GOAL_MODE, "manual")
+            // A step goal typed here is a fixed goal: the automatic one stops.
+            if (k == GoalKind.STEPS) db.settings.set(StepAutoGoal.AUTO_KEY, "0")
+        }
+    }
+
+    /** Turns the automatic step goal on or off; on, it starts from the goal in force (or 7,500). */
+    fun setStepsAuto(on: Boolean) {
+        viewModelScope.launch { setStepsAutoNow(on) }
+    }
+
+    /** [setStepsAuto] now (for tests). */
+    suspend fun setStepsAutoNow(on: Boolean) {
+        db.settings.set(StepAutoGoal.AUTO_KEY, if (on) null else "0")
+        if (on) {
+            db.settings.set(StepAutoGoal.CHECKED_KEY, null)
+            StepAutoGoal.update(db, clock)
         }
     }
 
@@ -336,6 +362,7 @@ class GoalsFragment : DetailFragment() {
     private var planShown = false
     private var settingText = false
     private var currentFilled = false
+    private lateinit var stepsAuto: MaterialSwitch
 
     override fun title(): CharSequence = getString(R.string.me_goals)
 
@@ -381,6 +408,31 @@ class GoalsFragment : DetailFragment() {
                     homes[f] = home to home.indexOfChild(layout)
                 }
             }
+            if (section == GoalSection.ACTIVITY) {
+                // Heart-rate zones decide what counts as an active minute (zone 2 and up).
+                val zonesRow = ListRow(ctx).apply {
+                    title = getString(R.string.zones_title)
+                    showChevron = true
+                    tag = "zones_row"
+                    onClick = { Nav.open(this@GoalsFragment, HrZonesFragment()) }
+                }
+                card.addView(zonesRow, Views.matchWrap(ctx, 8))
+                stepsAuto = MaterialSwitch(ctx).apply {
+                    text = getString(R.string.goal_steps_auto)
+                    tag = "goal_steps_auto"
+                    setOnCheckedChangeListener { _, on -> if (!settingText && on != vm.state.value.stepsAuto) vm.setStepsAuto(on) }
+                }
+                val stepsLayout = fields[GoalField.STEPS]?.first
+                val home = stepsLayout?.parent as? ViewGroup
+                if (home != null) home.addView(stepsAuto, home.indexOfChild(stepsLayout) + 1, Views.matchWrap(ctx, 4))
+                val db = ctx.graph.db
+                collectWhileStarted(flow { emit(HrZoneStore(db, SystemClock).current()) }.flowOn(Dispatchers.IO)) { z ->
+                    zonesRow.subtitle = getString(
+                        if (z.manual) R.string.zones_row_sub_manual else R.string.zones_row_sub_auto,
+                        Fmt.number(z.bounds[1].toLong()),
+                    )
+                }
+            }
         }
         wirePlanInputs()
         column.addView(Views.caption(ctx, getString(R.string.goal_note)), Views.matchWrap(ctx, 8))
@@ -393,6 +445,9 @@ class GoalsFragment : DetailFragment() {
         collectWhileStarted(vm.state) { s ->
             if (s.loading) return@collectWhileStarted
             picker.select(s.mainGoal)
+            settingText = true
+            stepsAuto.isChecked = s.stepsAuto
+            settingText = false
             dietRow.subtitle = NutrientUi.prefsSummary(ctx, s.diet)
             for ((f, pair) in fields) {
                 val (layout, edit) = pair

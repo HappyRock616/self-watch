@@ -208,7 +208,8 @@ class BodyScreensSmokeTest {
         "activity/active_kcal" to R.id.active_kcal_card,
         "activity/strength_sessions" to R.id.strength_card,
         "activity/active_days" to R.id.active_days_card,
-        "activity/training_load" to R.id.training_load_card,
+        // Not "activity/training_load": Weekly effort needs training status, which the demo watch lacks, so
+        // it shows as waiting for data (checked in ActivityCardsSmokeTest).
         "activity/weekly_volume" to R.id.weekly_volume_card,
         "activity/easy_hard" to R.id.easy_hard_card,
         "food/macros_today" to R.id.food_macros_card,
@@ -281,7 +282,7 @@ class BodyScreensSmokeTest {
         }
         // The demo data reached the cards that always have it (earlier days' readings and workouts).
         waitFor("demo data in the cards") {
-            activity.findViewById<View>(R.id.intensity_empty)?.visibility == View.GONE &&
+            activity.findViewById<View>(R.id.iv_empty)?.visibility == View.GONE &&
                 activity.window.decorView.let { d ->
                     listOf(R.id.hrn_empty, R.id.hrt_empty, R.id.br_empty, R.id.el_empty).all { d.findViewById<View>(it)?.visibility == View.GONE }
                 } &&

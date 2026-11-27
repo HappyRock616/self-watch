@@ -176,6 +176,8 @@ class CardStack(
 
     private fun <T> mountCard(card: Card<T>, size: CardSize): Mounted {
         val view: CardView<T> = if (size == CardSize.SMALL) SmallCardView(card, this, column) else card.createView(this, column)
+        // Card design standard: every card opens its detail. A large card without its own tap action opens [Card.openDetail].
+        if (size != CardSize.SMALL && !view.root.hasOnClickListeners()) view.root.setOnClickListener { card.openDetail(this) }
         return Mounted(view.root) { scope, inputs ->
             scope.launch {
                 combine(db.changes.observe(card.tables), inputs) { _, i -> i }.conflate().collect { i ->

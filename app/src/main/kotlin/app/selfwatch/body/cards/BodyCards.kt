@@ -19,6 +19,9 @@ object BodyCards {
     val ALL: List<Card<*>> = listOf(
         BodyTodayCard,
         SleepCard,
+        SleepChartCard,
+        HeartChartCard,
+        WeightChartCard,
         SleepScoreCard,
         HrvBaselineCard,
         RestingHrCard,

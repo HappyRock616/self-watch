@@ -11,6 +11,7 @@ import android.content.Context
 import app.selfwatch.R
 import app.selfwatch.body.BodyTrendLoader
 import app.selfwatch.body.BodyUnits
+import app.selfwatch.body.GarminBands
 import app.selfwatch.body.HeartCardLoader
 import app.selfwatch.body.MeasureDetailFragment
 import app.selfwatch.body.SignalKind
@@ -22,8 +23,11 @@ import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.DataKind
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.TrendCard
 import app.selfwatch.cards.TrendData
+import app.selfwatch.cards.TrendPicture
+import app.selfwatch.cards.TrendPictures
 import app.selfwatch.cards.WaitingCard
 import app.selfwatch.db.Table
 import app.selfwatch.food.budget.Bmr
@@ -32,6 +36,8 @@ import app.selfwatch.model.health.MetricKind
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.TimeRange
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.Band
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.FmtLabels
 import app.selfwatch.ui.format.Units
@@ -49,7 +55,11 @@ private suspend fun bodySeries(env: CardEnv, kind: BodyKind): TrendData {
     val latest = env.db.body.latest(kind) ?: return TrendData(null, units = env.units)
     val base = list.lastOrNull { it.tSec <= latest.tSec - CHANGE_DAYS * DAY_SEC }
     val change = base?.let { (latest.valueX100 - it.valueX100) / 100.0 }
-    return TrendData(latest.valueX100 / 100.0, list.map { it.valueX100 / 100.0 }, change, env.units)
+    val zone = env.clock.zone()
+    return TrendData(
+        latest.valueX100 / 100.0, list.map { it.valueX100 / 100.0 }, change, env.units,
+        startDay = list.firstOrNull()?.let { Day.of(it.tSec, zone) }, endDay = Day.of(latest.tSec, zone),
+    )
 }
 
 /**
@@ -106,7 +116,11 @@ object LeanMassCard : TrendCard("lean_mass", CardTab.BODY, R.string.card_lean_ma
         }
         val latest = lean.lastOrNull() ?: return TrendData(null, units = env.units)
         val base = lean.lastOrNull { it.first <= latest.first - CHANGE_DAYS * DAY_SEC }
-        return TrendData(latest.second, lean.map { it.second }, base?.let { latest.second - it.second }, env.units)
+        val zone = env.clock.zone()
+        return TrendData(
+            latest.second, lean.map { it.second }, base?.let { latest.second - it.second }, env.units,
+            startDay = Day.of(lean.first().first, zone), endDay = Day.of(latest.first, zone),
+        )
     }
 
     /** Lean mass in kg from a weight (kg ×100) and a body fat share (% ×100). */
@@ -124,9 +138,8 @@ object LeanMassCard : TrendCard("lean_mass", CardTab.BODY, R.string.card_lean_ma
 }
 
 /**
- * BMI: the scale's own number when it sends one, else the latest weight and the profile height. The
- * usual healthy range (18.5–24.9) is shown as a note, without a judgment color: BMI says little about
- * one person.
+ * BMI: the scale's own number when it sends one, else the latest weight and the profile height, named
+ * with the WHO band as Garmin Index scales do ([GarminBands.bmi]).
  */
 object BmiCard : TrendCard("bmi", CardTab.BODY, R.string.card_bmi, R.string.card_bmi_summary) {
     override val tables: Set<Table> = setOf(Table.BODY, Table.SETTING)
@@ -138,7 +151,7 @@ object BmiCard : TrendCard("bmi", CardTab.BODY, R.string.card_bmi, R.string.card
         if (own.latest != null) return own
         val height = env.db.settings.profile().heightCm ?: return TrendData(null, units = env.units)
         val w = bodySeries(env, BodyKind.WEIGHT)
-        return TrendData(w.latest?.let { bmi(it, height) }, w.series.map { bmi(it, height) }, w.change?.let { bmi(it, height) }, env.units)
+        return w.copy(latest = w.latest?.let { bmi(it, height) }, series = w.series.map { bmi(it, height) }, change = w.change?.let { bmi(it, height) })
     }
 
     /** BMI of [kg] at [heightCm]. */
@@ -148,9 +161,27 @@ object BmiCard : TrendCard("bmi", CardTab.BODY, R.string.card_bmi, R.string.card
 
     override fun unit(ctx: Context, units: Units): String? = null
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.trend_label_latest)
+    // The WHO band is the tag ("Overweight").
+    override fun label(ctx: Context, data: TrendData): String =
+        data.latest?.let { ctx.getString(GarminBands.bmi(it).name) } ?: ctx.getString(R.string.trend_label_latest)
 
-    override fun note(ctx: Context, data: TrendData): String = ctx.getString(R.string.bmi_note)
+    override fun note(ctx: Context, data: TrendData): String? = null
+
+    /** WHO bands: under 18.5, 18.5–24.9, 25–29.9, 30–34.9, 35 and over. */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val v = data.latest ?: return null
+        val c = LevelColors.of(ctx)
+        return TrendPicture.Range(
+            listOf(Band(18.5f, c.scaleClose), Band(25f, c.scaleGood), Band(30f, c.scaleClose), Band(35f, c.scaleOff), Band(BMI_MAX, c.stressHigh)),
+            BMI_MIN, BMI_MAX, v.toFloat(),
+            listOf(18.5f to "18.5", 25f to "25", 30f to "30", 35f to "35"),
+        )
+    }
+
+    private const val BMI_MIN = 15f
+    private const val BMI_MAX = 42f
+
+    override fun status(data: TrendData): CardStatus = data.latest?.let { GarminBands.bmi(it).status } ?: CardStatus.NONE
 
     override fun emptyMessage(ctx: Context): String = ctx.getString(R.string.bmi_empty)
 
@@ -169,8 +200,18 @@ object BmrCard : TrendCard("bmr", CardTab.BODY, R.string.card_bmr, R.string.card
 
     override suspend fun load(env: CardEnv): TrendData {
         val today = env.clock.today()
-        val days = env.db.summaries.days(DayRange(today.plusDays(-CHANGE_DAYS), today.plusDays(-1))).mapNotNull { it.restingKcal?.takeIf { k -> k > 0 } }
-        if (days.isNotEmpty()) return TrendData(days.average(), days.map { it.toDouble() }, units = env.units, extras = listOf(MEASURED))
+        val range = DayRange(today.plusDays(-CHANGE_DAYS), today.plusDays(-1))
+        val summaries = env.db.summaries.days(range)
+        val days = summaries.mapNotNull { it.restingKcal?.takeIf { k -> k > 0 } }
+        // The week bars: the last 7 complete days (0 for none).
+        val byDay = summaries.associate { it.day to (it.restingKcal ?: 0).coerceAtLeast(0) }
+        val week = (WEEK - 1 downTo 0).map { (byDay[today.plusDays(-1 - it)] ?: 0).toDouble() }
+        // "Measured" only when the watch reported its resting metabolic rate; otherwise the days used the formula.
+        val zone = env.clock.zone()
+        val watch = env.db.metrics.series(MetricKind.RESTING_KCAL, TimeRange(range.first.startSec(zone), today.startSec(zone))).isNotEmpty()
+        if (days.isNotEmpty()) {
+            return TrendData(days.average(), week, units = env.units, extras = listOf(if (watch) MEASURED else ESTIMATED), endDay = today.plusDays(-1))
+        }
         val p = env.db.settings.profile()
         val w = env.db.body.latest(BodyKind.WEIGHT)?.valueX100
         val age = p.birthYear?.let { today.year - it }
@@ -187,7 +228,21 @@ object BmrCard : TrendCard("bmr", CardTab.BODY, R.string.card_bmr, R.string.card
 
     override fun note(ctx: Context, data: TrendData): String? = null
 
+    /** The last 7 days as bars with day letters and the average as the line (none for a formula estimate). */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val end = data.endDay ?: return null
+        val avg = data.latest ?: return null
+        if (data.series.none { it > 0 }) return null
+        return TrendPicture.Bars(
+            TrendPictures.dayLetters(end, data.series.size),
+            data.series.map { it.toInt() }.toIntArray(),
+            goal = avg.toFloat(),
+        )
+    }
+
     override fun emptyMessage(ctx: Context): String = ctx.getString(R.string.bmr_empty)
+
+    private const val WEEK = 7
 
     private const val MEASURED = 1.0
     private const val ESTIMATED = 0.0
@@ -207,7 +262,7 @@ object TemperatureCard : TrendCard("temperature", CardTab.BODY, R.string.card_te
         val nights = BodyTrendLoader(env.db, env.clock).signalNights(DayRange(today.plusDays(-CHANGE_DAYS), today))[SignalKind.SKIN_TEMP].orEmpty()
         val sorted = nights.toSortedMap()
         val last = sorted.values.lastOrNull() ?: return TrendData(null, units = env.units)
-        return TrendData(last / 100.0, sorted.values.map { it / 100.0 }, units = env.units)
+        return TrendData(last / 100.0, sorted.values.map { it / 100.0 }, units = env.units, startDay = sorted.firstKey(), endDay = sorted.lastKey())
     }
 
     override fun format(ctx: Context, value: Double, units: Units): String {
@@ -217,9 +272,12 @@ object TemperatureCard : TrendCard("temperature", CardTab.BODY, R.string.card_te
 
     override fun unit(ctx: Context, units: Units): String = ctx.getString(if (units == Units.METRIC) R.string.unit_celsius_delta else R.string.unit_fahrenheit_delta)
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.temperature_label)
+    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.d2_tag_vs_usual)
 
-    override fun note(ctx: Context, data: TrendData): String? = null
+    override fun note(ctx: Context, data: TrendData): String? = ctx.getString(R.string.temperature_label)
+
+    /** Your usual: within half a degree of the baseline, shaded. */
+    override fun lineBand(data: TrendData): Pair<Float, Float> = -NEAR_C.toFloat() to NEAR_C.toFloat()
 
     override fun status(data: TrendData): CardStatus = when {
         data.latest == null -> CardStatus.NONE
@@ -255,27 +313,37 @@ object BloodPressureCard : TrendCard("blood_pressure", CardTab.BODY, R.string.ca
 
     override fun format(ctx: Context, value: Double, units: Units): String = Fmt.number(value, 0)
 
+    /** "128/79" (systolic over diastolic), or the systolic alone. */
+    override fun valueText(ctx: Context, data: TrendData): String {
+        val sys = data.latest?.let { Fmt.number(it, 0) } ?: return ctx.getString(R.string.dash)
+        return data.extras.firstOrNull()?.let { ctx.getString(R.string.d2_bp_value, sys, Fmt.number(it, 0)) } ?: sys
+    }
+
     override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.unit_mmhg)
 
-    override fun label(ctx: Context, data: TrendData): String =
-        data.extras.firstOrNull()?.let { ctx.getString(R.string.bp_label_diastolic, Fmt.number(it, 0)) } ?: ctx.getString(R.string.bp_label)
+    // The American Heart Association category is the tag.
+    override fun label(ctx: Context, data: TrendData): String = band(data)?.let { ctx.getString(it.name) } ?: ctx.getString(R.string.bp_label)
 
     override fun note(ctx: Context, data: TrendData): String? = null
 
-    override fun status(data: TrendData): CardStatus {
-        val s = data.latest ?: return CardStatus.NONE
-        val d = data.extras.firstOrNull() ?: 0.0
-        return when {
-            s < SYS_ELEVATED && d < DIA_HIGH -> CardStatus.GOOD
-            s < SYS_HIGH && d < DIA_HIGH -> CardStatus.CLOSE
-            else -> CardStatus.OFF
-        }
+    /** The systolic reading on the AHA ranges: normal, elevated, stage 1, stage 2, crisis. */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val sys = data.latest ?: return null
+        val c = LevelColors.of(ctx)
+        return TrendPicture.Range(
+            listOf(Band(120f, c.scaleGood), Band(130f, c.scaleClose), Band(140f, c.stressMedium), Band(180f, c.stressHigh), Band(BP_MAX, c.scaleOff)),
+            BP_MIN, BP_MAX, sys.toFloat(),
+            listOf(120f to "120", 130f to "130", 140f to "140", 180f to "180"),
+        )
     }
 
-    // American Heart Association categories: normal < 120/80, elevated 120–129, high from 130/80.
-    private const val SYS_ELEVATED = 120
-    private const val SYS_HIGH = 130
-    private const val DIA_HIGH = 80
+    private const val BP_MIN = 90f
+    private const val BP_MAX = 200f
+
+    override fun status(data: TrendData): CardStatus = band(data)?.status ?: CardStatus.NONE
+
+    /** The American Heart Association category of the latest reading ([GarminBands.bloodPressure]). */
+    private fun band(data: TrendData) = data.latest?.let { s -> GarminBands.bloodPressure(s.toInt(), (data.extras.firstOrNull() ?: 0.0).toInt()) }
 }
 
 /** Sleep score: last night's score from the device (0–100) and the last 30 nights. */
@@ -296,15 +364,24 @@ object SleepScoreCard : TrendCard("sleep_score", CardTab.BODY, R.string.card_sle
 
     override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.sleep_score_unit)
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.sleep_score_label)
+    override fun label(ctx: Context, data: TrendData): String =
+        data.latest?.let { ctx.getString(R.string.sleep_score_label_band, ctx.getString(GarminBands.sleepScore(it.toInt()).name)) }
+            ?: ctx.getString(R.string.sleep_score_label)
 
-    override fun status(data: TrendData): CardStatus {
-        val v = data.latest ?: return CardStatus.NONE
-        return when {
-            v >= GOOD_SCORE -> CardStatus.GOOD
-            v >= FAIR_SCORE -> CardStatus.CLOSE
-            else -> CardStatus.OFF
-        }
+    // Garmin's bands: Excellent 90+, Good 80–89, Fair 60–79, Poor under 60.
+    override fun status(data: TrendData): CardStatus = data.latest?.let { GarminBands.sleepScore(it.toInt()).status } ?: CardStatus.NONE
+
+    override val pictureShowsValue: Boolean = true
+
+    /** An arc gauge in Garmin's bands (Poor, Fair, Good, Excellent) with the score and its name inside. */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val v = data.latest ?: return null
+        return TrendPicture.Gauge(
+            CardVisuals.scoreBands(ctx, 60f, 80f, 90f),
+            v.toFloat(),
+            Fmt.number(v, 0),
+            ctx.getString(GarminBands.sleepScore(v.toInt()).name),
+        )
     }
 
     override fun open(host: CardHost): Boolean {
@@ -313,22 +390,28 @@ object SleepScoreCard : TrendCard("sleep_score", CardTab.BODY, R.string.card_sle
     }
 
     private const val MIN_NIGHTS = 3
-    private const val GOOD_SCORE = 80
-    private const val FAIR_SCORE = 60
 }
 
-/** Naps: today's sleep outside the night (sessions starting between 9:00 and 20:00), in minutes. */
+/**
+ * Naps: today's naps in minutes, from the watch's nap events (Garmin: under 3 hours, outside the sleep
+ * window). Without nap events, sleep sessions starting between 9:00 and 20:00 count.
+ */
 object NapsCard : TrendCard("naps", CardTab.BODY, R.string.card_naps, R.string.card_naps_summary) {
-    override val tables: Set<Table> = setOf(Table.SLEEP_SESSION)
+    override val tables: Set<Table> = setOf(Table.SLEEP_SESSION, Table.METRIC)
 
     override val needs: Set<DataKind> = setOf(DataKind.SLEEP)
 
     override suspend fun load(env: CardEnv): TrendData {
         val zone = env.clock.zone()
         val days = (NAP_DAYS - 1 downTo 0).map { env.day.plusDays(-it) }
-        val sessions = env.db.sleep.sessions(DayRange(days.first(), days.last()), zone)
-        val perDay = days.map { d -> napMinutes(d, sessions.map { it.startSec to it.endSec }, zone) }
-        return TrendData(perDay.last().toDouble(), perDay.map { it.toDouble() }, units = env.units, extras = listOf(perDay.last().toDouble()))
+        val naps = env.db.metrics.series(MetricKind.NAP_MIN, TimeRange(days.first().startSec(zone), days.last().plusDays(1).startSec(zone)))
+        val perDay = if (naps.isNotEmpty()) {
+            days.map { d -> naps.filter { Day.of(it.tSec, zone) == d }.sumOf { it.value } }
+        } else {
+            val sessions = env.db.sleep.sessions(DayRange(days.first(), days.last()), zone)
+            days.map { d -> napMinutes(d, sessions.map { it.startSec to it.endSec }, zone) }
+        }
+        return TrendData(perDay.last().toDouble(), perDay.map { it.toDouble() }, units = env.units, extras = listOf(perDay.last().toDouble()), endDay = days.last())
     }
 
     /** Minutes of [sessions] (start, end) on [day] that started between 9:00 and 20:00 local time. */
@@ -346,12 +429,19 @@ object NapsCard : TrendCard("naps", CardTab.BODY, R.string.card_naps, R.string.c
 
     override fun note(ctx: Context, data: TrendData): String? = null
 
+    /** Minutes napped each of the last 7 days, with day letters. */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val end = data.endDay ?: return null
+        if (data.latest == null || data.series.isEmpty()) return null
+        return TrendPicture.Bars(TrendPictures.dayLetters(end, data.series.size), data.series.map { it.toInt() }.toIntArray())
+    }
+
     override fun open(host: CardHost): Boolean {
         host.open(SleepDetailFragment())
         return true
     }
 
-    private const val NAP_DAYS = 14
+    private const val NAP_DAYS = 7
     private const val NAP_FROM_H = 9
     private const val NAP_TO_H = 20
     private const val HOUR_SEC = 3_600L
@@ -388,6 +478,21 @@ object MorningSummaryCard : TrendCard("morning_summary", CardTab.BODY, R.string.
         return listOfNotNull(hrv, energy).joinToString(" · ").ifEmpty { null }
     }
 
+    override val pictureShowsValue: Boolean = true
+
+    /** Three numbers with icons: sleep, HRV, energy (those known). */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val sleep = data.latest ?: return null
+        val tiles = listOfNotNull(
+            TrendPicture.Tile(R.drawable.ic_morning_sleep, format(ctx, sleep, data.units), ctx.getString(R.string.d2_morning_sleep)),
+            data.extras.getOrNull(0)?.let {
+                TrendPicture.Tile(R.drawable.ic_morning_hrv, Fmt.number(it, 0) + " " + ctx.getString(R.string.unit_ms), ctx.getString(R.string.d2_morning_hrv))
+            },
+            data.extras.getOrNull(1)?.let { TrendPicture.Tile(R.drawable.ic_morning_energy, Fmt.number(it, 0), ctx.getString(R.string.d2_morning_energy)) },
+        )
+        return TrendPicture.Tiles(tiles)
+    }
+
     override fun open(host: CardHost): Boolean {
         host.open(SleepDetailFragment())
         return true
@@ -402,8 +507,54 @@ val SleepNeedCard = WaitingCard("sleep_need", CardTab.BODY, R.string.card_sleep_
 /** The last 2-minute health check. */
 val HealthCheckCard = WaitingCard("health_check", CardTab.BODY, R.string.card_health_check, R.string.card_health_check_summary, DataKind.HEALTH_CHECK)
 
-/** Fitness age. */
-val FitnessAgeCard = WaitingCard("fitness_age", CardTab.BODY, R.string.card_fitness_age, R.string.card_fitness_age_summary, DataKind.FITNESS_AGE)
+/**
+ * Fitness age (Body), as Garmin derives it from VO2 max ([GarminBands.fitnessAge]): the latest running VO2
+ * max (else cycling), with the user's age for comparison. Lower than your age is good.
+ */
+object FitnessAgeCard : TrendCard("fitness_age", CardTab.BODY, R.string.card_fitness_age, R.string.card_fitness_age_summary) {
+    override val tables: Set<Table> = setOf(Table.METRIC, Table.SETTING)
+
+    override val needs: Set<DataKind> = setOf(DataKind.VO2_MAX)
+
+    override suspend fun load(env: CardEnv): TrendData {
+        val profile = env.db.settings.profile()
+        val age = profile.birthYear?.let { env.clock.today().year - it }?.takeIf { it in 10..100 } ?: return TrendData(null, units = env.units)
+        val vo2 = (env.db.metrics.latest(MetricKind.VO2_MAX_RUNNING) ?: env.db.metrics.latest(MetricKind.VO2_MAX_CYCLING))?.value
+            ?: return TrendData(null, units = env.units)
+        return TrendData(GarminBands.fitnessAge(vo2 / 10.0, profile.sex).toDouble(), units = env.units, extras = listOf(age.toDouble()))
+    }
+
+    override fun format(ctx: Context, value: Double, units: Units): String = Fmt.number(value, 0)
+
+    override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.fitness_age_unit)
+
+    override fun label(ctx: Context, data: TrendData): String =
+        ctx.getString(R.string.fitness_age_label, Fmt.number(data.extras.firstOrNull() ?: 0.0, 0))
+
+    override fun note(ctx: Context, data: TrendData): String? = null
+
+    /** Two bars: fitness age (good when at or under your age) and your age. */
+    override fun picture(ctx: Context, data: TrendData, small: Boolean): TrendPicture? {
+        val f = data.latest ?: return null
+        val age = data.extras.firstOrNull() ?: return null
+        val c = LevelColors.of(ctx)
+        val fitColor = if (f <= age) c.good else c.close
+        return TrendPicture.Bars(
+            listOf(ctx.getString(R.string.d2_fitness_bar), ctx.getString(R.string.d2_age_bar)),
+            intArrayOf(f.toInt(), age.toInt()),
+            colorFor = { g, _ -> if (g == 0) fitColor else c.track },
+            description = ctx.getString(R.string.d2_fitness_description, Fmt.number(f, 0), Fmt.number(age, 0)),
+        )
+    }
+
+    override fun status(data: TrendData): CardStatus {
+        val f = data.latest ?: return CardStatus.NONE
+        val age = data.extras.firstOrNull() ?: return CardStatus.NONE
+        return if (f <= age) CardStatus.GOOD else CardStatus.CLOSE
+    }
+
+    override fun emptyMessage(ctx: Context): String = ctx.getString(R.string.fitness_age_empty)
+}
 
 /** The last ECG recording. */
 val EcgCard = WaitingCard("ecg", CardTab.BODY, R.string.card_ecg, R.string.card_ecg_summary, DataKind.ECG, CardSize.LARGE)

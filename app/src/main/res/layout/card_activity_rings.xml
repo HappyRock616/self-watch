@@ -1,43 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Activity card: today's steps, active minutes and active calories against the goals (TodayRingsCard). -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Activity card: today's steps, active minutes and active calories as three rings (TodayRingsCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/today_rings_card"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:baselineAligned="false"
-    android:orientation="horizontal">
-
-    <app.selfwatch.ui.components.SwCard
-        style="@style/Widget.SelfWatch.TabCard.Third"
-        android:layout_marginTop="0dp">
-
-        <app.selfwatch.ui.components.RingView
-            android:id="@+id/ring_steps"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </app.selfwatch.ui.components.SwCard>
-
-    <app.selfwatch.ui.components.SwCard
-        style="@style/Widget.SelfWatch.TabCard.Third"
-        android:layout_marginStart="@dimen/tab_card_gap"
-        android:layout_marginTop="0dp">
-
-        <app.selfwatch.ui.components.RingView
-            android:id="@+id/ring_minutes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:swColor="?attr/colorSecondary" />
-    </app.selfwatch.ui.components.SwCard>
-
-    <app.selfwatch.ui.components.SwCard
-        style="@style/Widget.SelfWatch.TabCard.Third"
-        android:layout_marginStart="@dimen/tab_card_gap"
-        android:layout_marginTop="0dp">
-
-        <app.selfwatch.ui.components.RingView
-            android:id="@+id/ring_kcal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </app.selfwatch.ui.components.SwCard>
-</LinearLayout>
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_today_rings">
+    <app.selfwatch.ui.components.RingRowView
+        android:id="@+id/rings_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/rings_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/trend_empty" />
+</app.selfwatch.ui.components.SwCard>

@@ -114,7 +114,7 @@ class SummaryBuilderTest : ServiceDbTest() {
     }
 
     @Test
-    fun restingHrFallsBackToTheLowestHalfHourOfTheNight() = runBlocking {
+    fun restingHrFallsBackToTheLowestHalfHourOfTheWholeDay() = runBlocking {
         val dev = addDevice()
         val day = Day(20261120)
         val start = at(day.plusDays(-1), 23)
@@ -127,13 +127,15 @@ class SummaryBuilderTest : ServiceDbTest() {
             samples += MetricSample(dev, MetricKind.HEART_RATE, t, if (inDip) 50 else 62)
             t += 60
         }
-        // Lower, but after waking: not part of the night.
+        // Lower, after waking: still part of the local day, so it counts.
         for (i in 0 until 40) samples += MetricSample(dev, MetricKind.HEART_RATE, at(day, 8) + i * 60L, 45)
+        // Lower still, but the evening before: another local day, not counted.
+        for (i in 0 until 40) samples += MetricSample(dev, MetricKind.HEART_RATE, at(day.plusDays(-1), 20) + i * 60L, 40)
         db.metrics.insert(samples)
 
         SummaryBuilder(db, clock).refresh(setOf(day))
         val s = db.summaries.day(day)!!
-        assertEquals(50, s.restingHr)
+        assertEquals(45, s.restingHr)
         assertEquals(480, s.sleepMin)
     }
 

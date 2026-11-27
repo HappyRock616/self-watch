@@ -8,11 +8,15 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import app.selfwatch.R
+import app.selfwatch.activity.ActivityGoals
 import app.selfwatch.activity.ActivityLoader
+import app.selfwatch.activity.ActivityRules
 import app.selfwatch.activity.ActivityWeek
 import app.selfwatch.activity.IntensityMath
 import app.selfwatch.activity.Sports
@@ -28,25 +32,44 @@ import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.TrendCard
 import app.selfwatch.cards.TrendData
 import app.selfwatch.cards.WaitingCard
 import app.selfwatch.db.Table
+import app.selfwatch.model.food.GoalKind
 import app.selfwatch.model.health.Workout
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.TimeRange
 import app.selfwatch.shell.Views
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.BarsView
+import app.selfwatch.ui.components.DotsView
 import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingItem
+import app.selfwatch.ui.components.RingRowView
+import app.selfwatch.ui.components.RingView
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.FmtLabels
 import app.selfwatch.ui.format.Units
 import java.util.Locale
+import app.selfwatch.ui.R as UiR
 
-/** Active time: minutes moving today (moderate and vigorous minutes, each counted once), the last 7 days. */
+/**
+ * Active time (card design standard): minutes moving today (moderate and vigorous minutes, each counted
+ * once) with the last 7 days as bars and the daily share of the weekly active-minutes goal as the goal
+ * line. [TrendData.extras]: the daily share, then the 7 days (yyyymmdd, today last). Small form: the bars.
+ */
 object ActiveTimeCard : TrendCard("active_time", CardTab.ACTIVITY, R.string.card_active_time, R.string.card_active_time_summary) {
-    override val tables: Set<Table> = setOf(Table.ACTIVITY, Table.DAY_SUMMARY)
+    override fun open(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
+    override val tables: Set<Table> = setOf(Table.ACTIVITY, Table.DAY_SUMMARY, Table.GOAL)
 
     override val needs: Set<DataKind> = setOf(DataKind.ACTIVE_TIME, DataKind.STEPS)
 
@@ -60,45 +83,149 @@ object ActiveTimeCard : TrendCard("active_time", CardTab.ACTIVITY, R.string.card
         val perDay = days.map { d -> byDay[d]?.let { it.moderateMin + it.vigorousMin } ?: summary[d] }
         val today = perDay.last() ?: return TrendData(null, units = env.units)
         val avg = perDay.dropLast(1).filterNotNull().takeIf { it.isNotEmpty() }?.average()
-        return TrendData(today.toDouble(), perDay.map { (it ?: 0).toDouble() }, avg?.let { today - it }, env.units)
+        val share = ActivityGoals.dailyShare(ActivityGoals.activeMinWeek(env.db, env.day))
+        return TrendData(
+            today.toDouble(), perDay.map { (it ?: 0).toDouble() }, avg?.let { today - it }, env.units,
+            extras = listOf(share.toDouble()) + days.map { it.yyyymmdd.toDouble() },
+        )
     }
 
     override fun format(ctx: Context, value: Double, units: Units): String = Fmt.number(value, 0)
 
     override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.unit_min)
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.active_time_label)
+    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.tag_today)
 
     override fun note(ctx: Context, data: TrendData): String? = data.change?.let { c ->
         ctx.getString(if (c >= 0) R.string.active_time_above else R.string.active_time_below)
     }
 
+    /** The minutes per day as bars with weekday letters and the daily share as the goal line. */
+    private fun bars(chart: BarsView, data: TrendData) {
+        val share = data.extras.firstOrNull()?.toInt()
+        val days = data.extras.drop(1).mapNotNull { it?.toInt() }
+        val labels = if (days.size == data.series.size) StatCardView.weekdayLabels(days) else List(data.series.size) { "" }
+        ActivityVisuals.weekBars(chart, chart.context.getString(R.string.card_active_time), data.series.map { it.toInt() }, labels, share)
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallBars(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: TrendData) = bars(graphic as BarsView, data)
+
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<TrendData> =
+        object : CardView<TrendData>(CardView.inflate(parent, R.layout.card_activity_active_time)) {
+            private val tile = find<StatTile>(R.id.at_tile).apply { setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number) }
+            private val chart = find<BarsView>(R.id.at_bars)
+            private val empty = find<EmptyState>(R.id.at_empty)
+
+            override fun bind(data: TrendData) {
+                val ctx = root.context
+                val v = data.latest
+                ActivityVisuals.show(v != null, tile, chart)
+                ActivityVisuals.show(v == null, empty)
+                if (v == null) {
+                    root.contentDescription = empty.message
+                    return
+                }
+                ActivityVisuals.number(tile, format(ctx, v, data.units), unit(ctx, data.units), label(ctx, data))
+                bars(chart, data)
+                root.contentDescription = ctx.getString(R.string.design_active_time_description, tile.value)
+            }
+        }
+
     private const val WEEK = 7
 }
 
-/** Streaks: days in a row meeting the step goal (today counts once it is met). */
+/**
+ * Streaks (card design standard): days in a row meeting the step goal (today counts once it is met),
+ * with a flame and the last 14 days as dots, filled when the goal was met. [TrendData.extras]: the 14
+ * days, oldest first (1.0 met, 0.0 not, null no steps), then the 14 days (yyyymmdd). Small form: the dots.
+ */
 object StreaksCard : TrendCard("streaks", CardTab.ACTIVITY, R.string.card_streaks, R.string.card_streaks_summary) {
+    override fun open(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
+    /** Days shown as dots. */
+    const val DOTS: Int = 14
+
     override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.ACTIVITY, Table.GOAL)
 
     override val needs: Set<DataKind> = setOf(DataKind.STEPS)
 
-    override suspend fun load(env: CardEnv): TrendData = TrendData(ActivityLoader(env.db, env.clock).streak().toDouble(), units = env.units)
+    override suspend fun load(env: CardEnv): TrendData {
+        val streak = ActivityLoader(env.db, env.clock).streak()
+        val today = env.clock.today()
+        val days = (DOTS - 1 downTo 0).map { today.plusDays(-it) }
+        val steps = env.db.summaries.days(DayRange(days.first(), days.last())).mapNotNull { s -> s.steps?.let { s.day to it } }.toMap()
+        val history = env.db.goals.history(GoalKind.STEPS)
+        val met = days.map { d -> steps[d]?.let { if (it >= ActivityRules.goalOn(history, d, ActivityRules.DEFAULT_STEPS)) 1.0 else 0.0 } }
+        return TrendData(streak.toDouble(), units = env.units, extras = met + days.map { it.yyyymmdd.toDouble() })
+    }
+
+    /** One dot per day of the last [DOTS] days: true when the step goal was met. */
+    fun dots(data: TrendData): BooleanArray = BooleanArray(DOTS) { data.extras.getOrNull(it) == 1.0 }
 
     override fun format(ctx: Context, value: Double, units: Units): String = Fmt.number(value, 0)
 
     override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.streaks_unit)
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.streaks_label)
+    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.tag_in_a_row)
 
-    override fun note(ctx: Context, data: TrendData): String =
-        ctx.getString(if ((data.latest ?: 0.0) > 0) R.string.streaks_note_going else R.string.streaks_note_start)
+    override fun note(ctx: Context, data: TrendData): String? = null
 
     override fun status(data: TrendData): CardStatus = if ((data.latest ?: 0.0) > 0) CardStatus.GOOD else CardStatus.NONE
+
+    private fun bindDots(view: DotsView, data: TrendData, labels: Boolean) {
+        view.filled = dots(data)
+        val days = data.extras.drop(DOTS).mapNotNull { it?.toInt() }
+        view.labels = if (labels && days.size == DOTS) StatCardView.weekdayLabels(days) else emptyList()
+        view.color = LevelColors.of(view.context).good
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallDots(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: TrendData) = bindDots(graphic as DotsView, data, labels = false)
+
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<TrendData> =
+        object : CardView<TrendData>(CardView.inflate(parent, R.layout.card_activity_streaks)) {
+            private val row = find<View>(R.id.sk_row)
+            private val flame = find<ImageView>(R.id.sk_flame)
+            private val tile = find<StatTile>(R.id.sk_tile).apply { setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number) }
+            private val dotsView = find<DotsView>(R.id.sk_dots)
+            private val empty = find<EmptyState>(R.id.sk_empty)
+
+            override fun bind(data: TrendData) {
+                val ctx = root.context
+                val v = data.latest
+                ActivityVisuals.show(v != null, row, dotsView)
+                ActivityVisuals.show(v == null, empty)
+                if (v == null) {
+                    root.contentDescription = empty.message
+                    return
+                }
+                val c = LevelColors.of(ctx)
+                flame.imageTintList = ColorStateList.valueOf(if (v > 0) c.stressMedium else c.track)
+                ActivityVisuals.number(tile, format(ctx, v, data.units), unit(ctx, data.units), label(ctx, data))
+                bindDots(dotsView, data, labels = true)
+                root.contentDescription = ctx.getString(R.string.design_streaks_description, tile.value)
+            }
+        }
 }
 
-/** Weekly review: last week's steps a day against the week before (Monday to Sunday). */
+/**
+ * Weekly review (card design standard): last week's steps a day against the week before (Monday to
+ * Sunday) as two rings toward the step goal. [TrendData.extras]: the week before's average (or null),
+ * then the step goal. Small form: the rings.
+ */
 object WeeklyReviewCard : TrendCard("weekly_review", CardTab.ACTIVITY, R.string.card_weekly_review, R.string.card_weekly_review_summary) {
-    override val tables: Set<Table> = setOf(Table.DAY_SUMMARY)
+    override fun open(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
+    override val tables: Set<Table> = setOf(Table.DAY_SUMMARY, Table.GOAL)
 
     override val needs: Set<DataKind> = setOf(DataKind.STEPS)
 
@@ -109,7 +236,8 @@ object WeeklyReviewCard : TrendCard("weekly_review", CardTab.ACTIVITY, R.string.
         suspend fun avg(r: DayRange): Double? = env.db.summaries.days(r).mapNotNull { it.steps }.takeIf { it.isNotEmpty() }?.average()
         val a = avg(last) ?: return TrendData(null, units = env.units)
         val b = avg(before)
-        return TrendData(a, change = b?.let { a - it }, units = env.units, extras = listOf(b))
+        val goal = ActivityGoals.steps(env.db, last.last)
+        return TrendData(a, change = b?.let { a - it }, units = env.units, extras = listOf(b, goal.toDouble()))
     }
 
     /** Last week against the week before, as a share (+0.08 = 8% more), or null. */
@@ -119,7 +247,7 @@ object WeeklyReviewCard : TrendCard("weekly_review", CardTab.ACTIVITY, R.string.
 
     override fun unit(ctx: Context, units: Units): String? = null
 
-    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.weekly_review_label)
+    override fun label(ctx: Context, data: TrendData): String = ctx.getString(R.string.tag_steps_a_day)
 
     override fun note(ctx: Context, data: TrendData): String? {
         val s = share(data.latest ?: return null, data.extras.firstOrNull()) ?: return null
@@ -131,6 +259,54 @@ object WeeklyReviewCard : TrendCard("weekly_review", CardTab.ACTIVITY, R.string.
         val s = share(data.latest ?: return CardStatus.NONE, data.extras.firstOrNull()) ?: return CardStatus.NONE
         return if (s >= 0) CardStatus.GOOD else CardStatus.CLOSE
     }
+
+    /** Last week and the week before as rings toward the step goal (7,500 when unknown). */
+    fun rings(ctx: Context, data: TrendData): List<RingItem> {
+        val goal = data.extras.getOrNull(1)?.toInt() ?: ActivityGoals.DEFAULT_STEPS
+        val c = LevelColors.of(ctx)
+        fun ring(v: Double?, label: Int): RingItem = if (v == null) {
+            RingItem(0f, c.track, ctx.getString(R.string.dash), ctx.getString(label))
+        } else {
+            val n = v.toInt()
+            RingItem(if (goal > 0) n.toFloat() / goal else 0f, ActivityVisuals.goalColor(ctx, n, goal), ActivityGoalsCard.compact(n), ctx.getString(label))
+        }
+        return listOf(ring(data.latest, R.string.ring_last_week), ring(data.extras.firstOrNull(), R.string.ring_week_before))
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallRingRow(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: TrendData) {
+        (graphic as RingRowView).items = rings(graphic.context, data)
+    }
+
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<TrendData> =
+        object : CardView<TrendData>(CardView.inflate(parent, R.layout.card_activity_weekly_review)) {
+            private val row = find<RingRowView>(R.id.wr_rings)
+            private val empty = find<EmptyState>(R.id.wr_empty)
+
+            override fun bind(data: TrendData) {
+                val ctx = root.context
+                val v = data.latest
+                ActivityVisuals.show(v != null, row)
+                ActivityVisuals.show(v == null, empty)
+                if (v == null) {
+                    root.contentDescription = empty.message
+                    return
+                }
+                row.items = rings(ctx, data)
+                val dash = ctx.getString(R.string.dash)
+                val goal = data.extras.getOrNull(1)?.toInt() ?: ActivityGoals.DEFAULT_STEPS
+                root.contentDescription = listOfNotNull(
+                    ctx.getString(
+                        R.string.design_weekly_review_description, format(ctx, v, data.units),
+                        data.extras.firstOrNull()?.let { format(ctx, it, data.units) } ?: dash, Fmt.number(goal.toLong()),
+                    ),
+                    note(ctx, data),
+                ).joinToString(" ")
+            }
+        }
 
     private const val WEEK = 7
 }
@@ -278,7 +454,82 @@ object PersonalRecordsCard : Card<PersonalRecordsCard.Data>(
 val TrainingStatusCard = WaitingCard("training_status", CardTab.ACTIVITY, R.string.card_training_status, R.string.card_training_status_summary, DataKind.TRAINING_STATUS)
 
 /** Hours until recovered. */
-val RecoveryTimeCard = WaitingCard("recovery_time", CardTab.ACTIVITY, R.string.card_recovery_time, R.string.card_recovery_time_summary, DataKind.RECOVERY_TIME)
+/**
+ * Recovery time, from the watch (FIT `metric_recovery`): the hours left until you are ready for the next
+ * hard workout, counted down from when the watch set it (Garmin caps it at 4 days). 0 means recovered.
+ */
+object RecoveryTimeCard : TrendCard("recovery_time", CardTab.ACTIVITY, R.string.card_recovery_time, R.string.card_recovery_time_summary) {
+    override val tables: Set<Table> = setOf(Table.METRIC)
+
+    override val needs: Set<DataKind> = setOf(DataKind.RECOVERY_TIME)
+
+    override suspend fun load(env: CardEnv): TrendData {
+        val last = env.db.metrics.latest(app.selfwatch.model.health.MetricKind.RECOVERY_MIN) ?: return TrendData(null, units = env.units)
+        val leftMin = (last.value - (env.clock.nowSec() - last.tSec) / 60).coerceAtLeast(0)
+        return TrendData(leftMin / 60.0, units = env.units)
+    }
+
+    override fun format(ctx: Context, value: Double, units: Units): String = Fmt.number(kotlin.math.ceil(value), 0)
+
+    override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.recovery_time_unit)
+
+    override fun label(ctx: Context, data: TrendData): String =
+        ctx.getString(if ((data.latest ?: 0.0) <= 0.0) R.string.recovery_time_ready else R.string.recovery_time_left)
+
+    override fun note(ctx: Context, data: TrendData): String? = null
+
+    override fun status(data: TrendData): CardStatus = when {
+        data.latest == null -> CardStatus.NONE
+        data.latest <= 0.0 -> CardStatus.GOOD
+        else -> CardStatus.CLOSE
+    }
+
+    override fun emptyMessage(ctx: Context): String = ctx.getString(R.string.recovery_time_empty)
+
+    /** Garmin's longest recovery time, 4 days: a full countdown ring. */
+    const val MAX_HOURS: Double = 96.0
+
+    /** The countdown: hours left of [MAX_HOURS] inside the ring; recovered is a full ring in the goal color. */
+    private fun ring(view: RingView, data: TrendData) {
+        val ctx = view.context
+        val c = LevelColors.of(ctx)
+        val h = data.latest ?: 0.0
+        val ready = h <= 0.0
+        view.progress = if (ready) 1f else (h / MAX_HOURS).toFloat().coerceIn(0f, 1f)
+        view.color = if (ready) c.good else c.close
+        view.centerText = format(ctx, h, data.units)
+        view.subText = ctx.getString(if (ready) R.string.tag_ready else R.string.tag_hours)
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallRing(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: TrendData) = ring(graphic as RingView, data)
+
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<TrendData> =
+        object : CardView<TrendData>(CardView.inflate(parent, R.layout.card_activity_recovery_time)) {
+            private val ringView = find<RingView>(R.id.rt_ring)
+            private val empty = find<EmptyState>(R.id.rt_empty)
+
+            override fun bind(data: TrendData) {
+                val ctx = root.context
+                val v = data.latest
+                ActivityVisuals.show(v != null, ringView)
+                ActivityVisuals.show(v == null, empty)
+                if (v == null) {
+                    root.contentDescription = empty.message
+                    return
+                }
+                ring(ringView, data)
+                root.contentDescription = if (v <= 0.0) {
+                    ctx.getString(R.string.design_recovery_time_ready)
+                } else {
+                    ctx.getString(R.string.design_recovery_time_description, format(ctx, v, data.units))
+                }
+            }
+        }
+}
 
 /** Floors climbed. */
 val FloorsCard = WaitingCard("floors", CardTab.ACTIVITY, R.string.card_floors, R.string.card_floors_summary, DataKind.FLOORS)

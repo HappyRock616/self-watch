@@ -8,9 +8,6 @@
 package app.selfwatch.cards
 
 import android.app.Application
-import app.selfwatch.activity.cards.ClockPart
-import app.selfwatch.activity.cards.DayClockCard
-import app.selfwatch.activity.cards.DayClockMath
 import app.selfwatch.activity.cards.LiveCard
 import app.selfwatch.activity.cards.WeatherCard
 import app.selfwatch.body.TestDb
@@ -75,57 +72,6 @@ class FinishedCardsTest {
 
     private fun device(address: String, kind: DeviceKind = DeviceKind.GARMIN_WATCH, features: Set<Feature> = emptySet(), name: String = "Watch") =
         DeviceInfo(0, kind, address, name, "model", null, null, null, SupportTier.VERIFIED, features, null)
-
-    // ---- Day clock ----
-
-    @Test
-    fun dayClockSortsTheDayIntoSleepRestLightAndActive() {
-        val minutes = ArrayList<ActivityMinute>()
-        for (m in 420 until 450) minutes += minute(m, 110, 2) // 7:00–7:30 brisk walk
-        for (m in 600 until 615) minutes += minute(m, 10, 1) // 10:00 light
-        for (m in 615 until 630) minutes += minute(m, 0, 0) // 10:15 resting
-        for (m in 420 until 450) minutes += minute(m, 50, 1, device = 2) // a second device on the same minutes
-        val sleep = listOf(SleepSession(1, start - 3_600, start + 6 * 3_600, null))
-        val now = start + 12 * 3_600
-        val c = DayClockMath.build(range, minutes, sleep, now)
-        assertEquals(96, c.parts.size)
-        assertEquals(ClockPart.SLEEP, c.parts[0])
-        assertEquals(ClockPart.SLEEP, c.parts[23])
-        assertEquals(ClockPart.NONE, c.parts[24])
-        assertEquals(ClockPart.ACTIVE, c.parts[28])
-        assertEquals(ClockPart.LIGHT, c.parts[40])
-        assertEquals(ClockPart.REST, c.parts[41])
-        // Nothing after now, even with data.
-        assertTrue(c.parts.drop(48).all { it == ClockPart.NONE })
-        assertEquals(6 * 60, c.sleepMin)
-        assertEquals(30, c.activeMin)
-        assertEquals(15, c.lightMin)
-        assertEquals(15, c.restMin)
-        // 7 o'clock (3,300 steps, moderate minutes) is active; 10 o'clock (150 steps) is not.
-        assertEquals(1, c.activeHours)
-        assertFalse(c.isEmpty)
-        assertTrue(DayClockMath.build(range, emptyList(), emptyList(), now).isEmpty)
-    }
-
-    @Test
-    fun dayClockHandlesDaylightSavingDays() {
-        val shortDay = Day(20260308).toTimeRange(zone)
-        assertEquals(92, DayClockMath.build(shortDay, emptyList(), emptyList(), shortDay.endSec).parts.size)
-        val longDay = Day(20261101).toTimeRange(zone)
-        assertEquals(100, DayClockMath.build(longDay, emptyList(), emptyList(), longDay.endSec).parts.size)
-    }
-
-    @Test
-    fun dayClockLoadsFromTheDatabase() = runBlocking {
-        val db = TestDb.fresh(ctx)
-        val clock = FakeClock(start + 20 * 3_600, zone)
-        db.activity.insert((0 until 30).map { minute(18 * 60 + it, 150, 3) })
-        db.sleep.insertSession(SleepSession(1, start - 2 * 3_600, start + 7 * 3_600, 80))
-        val data = DayClockCard.load(CardEnv(db, clock, day, Units.METRIC))
-        assertEquals(7 * 60, data.clock.sleepMin)
-        assertEquals(30, data.clock.activeMin)
-        assertEquals("1", DayClockCard.small(ctx, data)?.value)
-    }
 
     // ---- Device cards ----
 

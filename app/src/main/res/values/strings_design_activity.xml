@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity cards redrawn to the card design standard (docs/CARD_DESIGN.md): short tags, ring labels, split labels. -->
+<resources>
+    <!-- One-word labels under goal rings -->
+    <string name="ring_steps">Steps</string>
+    <string name="ring_active">Active</string>
+    <string name="ring_minutes">Minutes</string>
+    <string name="ring_calories">Calories</string>
+    <string name="ring_workouts">Workouts</string>
+    <string name="ring_days">Days</string>
+    <string name="ring_km">km</string>
+    <string name="ring_mi">mi</string>
+    <string name="ring_value_of">%1$s/%2$s</string>
+    <string name="ring_last_week">Last week</string>
+    <string name="ring_week_before">Week before</string>
+
+    <!-- Short tags beside the big number (title plus at most four words) -->
+    <string name="tag_goal">goal %1$s</string>
+    <string name="tag_live">live</string>
+    <string name="tag_this_week">this week</string>
+    <string name="tag_today">today</string>
+    <string name="tag_easy">easy</string>
+    <string name="tag_two_min">after 2 min</string>
+    <string name="tag_one_min">after 1 min</string>
+    <string name="tag_vigorous">vigorous</string>
+    <string name="tag_steps">steps</string>
+    <string name="tag_hours">hours</string>
+    <string name="tag_ready">ready</string>
+    <string name="tag_in_a_row">days in a row</string>
+    <string name="tag_steps_a_day">steps a day</string>
+
+    <!-- Split bar parts ("Resting 1,862") -->
+    <string name="part_value">%1$s %2$s</string>
+    <string name="part_resting">Resting</string>
+    <string name="part_active">Active</string>
+    <string name="part_easy">Easy</string>
+    <string name="part_hard">Hard</string>
+
+    <!-- Marks -->
+    <string name="mark_workout">●</string>
+    <string name="mark_workout_dot">·</string>
+
+    <!-- TalkBack -->
+    <string name="design_goals_description">%1$s. %2$s</string>
+    <string name="design_ring_spoken">%1$s %2$s</string>
+    <string name="design_steps_description">Steps today %1$s, goal %2$s. Last 7 days as bars.</string>
+    <string name="design_distance_description">Distance today %1$s. Last 7 days as bars.</string>
+    <string name="design_intensity_minutes_description">Intensity minutes this week %1$s of %2$s. Bars per day with the daily share. Double tap to see exercise and sleep.</string>
+    <string name="design_active_days_description">%1$s of %2$s active days this week.</string>
+    <string name="design_active_kcal_description">Active calories today about %1$s, goal %2$s.</string>
+    <string name="design_calories_description">Calories today about %1$s: resting %2$s, active %3$s.</string>
+    <string name="design_timeline_description">Today hour by hour: %1$s steps so far, busiest hour %2$s.</string>
+    <plurals name="design_timeline_workouts">
+        <item quantity="one">%d workout today.</item>
+        <item quantity="other">%d workouts today.</item>
+    </plurals>
+    <string name="design_rings_description">Today. Steps %1$s of %2$s. Active minutes this week %3$s of %4$s. Active calories %5$s of %6$s.</string>
+    <string name="design_recovery_hr_description">Heart rate recovery %1$s beats a minute, %2$s. Last workouts as bars. Double tap to open the workout.</string>
+    <string name="design_vo2_description">VO2 max %1$s ml/kg/min. %2$s</string>
+    <string name="design_recovery_time_description">Recovery time %1$s hours left.</string>
+    <string name="design_recovery_time_ready">Recovered: ready for a hard workout.</string>
+    <string name="design_weekly_volume_description">Workout time this week %1$s. Last 6 weeks as bars.</string>
+    <string name="design_easy_hard_description">%1$s of workout time easy in the last 4 weeks: easy %2$s, hard %3$s. The usual mix is %4$s to %5$s%% easy.</string>
+    <string name="design_strength_description">Strength: %1$s days this week, aim %2$s.</string>
+    <string name="design_streaks_description">%1$s days in a row at your step goal. Last 14 days as dots.</string>
+    <string name="design_weekly_review_description">Steps a day: last week %1$s, the week before %2$s, goal %3$s.</string>
+    <string name="design_intensity_description">Vigorous minutes in the last 7 days: %1$s of %2$s. Double tap to open Activity.</string>
+    <string name="design_active_time_description">Moving today %1$s minutes. Last 7 days as bars.</string>
+    <string name="daily_activity_title">Daily activity</string>
+    <string name="daily_activity_steps">Steps</string>
+    <string name="daily_activity_distance">Distance</string>
+    <string name="daily_activity_kcal">Active calories</string>
+    <string name="daily_activity_minutes">Active minutes</string>
+    <string name="daily_activity_note">The last 90 days, one bar per day. Pinch to zoom.</string>
+    <string name="daily_activity_empty">Your daily steps, distance and calories show here once your watch has synced.</string>
+</resources>

@@ -1,38 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Body card: the watch's energy level today (EnergyLevelCard). -->
+<!-- Body card: the watch's energy level today (EnergyLevelCard), card design standard: gauge, day strip, charged / drained tag. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/energy_level_card"
     style="@style/Widget.SelfWatch.TabCard"
     app:swTitle="@string/card_energy_level">
 
-    <app.selfwatch.ui.components.StatTile
-        android:id="@+id/el_tile"
+    <app.selfwatch.ui.components.ArcGaugeView
+        android:id="@+id/el_gauge"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/card_gauge_height"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.DayStripView
+        android:id="@+id/el_strip"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:swValue="@string/dash" />
-
-    <TextView
-        android:id="@+id/el_today"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-
-    <app.selfwatch.ui.components.Sparkline
-        android:id="@+id/el_spark"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/body_spark_height"
         android:layout_marginTop="@dimen/sw_space_1"
         android:importantForAccessibility="no" />
-
     <TextView
-        android:id="@+id/el_note"
+        android:id="@+id/el_tag"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-
+        android:gravity="center_horizontal"
+        android:importantForAccessibility="no"
+        android:textAppearance="@style/TextAppearance.SelfWatch.Caption.Number" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/el_empty"
         android:layout_width="match_parent"

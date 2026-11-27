@@ -8,15 +8,22 @@
 package app.selfwatch.body.cards
 
 import android.content.Context
+import android.view.View
+import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityWeek
+import app.selfwatch.body.GarminBands
 import app.selfwatch.body.BodyTrendLoader
 import app.selfwatch.body.HeartDetailFragment
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
+import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
+import app.selfwatch.ui.components.ArcGaugeView
+import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.cards.TrendCard
 import app.selfwatch.cards.TrendData
 import app.selfwatch.db.Table
@@ -135,20 +142,13 @@ object ReadinessCard : TrendCard("readiness", CardTab.BODY, R.string.card_readin
 
     override fun unit(ctx: Context, units: Units): String = ctx.getString(R.string.readiness_unit)
 
-    override fun label(ctx: Context, data: TrendData): String {
-        val v = data.latest ?: 0.0
-        return ctx.getString(
-            when {
-                v >= ReadinessMath.READY -> R.string.readiness_ready
-                v >= ReadinessMath.STEADY -> R.string.readiness_steady
-                else -> R.string.readiness_rest
-            },
-        )
-    }
+    // Garmin's training readiness names: Prime 95+, High 75–94, Moderate 50–74, Low 25–49, Poor under 25.
+    override fun label(ctx: Context, data: TrendData): String =
+        ctx.getString(R.string.readiness_label_band, ctx.getString(GarminBands.readiness((data.latest ?: 0.0).toInt()).name))
 
     override fun note(ctx: Context, data: TrendData): String? {
         val factor = data.extras.firstOrNull()?.toInt()?.let { ReadinessFactor.entries.getOrNull(it) } ?: return null
-        if ((data.latest ?: 0.0) >= ReadinessMath.READY) return ctx.getString(R.string.readiness_note_good)
+        if ((data.latest ?: 0.0) >= HIGH) return ctx.getString(R.string.readiness_note_good)
         return ctx.getString(
             when (factor) {
                 ReadinessFactor.SLEEP -> R.string.readiness_note_sleep
@@ -159,19 +159,59 @@ object ReadinessCard : TrendCard("readiness", CardTab.BODY, R.string.card_readin
         )
     }
 
-    override fun status(data: TrendData): CardStatus {
-        val v = data.latest ?: return CardStatus.NONE
-        return when {
-            v >= ReadinessMath.READY -> CardStatus.GOOD
-            v >= ReadinessMath.STEADY -> CardStatus.CLOSE
-            else -> CardStatus.OFF
-        }
-    }
+    override fun status(data: TrendData): CardStatus = data.latest?.let { GarminBands.readiness(it.toInt()).status } ?: CardStatus.NONE
+
+    private const val HIGH = 75
 
     override fun emptyMessage(ctx: Context): String = ctx.getString(R.string.readiness_empty)
 
     override fun open(host: CardHost): Boolean {
         host.open(HeartDetailFragment())
         return true
+    }
+
+    /** Garmin's band name for [score]: Prime, High, Moderate, Low or Poor. */
+    private fun band(ctx: Context, score: Int): String = ctx.getString(GarminBands.readiness(score).name)
+
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallGauge(ctx, BodyVisuals.readinessBands(ctx))
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: TrendData) {
+        val score = data.latest?.roundToInt() ?: return
+        (graphic as ArcGaugeView).apply {
+            value = score.toFloat()
+            centerText = score.toString()
+            subText = band(context, score)
+        }
+    }
+
+    // Card design standard: an arc gauge with the score and Garmin's band; no notes on the card.
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<TrendData> = Holder(host, parent)
+
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<TrendData>(CardView.inflate(parent, R.layout.card_body_readiness)) {
+        private val gauge = find<ArcGaugeView>(R.id.readiness_gauge)
+        private val empty = find<EmptyState>(R.id.readiness_empty)
+
+        init {
+            root.setOnClickListener { open(host) }
+            gauge.bands = BodyVisuals.readinessBands(root.context)
+        }
+
+        override fun bind(data: TrendData) {
+            val ctx = root.context
+            val score = data.latest?.roundToInt()
+            CardVisuals.show(gauge, score != null)
+            CardVisuals.show(empty, score == null)
+            if (score == null) {
+                empty.message = emptyMessage(ctx)
+                root.contentDescription = listOf(ctx.getString(R.string.card_readiness), empty.message).joinToString(". ")
+                return
+            }
+            gauge.value = score.toFloat()
+            gauge.centerText = score.toString()
+            gauge.subText = band(ctx, score)
+            root.contentDescription = ctx.getString(R.string.body1_readiness_description, gauge.centerText, gauge.subText)
+        }
     }
 }

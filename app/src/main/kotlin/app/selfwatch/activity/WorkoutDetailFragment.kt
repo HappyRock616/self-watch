@@ -105,7 +105,14 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
             toolbar.menu.findItem(R.id.menu_undo_trim)?.isVisible = trim != null
             toolbar.menu.findItem(R.id.menu_export_fit)?.setTitle(if (trim != null) R.string.workout_export_fit_trimmed else R.string.workout_export_fit)
             ChartScreens.set(top[0], w.distanceM?.takeIf { it > 0 }?.let { Fmt.distance(it.toDouble(), s.units, loc, labels) })
+            // Workout time is the timer time (as the watch's Timer); elapsed time, stops included, is noted when it differs.
             ChartScreens.set(top[1], Fmt.duration(w.durationSec.toLong(), loc, labels))
+            val elapsed = w.endSec - w.startSec
+            top[1].label = if (elapsed - w.durationSec >= MIN_STOP_SEC) {
+                getString(R.string.workout_time_elapsed, Fmt.duration(elapsed, loc, labels))
+            } else {
+                getString(R.string.workout_time)
+            }
             val pace = Sports.usesPace(w.sport)
             if (pace) {
                 ChartScreens.set(top[2], Sports.pace(w.durationSec, w.distanceM, s.units), Sports.paceUnit(ctx, s.units))
@@ -232,6 +239,7 @@ class WorkoutDetailFragment : DetailFragment(R.menu.menu_workout) {
     companion object {
         private const val TAG = "WorkoutDetail"
         private const val ARG_ID = "workout_id"
+        private const val MIN_STOP_SEC = 60L
         private const val STATE_FORMAT = "pending_format"
         private const val GAP_SEC = 120L
         private const val CM_PER_FOOT = 30.48

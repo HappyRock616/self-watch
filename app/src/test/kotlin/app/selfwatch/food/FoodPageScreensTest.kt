@@ -164,7 +164,7 @@ class FoodPageScreensTest {
         assertTrue(a.shows("Full nutrient data for 0 of 2 foods"))
         assertTrue(a.shows("—")) // vitamins nobody lists
         assertTrue(a.shows("Added sugar"))
-        assertTrue(a.shows("% ")) // macro share of calories
+        assertTrue(texts(a.window.decorView).any { Regex("· [0-9]+%").containsMatchIn(it) }) // macro share of calories (meal_summary_macro_value)
         assertTrue(a.window.decorView.findViewWithTag<View>("meal_food_$cakeId")?.isShown == true)
         a.supportFragmentManager.popBackStackImmediate()
         idle()

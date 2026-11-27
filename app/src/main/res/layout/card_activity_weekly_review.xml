@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: steps a day last week vs the week before as rings (WeeklyReviewCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/weekly_review_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_weekly_review">
+    <app.selfwatch.ui.components.RingRowView
+        android:id="@+id/wr_rings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/wr_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/trend_empty" />
+</app.selfwatch.ui.components.SwCard>

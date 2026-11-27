@@ -8,7 +8,10 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.R
 import app.selfwatch.body.WeightDetailFragment
 import app.selfwatch.cards.Card
@@ -68,6 +71,32 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
         )
     }
 
+    /** The aim as a short tag: "aim 1.2 or more" or "aim 1.2–2.0" (per lb for US units). */
+    fun aim(ctx: Context, t: PerKgTarget, units: app.selfwatch.ui.format.Units): String {
+        val high = t.high
+        return if (high == null) {
+            ctx.getString(R.string.small_aim_min, FoodCardText.perKg(t.low, units))
+        } else {
+            ctx.getString(R.string.small_aim_band, FoodCardText.perKg(t.low, units), FoodCardText.perKg(high, units))
+        }
+    }
+
+    /** Protein per kg on a range bar: the target band marked with its edges; null without a value. */
+    fun picture(ctx: Context, data: InUnits<ProteinPerKg>): TrendPicture? {
+        val p = data.value
+        val perKg = p.perKg ?: return null
+        if (p.kgX100 == null || p.proteinG == null) return null
+        val t = p.target.target
+        val ticks = listOfNotNull(t.low, t.high).map { it.toFloat() to FoodCardText.perKg(it, data.units) }
+        return FoodPictures.target(ctx, perKg, t.low, t.high, ticks)
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: InUnits<ProteinPerKg>) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun openDetail(host: CardHost): Boolean {
         host.open(GoalsFragment())
         return true
@@ -99,20 +128,13 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
                 showEmpty(ctx.getString(R.string.protein_kg_empty))
                 return
             }
-            showContent()
             val t = p.target.target
             val u = data.units
             tile.value = FoodCardText.perKg(perKg, u)
             tile.unit = FoodCardText.gramsUnit(ctx, u)
             val target = FoodCardText.target(ctx, t, u)
-            tile.label = target
-            val reached = perKg >= t.low
-            bar.set(
-                perKg.toFloat(), FoodCardText.barMax(perKg, t),
-                if (reached) palette.primary else palette.secondary,
-                low = t.low.toFloat(), high = t.high?.toFloat(),
-            )
-            show(bar, true)
+            tile.label = aim(ctx, t, u)
+            showContent(picture(ctx, data))
             // The target the reason names: "1.2 g/kg" or "1.2–2.0 g/kg" (per lb for US units).
             val top = t.high
             val amount = if (top == null) FoodCardText.grams(ctx, t.low, u) else FoodCardText.gramsRange(ctx, t.low, top, u)
@@ -125,13 +147,12 @@ object ProteinPerKgCard : Card<InUnits<ProteinPerKg>>(
                 ProteinReason.GENERAL -> ctx.getString(R.string.protein_kg_reason_general, amount)
                 ProteinReason.OWN_GOAL -> ctx.getString(R.string.protein_kg_reason_own, Fmt.number((p.goalG ?: 0).toLong()))
             }
-            text(note, reason)
-            text(coverage, ctx.getString(R.string.protein_kg_inputs, Fmt.number(p.proteinG.toLong()), Fmt.weight(kg, data.units)))
+            val inputs = ctx.getString(R.string.protein_kg_inputs, Fmt.number(p.proteinG.toLong()), Fmt.weight(kg, data.units))
             card.contentDescription = ctx.getString(
                 R.string.food_card_description,
                 ctx.getString(R.string.card_protein_per_kg),
                 "${tile.value} ${tile.unit}",
-                "$target. $reason",
+                "$target. $reason. $inputs",
             )
         }
     }

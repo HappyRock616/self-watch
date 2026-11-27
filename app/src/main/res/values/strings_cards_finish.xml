@@ -8,23 +8,6 @@
     <string name="ago_days">d ago</string>
 
     <!-- Day clock -->
-    <string name="card_day_clock">Day clock</string>
-    <string name="card_day_clock_summary">Your day as a 24-hour circle of sleep, rest and activity</string>
-    <plurals name="day_clock_active_hours">
-        <item quantity="one">active hour</item>
-        <item quantity="other">active hours</item>
-    </plurals>
-    <plurals name="day_clock_active_hours_count">
-        <item quantity="one">%d active hour</item>
-        <item quantity="other">%d active hours</item>
-    </plurals>
-    <string name="day_clock_sleep_note">Sleep %1$s</string>
-    <string name="day_clock_active">Active %1$s</string>
-    <string name="day_clock_light">Light movement %1$s</string>
-    <string name="day_clock_rest">Rest %1$s</string>
-    <string name="day_clock_sleep">Sleep %1$s</string>
-    <string name="day_clock_empty">Your day shows up here once your watch has synced today\'s steps or sleep.</string>
-    <string name="day_clock_description">Day clock. %1$s. Active %2$s, light movement %3$s, rest %4$s, sleep %5$s.</string>
 
     <!-- Device cards -->
     <string name="card_battery">Battery</string>

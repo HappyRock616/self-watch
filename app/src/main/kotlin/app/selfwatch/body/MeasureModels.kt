@@ -112,32 +112,7 @@ class WeightViewModel(private val db: SelfWatchDb, private val clock: Clock) : V
     }
 
     /** Loads [range] in [units]. */
-    suspend fun load(range: WeightRange, units: Units): WeightUiState {
-        val today = clock.today()
-        val first = range.days?.let { today.plusDays(1 - it) } ?: EPOCH_DAY
-        val all = db.body.series(BodyKind.WEIGHT, DayRange(first, today), clock.zone())
-        val trend = WeightMath.trend(LongArray(all.size) { all[it].tSec }, IntArray(all.size) { all[it].valueX100 })
-        val latest = db.body.latest(BodyKind.WEIGHT)
-        val chartFirst = when {
-            all.isEmpty() -> null
-            range.days != null -> first
-            else -> Day.of(all.first().tSec, clock.zone())
-        }
-        return WeightUiState(
-            range = range,
-            units = units,
-            entries = all,
-            trendKgX100 = trend.lastOrNull()?.roundToInt(),
-            goal = db.goals.goalOn(GoalKind.WEIGHT_KG_X100, today),
-            bmi = WeightRules.bmi(latest?.valueX100, db.settings.profile().heightCm),
-            firstDay = chartFirst,
-            lastDay = today,
-            loading = false,
-            trend = trend.map { it.roundToInt() },
-            overlay = chartFirst?.let { WeightOverlay.load(db, it, today) },
-            hiddenLayers = WeightLayers.load(db),
-        )
-    }
+    suspend fun load(range: WeightRange, units: Units): WeightUiState = load(db, clock, range, units)
 
     /** Remembers which chart layers are switched off. */
     fun saveHiddenLayers(hidden: Set<String>) {
@@ -154,7 +129,7 @@ class WeightViewModel(private val db: SelfWatchDb, private val clock: Clock) : V
         viewModelScope.launch { db.goals.set(Goal(GoalKind.WEIGHT_KG_X100, kgX100, clock.today())) }
     }
 
-    /** Factory. */
+    /** Factory and the shared loader. */
     companion object {
         private const val TAG = "WeightViewModel"
         private const val STOP_MS = 5_000L
@@ -162,6 +137,34 @@ class WeightViewModel(private val db: SelfWatchDb, private val clock: Clock) : V
         /** Builds the view model from [graph]. */
         fun factory(graph: AppGraph): ViewModelProvider.Factory = viewModelFactory {
             initializer { WeightViewModel(graph.db, SystemClock) }
+        }
+
+        /** The Weight screen's state for [range] in [units] (also the Weight chart card's data). */
+        suspend fun load(db: SelfWatchDb, clock: Clock, range: WeightRange, units: Units): WeightUiState {
+            val today = clock.today()
+            val first = range.days?.let { today.plusDays(1 - it) } ?: EPOCH_DAY
+            val all = db.body.series(BodyKind.WEIGHT, DayRange(first, today), clock.zone())
+            val trend = WeightMath.trend(LongArray(all.size) { all[it].tSec }, IntArray(all.size) { all[it].valueX100 })
+            val latest = db.body.latest(BodyKind.WEIGHT)
+            val chartFirst = when {
+                all.isEmpty() -> null
+                range.days != null -> first
+                else -> Day.of(all.first().tSec, clock.zone())
+            }
+            return WeightUiState(
+                range = range,
+                units = units,
+                entries = all,
+                trendKgX100 = trend.lastOrNull()?.roundToInt(),
+                goal = db.goals.goalOn(GoalKind.WEIGHT_KG_X100, today),
+                bmi = WeightRules.bmi(latest?.valueX100, db.settings.profile().heightCm),
+                firstDay = chartFirst,
+                lastDay = today,
+                loading = false,
+                trend = trend.map { it.roundToInt() },
+                overlay = chartFirst?.let { WeightOverlay.load(db, it, today) },
+                hiddenLayers = WeightLayers.load(db),
+            )
         }
     }
 }

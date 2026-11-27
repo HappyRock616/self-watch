@@ -13,7 +13,7 @@
     <string name="small_of_week_target">of %1$s this week</string>
     <string name="small_target_reached">Target reached</string>
     <string name="small_min_to_go">%1$s min to go</string>
-    <string name="small_drop_label">drop in 1 minute</string>
+    <string name="small_drop_label">drop in 2 minutes</string>
     <string name="small_recent_avg">Recent average %1$s</string>
     <string name="small_of_steps">of %1$s steps</string>
     <string name="small_to_go">%1$s to go</string>

@@ -157,7 +157,8 @@
     <string name="workout_title">Workout</string>
     <string name="workout_list_title">Workouts</string>
     <string name="workout_distance">distance</string>
-    <string name="workout_time">time</string>
+    <string name="workout_time">workout time</string>
+    <string name="workout_time_elapsed">workout time · %1$s with stops</string>
     <string name="workout_pace">pace</string>
     <string name="workout_speed">Speed</string>
     <string name="workout_avg_hr">avg HR</string>
@@ -197,6 +198,7 @@
     <string name="goal_fat">Fat</string>
     <string name="goal_carb">Carbohydrate</string>
     <string name="goal_steps">Steps per day</string>
+    <string name="goal_steps_auto">Auto step goal (like Garmin: goes up after days you reach it, never down)</string>
     <string name="goal_active_min">Active minutes per week</string>
     <string name="goal_active_kcal">Active calories per day</string>
     <string name="goal_weight">Goal weight</string>

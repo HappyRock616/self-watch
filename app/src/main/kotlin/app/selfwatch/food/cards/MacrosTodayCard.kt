@@ -8,11 +8,11 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.body.BodyLoader
 import app.selfwatch.body.MacrosInfo
-import app.selfwatch.body.cards.MacrosCardView
 import app.selfwatch.body.cards.MacrosTables
 import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
@@ -22,12 +22,23 @@ import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
 import app.selfwatch.me.GoalsFragment
+import app.selfwatch.shell.Views
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingItem
+import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.format.Fmt
 
-/** Protein, carbs and fat for the diary day shown, against the targets; opens Goals. Same view as Body's macros card. */
+/**
+ * Protein, carbs and fat for the diary day shown (card design standard): three rings toward the targets,
+ * grams inside (met = good, short = close; a ring without a target stays empty). Small form: the rings.
+ * Opens Goals.
+ */
 object MacrosTodayCard : Card<MacrosInfo>(
     "macros_today",
     CardTab.FOOD,
@@ -59,16 +70,61 @@ object MacrosTodayCard : Card<MacrosInfo>(
         )
     }
 
+    /** The three rings, or null with nothing logged. */
+    fun picture(ctx: Context, data: MacrosInfo): TrendPicture? {
+        if (data.isEmpty) return null
+        val c = LevelColors.of(ctx)
+        fun ring(g: Int?, goal: Int?, label: Int) = RingItem(
+            progress = goal?.takeIf { it > 0 }?.let { (g ?: 0).toFloat() / it } ?: 0f,
+            color = if (goal != null && (g ?: 0) >= goal) c.good else c.close,
+            value = g?.let { Fmt.number(it.toLong()) } ?: ctx.getString(R.string.dash),
+            label = ctx.getString(label),
+        )
+        return TrendPicture.Rings(
+            listOf(
+                ring(data.proteinG, data.proteinGoalG, R.string.balance_protein),
+                ring(data.carbG, data.carbGoalG, R.string.balance_carbs),
+                ring(data.fatG, data.fatGoalG, R.string.balance_fat),
+            ),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: MacrosInfo) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun openDetail(host: CardHost): Boolean {
         host.open(GoalsFragment())
         return true
     }
 
-    override fun createView(host: CardHost, parent: ViewGroup): CardView<MacrosInfo> =
-        MacrosCardView(
-            parent,
-            onOpen = { host.open(GoalsFragment()) },
-            onSetGoal = { host.open(GoalsFragment()) },
-            description = R.string.macros_today_description,
-        ).also { it.root.id = R.id.food_macros_card }
+    override fun createView(host: CardHost, parent: ViewGroup): CardView<MacrosInfo> = Holder(host, parent)
+
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<MacrosInfo>(SwCard(parent.context)) {
+        private val ctx = parent.context
+        private val rings = PictureFrame(ctx, small = false)
+        private val empty = EmptyState(ctx).apply { message = ctx.getString(R.string.macros_empty) }
+
+        init {
+            val sw = root as SwCard
+            sw.id = R.id.food_macros_card
+            sw.title = ctx.getString(R.string.card_macros_today)
+            sw.isClickable = true
+            sw.isFocusable = true
+            sw.setOnClickListener { host.open(GoalsFragment()) }
+            sw.addView(rings, Views.matchWrap(ctx))
+            sw.addView(empty, Views.matchWrap(ctx))
+        }
+
+        override fun bind(data: MacrosInfo) {
+            rings.show(picture(ctx, data))
+            empty.visibility = if (data.isEmpty) View.VISIBLE else View.GONE
+            fun g(v: Int?): String = ctx.getString(R.string.grams_value, Fmt.number((v ?: 0).toLong()))
+            root.contentDescription = ctx.getString(R.string.macros_today_description, g(data.proteinG), g(data.carbG), g(data.fatG))
+        }
+    }
 }

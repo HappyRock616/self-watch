@@ -16,8 +16,6 @@ import androidx.fragment.app.Fragment
 import app.selfwatch.activity.Sports
 import app.selfwatch.activity.cards.ActiveTimeCard
 import app.selfwatch.activity.cards.ActivityGoalsCard
-import app.selfwatch.activity.cards.DayClockCard
-import app.selfwatch.activity.cards.DayClockMath
 import app.selfwatch.activity.cards.LastActivityCard
 import app.selfwatch.activity.cards.LiveCard
 import app.selfwatch.activity.cards.PersonalRecordsCard
@@ -136,7 +134,6 @@ object CardSamples {
             LastActivityCard to LastActivityCard.Data(workouts.maxByOrNull { it.startSec }, units),
             PersonalRecordsCard to PersonalRecordsCard.Data(RecordMath.records(workouts), units),
             Vo2MaxCard to TrendData(48.3, listOf(46.9, 47.2, 47.6, 48.0, 48.3), 1.1, units, listOf(51.0, 0.0)),
-            DayClockCard to dayClock(today, zone),
             LiveCard to LiveCard.Data(64, System.currentTimeMillis() / 1000 - 180, 7_420, mapOf(1L to "vívoactive 5")),
             WeatherCard to WeatherCard.Data(weather(today), true, today, units),
             BatteryCard to battery(),
@@ -147,23 +144,6 @@ object CardSamples {
     }
 
     /** A day: asleep until 6:45, a morning walk, a desk day with short walks, a run at 18:00. */
-    private fun dayClock(today: Day, zone: ZoneId): DayClockCard.Data {
-        val range = today.toTimeRange(zone)
-        val start = range.startSec
-        val minutes = ArrayList<ActivityMinute>()
-        fun span(fromMin: Int, toMin: Int, steps: Int, intensity: Int) {
-            for (m in fromMin until toMin) minutes += ActivityMinute(1, start + m * 60L, steps, 0, 0, intensity, null)
-        }
-        span(405, 1_380, 2, 0)
-        span(420, 450, 105, 2)
-        span(720, 740, 90, 1)
-        span(900, 915, 80, 1)
-        span(1_080, 1_125, 160, 3)
-        val sleep = listOf(SleepSession(1, start - 3_600, start + 405 * 60L, 80))
-        val now = start + 20 * 3_600L
-        return DayClockCard.Data(DayClockMath.build(range, minutes, sleep, now), now)
-    }
-
     private fun weather(today: Day): WatchCommand.Weather = WatchCommand.Weather(
         WeatherNow(System.currentTimeMillis() / 1000 - 1_500, 128, 110, WeatherCondition.PARTLY_CLOUDY, 62, 140, 220, "Chicago"),
         listOf(WeatherDay(today, 61, 154, WeatherCondition.PARTLY_CLOUDY, 20), WeatherDay(today.plusDays(1), 40, 120, WeatherCondition.RAIN, 70)),

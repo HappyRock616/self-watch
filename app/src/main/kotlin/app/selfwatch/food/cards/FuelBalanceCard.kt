@@ -8,7 +8,12 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
+import app.selfwatch.cards.PictureFrame
+import app.selfwatch.cards.TrendPicture
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.Band
 import app.selfwatch.R
 import app.selfwatch.body.MeasurementsFragment
 import app.selfwatch.body.WeightDetailFragment
@@ -63,6 +68,29 @@ object FuelBalanceCard : Card<InUnits<FuelBalance>>(
         )
     }
 
+    /**
+     * kcal per kg of fat-free mass on a range bar: under about 30 is "close" (a soft flag, never an alarm),
+     * above it "good"; null without a value.
+     */
+    fun picture(ctx: Context, data: InUnits<FuelBalance>): TrendPicture? {
+        val value = data.value.kcalPerKgFfm ?: return null
+        if (data.value.missing == FuelMissing.WEIGHT || data.value.missing == FuelMissing.BODY_FAT) return null
+        val c = LevelColors.of(ctx)
+        val limit = FoodCardMath.LOW_FUEL_KCAL_PER_KG_FFM.toFloat()
+        val max = maxOf(value.toFloat(), limit * 2)
+        return TrendPicture.Range(
+            listOf(Band(limit, c.scaleClose), Band(max, c.scaleGood)),
+            0f, max, value.coerceAtLeast(0).toFloat(),
+            listOf(limit to FoodCardText.perKg(limit.toDouble(), data.units, decimals = 0)),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: InUnits<FuelBalance>) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<InUnits<FuelBalance>> = Holder(host, parent)
 
     private class Holder(host: CardHost, parent: ViewGroup) :
@@ -80,9 +108,9 @@ object FuelBalanceCard : Card<InUnits<FuelBalance>>(
             }
         }
 
-        override fun bind(data: InUnits<FuelBalance>) = bind(data.value, data.units)
+        override fun bind(data: InUnits<FuelBalance>) = bind(data.value, data.units, picture(ctx, data))
 
-        private fun bind(data: FuelBalance, units: Units) {
+        private fun bind(data: FuelBalance, units: Units, p: TrendPicture?) {
             missing = data.missing
             val value = data.kcalPerKgFfm
             val fewDays = ctx.resources.getQuantityString(R.plurals.fuel_balance_few_days, data.loggedDays, data.loggedDays)
@@ -103,27 +131,17 @@ object FuelBalanceCard : Card<InUnits<FuelBalance>>(
                 showEmpty(fewDays)
                 return
             }
-            showContent()
             tile.value = FoodCardText.perKg(value.toDouble(), units, decimals = 0)
             tile.unit = FoodCardText.kcalUnit(ctx, units)
-            tile.label = ctx.getString(R.string.fuel_balance_label)
-            val limit = FoodCardMath.LOW_FUEL_KCAL_PER_KG_FFM.toFloat()
-            bar.set(
-                value.coerceAtLeast(0).toFloat(),
-                maxOf(value.toFloat(), limit * 2),
-                if (data.low) palette.alarm else palette.primary,
-                limit = limit,
-            )
-            show(bar, true)
+            tile.label = ctx.getString(R.string.small_fuel_label)
+            showContent(p)
             val line = if (data.low) {
                 ctx.getString(R.string.fuel_balance_low)
             } else {
                 val ok = ctx.getString(R.string.per_weight_value, FoodCardText.perKg(FoodCardMath.LOW_FUEL_KCAL_PER_KG_FFM.toDouble(), units, decimals = 0), FoodCardText.kcalUnit(ctx, units))
                 ctx.getString(R.string.fuel_balance_ok, ok)
             }
-            text(note, line)
-            text(
-                coverage,
+            val inputs = (
                 ctx.resources.getQuantityString(
                     R.plurals.fuel_balance_inputs,
                     data.loggedDays,
@@ -131,13 +149,13 @@ object FuelBalanceCard : Card<InUnits<FuelBalance>>(
                     Fmt.number((data.avgActiveKcal ?: 0).toLong()),
                     Fmt.weight(((data.ffmKg ?: 0.0) * 100).roundToInt(), units),
                     data.loggedDays,
-                ),
-            )
+                )
+                )
             card.contentDescription = ctx.getString(
                 R.string.food_card_description,
                 ctx.getString(R.string.card_fuel_balance),
                 "${tile.value} ${tile.unit}",
-                line,
+                "$line. $inputs",
             )
         }
     }

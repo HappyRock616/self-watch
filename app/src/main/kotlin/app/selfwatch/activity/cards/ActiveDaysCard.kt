@@ -8,6 +8,7 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityGoals
@@ -25,12 +26,17 @@ import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.DotsView
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
+import app.selfwatch.ui.R as UiR
 
 /**
- * Active days this week (C15): days, Monday to today, with at least a seventh of the weekly
- * active-minutes goal in intensity minutes (moderate once, vigorous twice; [IntensityMath.activeDayMin]). There is no official number; the aim shown is
- * "most days" (5) and the wording "some is better than none" (CDC).
+ * Active days this week (C15, card design standard): seven day dots, Monday to Sunday, filled on days
+ * with at least a seventh of the weekly active-minutes goal in intensity minutes (moderate once,
+ * vigorous twice; [IntensityMath.activeDayMin]). The aim is "most days" (5). Small form: the dots.
  */
 object ActiveDaysCard : Card<ActiveDaysCard.Data>("active_days", CardTab.ACTIVITY, R.string.card_active_days, R.string.card_active_days_summary) {
 
@@ -44,6 +50,9 @@ object ActiveDaysCard : Card<ActiveDaysCard.Data>("active_days", CardTab.ACTIVIT
 
         /** Days reaching the threshold. */
         val activeDays: Int get() = IntensityMath.activeDays(perDay, dayMin)
+
+        /** One dot per day of [days]: true when the day was active. */
+        val dots: BooleanArray get() = BooleanArray(days.size) { (perDay.getOrNull(it) ?: 0) >= dayMin }
     }
 
     override val tables: Set<Table> = setOf(Table.ACTIVITY, Table.DAY_SUMMARY, Table.GOAL)
@@ -59,41 +68,57 @@ object ActiveDaysCard : Card<ActiveDaysCard.Data>("active_days", CardTab.ACTIVIT
 
     override val needs: Set<DataKind> = setOf(DataKind.STEPS, DataKind.ACTIVE_TIME)
 
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
     override fun small(ctx: Context, data: Data): SmallFace? {
         if (!data.hasData) return null
         val target = IntensityMath.ACTIVE_DAYS_TARGET
         return SmallFace(
             value = Fmt.number(data.activeDays.toLong()),
-            label = ctx.getString(R.string.small_active_days_label),
+            label = ctx.getString(R.string.activity_of_goal, Fmt.number(target.toLong())),
             status = CardStatusColors.ofProgress(data.activeDays.toDouble(), target.toDouble()),
-            note = ctx.getString(R.string.small_most_days),
             progress = data.activeDays.toFloat() / target,
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = ActivityVisuals.smallDots(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) = bindDots(graphic as DotsView, data)
+
+    private fun bindDots(dots: DotsView, data: Data) {
+        dots.filled = data.dots
+        dots.labels = StatCardView.weekdayLabels(data.days.map { it.yyyymmdd })
+        dots.color = LevelColors.of(dots.context).good
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(parent)
 
     private const val HISTORY_DAYS = 27
 
-    private class Holder(parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_active_days,
-        StatIds(R.id.ad_tile, R.id.ad_bar, R.id.ad_bars, R.id.ad_caption, R.id.ad_note, R.id.ad_empty),
-    ) {
+    private class Holder(parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_active_days)) {
+        private val tile = find<StatTile>(R.id.ad_tile)
+        private val dots = find<DotsView>(R.id.ad_dots)
+        private val empty = find<EmptyState>(R.id.ad_empty)
+
+        init {
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
+        }
+
         override fun bind(data: Data) {
             val ctx = root.context
-            showEmpty(!data.hasData)
-            if (!data.hasData) return
-            tile.value = Fmt.number(data.activeDays.toLong())
-            tile.unit = null
-            tile.label = ctx.getString(R.string.ad_label)
-            progress(data.activeDays, IntensityMath.ACTIVE_DAYS_TARGET)
-            caption.text = ctx.getString(R.string.ad_caption, Fmt.number(data.dayMin.toLong()))
-            bars(
-                ctx.getString(R.string.card_active_days),
-                data.perDay.map { it ?: 0 }, weekdayLabels(data.days.map { it.yyyymmdd }), data.dayMin,
-            )
-            note.setText(R.string.ad_note)
-            root.contentDescription = ctx.getString(R.string.ad_description, tile.value)
+            ActivityVisuals.show(data.hasData, tile, dots)
+            ActivityVisuals.show(!data.hasData, empty)
+            if (!data.hasData) {
+                root.contentDescription = empty.message
+                return
+            }
+            val target = Fmt.number(IntensityMath.ACTIVE_DAYS_TARGET.toLong())
+            ActivityVisuals.number(tile, Fmt.number(data.activeDays.toLong()), null, ctx.getString(R.string.activity_of_goal, target))
+            bindDots(dots, data)
+            root.contentDescription = ctx.getString(R.string.design_active_days_description, tile.value, target)
         }
     }
 }

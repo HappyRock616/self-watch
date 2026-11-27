@@ -43,8 +43,15 @@ data class HeartNowInfo(
  * @property days the days, oldest first (today last).
  * @property resting resting heart rate per day (null: none).
  * @property average average of the day's readings (null: none).
+ * @property low the day's lowest reading; [high] its highest (null: none; empty lists when not loaded).
  */
-data class HeartTrendInfo(val days: List<Day>, val resting: List<Int?>, val average: List<Int?>) {
+data class HeartTrendInfo(
+    val days: List<Day>,
+    val resting: List<Int?>,
+    val average: List<Int?>,
+    val low: List<Int?> = emptyList(),
+    val high: List<Int?> = emptyList(),
+) {
     /** True with no value of either kind. */
     val isEmpty: Boolean get() = resting.all { it == null } && average.all { it == null }
 
@@ -82,7 +89,19 @@ data class BreathingInfo(val result: BreathingResult?, val lastX10: Int?, val ni
  * @property high today's highest; [low] today's lowest.
  * @property spark 15-minute values over today, oldest first.
  */
-data class EnergyLevelInfo(val latest: Int, val latestSec: Long, val high: Int, val low: Int, val spark: List<Int>)
+data class EnergyLevelInfo(
+    val latest: Int,
+    val latestSec: Long,
+    val high: Int,
+    val low: Int,
+    val spark: List<Int>,
+    /** Points gained today (sum of the rises between readings), as Garmin's "charged". */
+    val charged: Int = 0,
+    /** Points lost today (sum of the falls between readings), as Garmin's "drained". */
+    val drained: Int = 0,
+    /** Today in 96 slots of 15 minutes: the average level, −1 without a reading (empty when not loaded). */
+    val slots: List<Int> = emptyList(),
+)
 
 /** Pure arithmetic of the heart, breathing and energy cards. */
 object HeartCardMath {
@@ -178,9 +197,15 @@ class HeartCardLoader(private val db: SelfWatchDb, private val clock: Clock) {
         val today = clock.today()
         val range = DayRange(today.plusDays(1 - HeartCardMath.TREND_DAYS), today)
         val resting = BodyTrendLoader(db, clock).restingByDay(range)
-        val avg = db.metrics.dailyStats(MetricKind.HEART_RATE, range, clock.zone()).associate { it.day to it.avg }
+        val stats = db.metrics.dailyStats(MetricKind.HEART_RATE, range, clock.zone()).associateBy { it.day }
         val days = range.days()
-        return HeartTrendInfo(days, days.map { resting[it] }, days.map { avg[it] })
+        return HeartTrendInfo(
+            days,
+            days.map { resting[it] },
+            days.map { stats[it]?.avg },
+            low = days.map { d -> stats[d]?.min?.takeIf { it >= HeartCardMath.MIN_BPM } },
+            high = days.map { d -> stats[d]?.max?.takeIf { it >= HeartCardMath.MIN_BPM } },
+        )
     }
 
     /** Last night's breathing against the usual range. */
@@ -205,12 +230,19 @@ class HeartCardLoader(private val db: SelfWatchDb, private val clock: Clock) {
             high = samples.maxOf { it.value },
             low = samples.minOf { it.value },
             spark = HeartCardMath.buckets(samples, start, now + 1),
+            charged = samples.zipWithNext { a, b -> (b.value - a.value).coerceAtLeast(0) }.sum(),
+            drained = samples.zipWithNext { a, b -> (a.value - b.value).coerceAtLeast(0) }.sum(),
+            slots = BodyCardMath.slots(
+                LongArray(samples.size) { samples[it].tSec }, IntArray(samples.size) { samples[it].value },
+                start, clock.today().plusDays(1).startSec(zone), DAY_SLOTS,
+            ).toList(),
         )
     }
 
     private companion object {
         const val DAY_SEC = 86_400L
         const val MAX_ENERGY = 100
+        const val DAY_SLOTS = 96
     }
 }
 

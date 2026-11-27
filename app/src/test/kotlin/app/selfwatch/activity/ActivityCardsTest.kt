@@ -31,6 +31,7 @@ import app.selfwatch.me.GoalField
 import app.selfwatch.model.fake.FakeClock
 import app.selfwatch.model.food.Goal
 import app.selfwatch.model.food.GoalKind
+import app.selfwatch.model.food.Sex
 import app.selfwatch.model.health.ActivityMinute
 import app.selfwatch.model.health.DataSource
 import app.selfwatch.model.health.DaySummary
@@ -89,11 +90,11 @@ class ActivityCardsTest {
         assertEquals(ActivityWeek.days(today), d.days)
         assertEquals(listOf(30, 20, 15, null, null, null, null), d.perDay)
         assertEquals(65, d.weekMin)
-        // No goal set: the default 300 a week, whatever the main goal.
-        assertEquals(300, d.target)
+        // No goal set: the default 150 a week, whatever the main goal.
+        assertEquals(150, d.target)
         assertTrue(d.hasData)
         db.settings.set(SettingKeys.MAIN_GOAL, MainGoal.WEIGHT_LOSS.id)
-        assertEquals(300, IntensityMinutesCard.load(env(db)).target)
+        assertEquals(150, IntensityMinutesCard.load(env(db)).target)
         // The weekly active-minutes goal is the target.
         db.goals.set(Goal(GoalKind.ACTIVE_MIN, 140, today.plusDays(-3)))
         assertEquals(140, IntensityMinutesCard.load(env(db)).target)
@@ -114,12 +115,12 @@ class ActivityCardsTest {
         db.summaries.upsertDay(summary(today.plusDays(-2), steps = 9_000, activeKcal = 480), clock.nowSec())
         val s = StepsTodayCard.load(env(db))
         assertEquals(5_000, s.steps)
-        assertEquals(10_000, s.target)
+        assertEquals(7_500, s.target)
         assertFalse(s.ownGoal)
         assertEquals(listOf(null, null, null, null, 9_000, null, 5_000), s.week)
-        // No age-based default: 60 and over still gets 10,000.
+        // No age-based default: 60 and over still gets 7,500.
         db.settings.setInt(SettingKeys.PROFILE_BIRTH_YEAR, 2026 - 62)
-        assertEquals(10_000, StepsTodayCard.load(env(db)).target)
+        assertEquals(7_500, StepsTodayCard.load(env(db)).target)
         // The user's own goal wins.
         db.goals.set(Goal(GoalKind.STEPS, 8_000, today.plusDays(-10)))
         val own = StepsTodayCard.load(env(db))
@@ -287,7 +288,8 @@ class ActivityCardsTest {
         assertEquals(48.3, d.latest!!, 1e-9)
         assertEquals(listOf(47.0, 48.3), d.series)
         assertEquals(1.3, d.change!!, 1e-9)
-        assertEquals(listOf(51.0, 0.0), d.extras)
+        // Other sport, cycling flag, age (no birth year: null), sex ordinal (unspecified).
+        assertEquals(listOf(51.0, 0.0, null, Sex.UNSPECIFIED.ordinal.toDouble()), d.extras)
         assertEquals("Running", Vo2MaxCard.label(ctx, d))
         assertEquals("Cycling 51.0", Vo2MaxCard.note(ctx, d))
         assertEquals("48.3", Vo2MaxCard.small(ctx, d)!!.value.toString())
@@ -308,16 +310,31 @@ class ActivityCardsTest {
             listOf("activity_goals", "training_load", "vo2_max", "recovery_hr", "weekly_volume", "workouts"),
             CardPresets.layout(CardTab.ACTIVITY).map { it.card.id },
         )
-        // Before the watch's first VO2 max estimate, Steps fills its place, right where it would be.
+        // A normal Garmin watch has no training status: Steps fills Weekly effort's place, right where it
+        // would be, and the card stays in the list (hidden) for watches that have it.
+        val garmin = CardPresets.defaults(CardTab.ACTIVITY, Recorded.ALL)
+        assertEquals(
+            listOf("activity_goals", "training_load", "steps_today", "vo2_max", "recovery_hr", "weekly_volume", "workouts"),
+            garmin.map { it.card.id },
+        )
+        assertEquals(
+            listOf("activity_goals", "steps_today", "vo2_max", "recovery_hr", "weekly_volume", "workouts"),
+            CardStore.shownOf(garmin, Recorded.ALL).map { it.card.id },
+        )
+        // Before the watch's first VO2 max estimate too, Distance (the next backup) fills that place.
         val noVo2 = Recorded(Recorded.ALL.kinds - DataKind.VO2_MAX)
         val all = CardPresets.defaults(CardTab.ACTIVITY, noVo2)
-        assertEquals(listOf("activity_goals", "training_load", "vo2_max", "steps_today", "recovery_hr", "weekly_volume", "workouts"), all.map { it.card.id })
         assertEquals(
-            listOf("activity_goals", "training_load", "steps_today", "recovery_hr", "weekly_volume", "workouts"),
+            listOf("activity_goals", "training_load", "steps_today", "vo2_max", "distance_today", "recovery_hr", "weekly_volume", "workouts"),
+            all.map { it.card.id },
+        )
+        assertEquals(
+            listOf("activity_goals", "steps_today", "distance_today", "recovery_hr", "weekly_volume", "workouts"),
             CardStore.shownOf(all, noVo2).map { it.card.id },
         )
-        // With an estimate stored, the card shows and no backup is needed.
-        assertEquals(CardPresets.layout(CardTab.ACTIVITY), CardPresets.defaults(CardTab.ACTIVITY, Recorded.ALL))
+        // A watch with training status and a VO2 max estimate shows every default and needs no backup.
+        val everything = Recorded(Recorded.ALL.kinds + DataKind.TRAINING_STATUS)
+        assertEquals(CardPresets.layout(CardTab.ACTIVITY), CardPresets.defaults(CardTab.ACTIVITY, everything))
     }
 
     private fun minute(t: Long, intensity: Int) = ActivityMinute(1, t, 100, 50, 7_000, intensity, null)

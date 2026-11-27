@@ -16,6 +16,10 @@ import app.selfwatch.interop.jobs.AutoJobs
 import app.selfwatch.log.FileLogSink
 import app.selfwatch.log.LogSinks
 import app.selfwatch.model.log.SwLog
+import app.selfwatch.model.time.SystemClock
+import app.selfwatch.service.health.HrZoneStore
+import app.selfwatch.service.health.StepAutoGoal
+import app.selfwatch.service.health.SummaryBuilder
 import app.selfwatch.service.WatchServiceDeps
 import app.selfwatch.service.WatchServiceHost
 import app.selfwatch.ui.SwTheme
@@ -66,6 +70,9 @@ class SelfWatchApp : Application(), WatchServiceHost {
             CoroutineExceptionHandler { _, e -> SwLog.e(TAG, "app scope failure", e) },
     )
 
+    /** Work that must outlive a screen (saving heart-rate zones re-works out the stored days). */
+    val appScope: CoroutineScope get() = scope
+
     override fun onCreate() {
         super.onCreate()
         role = ProcessRole.of(ProcessRole.currentProcessName(), packageName)
@@ -104,6 +111,7 @@ object AppStartup {
             val g = graph()
             watchAppearance(g, scope)
             migrateGoals(g, scope)
+            applyZonesOnce(g, scope)
             wireAutoJobs(ctx.applicationContext, g, scope)
         }
         return file
@@ -139,6 +147,29 @@ object AppStartup {
                 throw e
             } catch (e: RuntimeException) {
                 SwLog.e(TAG, "goal migration failed", e)
+            }
+        }
+    }
+
+    /**
+     * Once after the update to 0.0.4: works out the stored days' active minutes from heart-rate zones
+     * (zone 2+) so the past is not left at 0.
+     */
+    private fun applyZonesOnce(g: AppGraph, scope: CoroutineScope) {
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    StepAutoGoal.update(g.db, SystemClock)
+                    val store = HrZoneStore(g.db, SystemClock)
+                    if (store.historyPending()) {
+                        store.applyToHistory(SummaryBuilder(g.db, SystemClock))
+                        SwLog.i(TAG, "active minutes worked out from heart-rate zones")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: RuntimeException) {
+                SwLog.e(TAG, "heart-rate zone update failed", e)
             }
         }
     }

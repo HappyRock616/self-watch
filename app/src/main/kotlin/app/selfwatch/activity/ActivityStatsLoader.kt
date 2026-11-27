@@ -9,7 +9,9 @@ package app.selfwatch.activity
 
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.SettingKeys
+import app.selfwatch.model.health.HrZoneSet
 import app.selfwatch.model.health.MetricKind
+import app.selfwatch.service.health.HrZoneStore
 import app.selfwatch.model.health.Workout
 import app.selfwatch.model.time.Clock
 import app.selfwatch.model.time.Day
@@ -31,9 +33,11 @@ class ActivityStatsLoader(private val db: SelfWatchDb, private val clock: Clock)
     /** Age in whole years this calendar year, or null without a birth year. */
     suspend fun age(): Int? = db.settings.getInt(SettingKeys.PROFILE_BIRTH_YEAR)?.let { clock.today().year - it }?.takeIf { it in 0..AGE_MAX }
 
+    /** The heart-rate zones in use (Goals › Heart-rate zones). */
+    suspend fun zoneSet(): HrZoneSet = HrZoneStore(db, clock).current()
+
     /** The maximum heart rate for the zones. */
-    suspend fun maxHr(): MaxHr =
-        HrZones.maxHr(db.settings.getInt(HrZones.MAX_HR_KEY), db.settings.getInt(SettingKeys.PROFILE_BIRTH_YEAR), clock.today().year)
+    suspend fun maxHr(): MaxHr = MaxHr.of(zoneSet())
 
     /** Intensity minutes per day of [days] (null where nothing was recorded). */
     suspend fun intensityPerDay(days: List<Day>): List<Int?> {
@@ -56,19 +60,19 @@ class ActivityStatsLoader(private val db: SelfWatchDb, private val clock: Clock)
     /** Workouts that started on [days], oldest first. */
     suspend fun workouts(days: DayRange): List<Workout> = db.workouts.forExport(days, clock.zone())
 
-    /** Each workout of [workouts] with its zone time for [maxHr]. */
-    suspend fun zones(workouts: List<Workout>, maxHr: Int): List<SessionZones> = workouts.map { w ->
+    /** Each workout of [workouts] with its zone time in [zones]. */
+    suspend fun zones(workouts: List<Workout>, zones: HrZoneSet): List<SessionZones> = workouts.map { w ->
         val readings = heartRate(w)
-        val zones = HrZones.zoneSeconds(readings, w.startSec, w.endSec, w.durationSec, w.avgHr, maxHr)
-        val fromAverage = zones != null && HrZones.zoneSeconds(readings, w.startSec, w.endSec, w.durationSec, null, maxHr) == null
-        SessionZones(w, zones, fromAverage)
+        val sec = HrZones.zoneSeconds(readings, w.startSec, w.endSec, w.durationSec, w.avgHr, zones::zoneOf)
+        val fromAverage = sec != null && HrZones.zoneSeconds(readings, w.startSec, w.endSec, w.durationSec, null, zones::zoneOf) == null
+        SessionZones(w, sec, fromAverage)
     }
 
     /** Training load per local day for the workouts in [days]. */
-    suspend fun dailyLoad(days: DayRange, maxHr: Int): Map<Day, Int> {
+    suspend fun dailyLoad(days: DayRange, zones: HrZoneSet): Map<Day, Int> {
         val zone = clock.zone()
         val out = HashMap<Day, Int>()
-        for (s in zones(workouts(days), maxHr)) {
+        for (s in zones(workouts(days), zones)) {
             if (s.zoneSec == null) continue
             val d = Day.of(s.workout.startSec, zone)
             out[d] = (out[d] ?: 0) + s.load

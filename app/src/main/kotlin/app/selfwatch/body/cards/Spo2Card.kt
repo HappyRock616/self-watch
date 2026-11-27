@@ -19,17 +19,24 @@ import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.model.time.Day
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.Band
 import app.selfwatch.ui.components.EmptyState
-import app.selfwatch.ui.components.Sparkline
+import app.selfwatch.ui.components.RangeBarView
 import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.R as UiR
 
-/** Last night's blood oxygen and 30 nights; opens Sleep. */
+/**
+ * Blood oxygen (card design standard): last night's average asleep on a range bar from 80 to 100 %
+ * (under 90 orange, 90–94 yellow, 95 and up good), with "asleep · low 89%" as its tag. Small form: the
+ * number and the range bar. Opens Sleep.
+ */
 object Spo2Card : Card<Spo2Card.Data>("spo2", CardTab.BODY, R.string.card_spo2, R.string.card_spo2_summary) {
 
     /** Blood oxygen (null with no readings in 30 days) and [today], to name last night. */
@@ -41,14 +48,41 @@ object Spo2Card : Card<Spo2Card.Data>("spo2", CardTab.BODY, R.string.card_spo2, 
 
     override val needs: Set<DataKind> = setOf(DataKind.SPO2)
 
+    /** "asleep · low 89%", or "asleep" without a lowest reading. */
+    fun tag(ctx: Context, o: Spo2Info): String =
+        o.lowestPct?.let { ctx.getString(R.string.body1_spo2_low, it) } ?: ctx.getString(R.string.body1_spo2_asleep)
+
     override fun small(ctx: Context, data: Data): SmallFace? {
         val o = data.spo2 ?: return null
         return SmallFace(
             value = o.lastPct.toString(),
-            label = if (o.lastDay == data.today) ctx.getString(R.string.sleep_card_last_night) else Fmt.day(ctx, o.lastDay.yyyymmdd),
+            label = tag(ctx, o),
             unit = ctx.getString(R.string.unit_percent),
+            note = if (o.lastDay == data.today) ctx.getString(R.string.sleep_card_last_night) else Fmt.day(ctx, o.lastDay.yyyymmdd),
         )
     }
+
+    override fun createSmallGraphic(ctx: Context): View = BodyVisuals.smallRange(ctx)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        val o = data.spo2 ?: return
+        bindRange(graphic as RangeBarView, o.lastPct, ticks = false)
+    }
+
+    /** [pct] on the 80–100 % bar. */
+    fun bindRange(bar: RangeBarView, pct: Int, ticks: Boolean) {
+        val c = LevelColors.of(bar.context)
+        bar.min = MIN
+        bar.max = MAX
+        bar.bands = listOf(Band(LOW, c.stressMedium), Band(OK, c.scaleClose), Band(MAX, c.scaleGood))
+        bar.value = pct.toFloat().coerceIn(MIN, MAX)
+        bar.ticks = if (ticks) listOf(LOW to "90", OK to "95") else emptyList()
+    }
+
+    private const val MIN = 80f
+    private const val LOW = 90f
+    private const val OK = 95f
+    private const val MAX = 100f
 
     override fun openDetail(host: CardHost): Boolean {
         host.open(SleepDetailFragment())
@@ -58,28 +92,30 @@ object Spo2Card : Card<Spo2Card.Data>("spo2", CardTab.BODY, R.string.card_spo2, 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
 
     private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_body_spo2)) {
+        private val tile = find<StatTile>(R.id.spo2_tile)
+        private val range = find<RangeBarView>(R.id.spo2_range)
+        private val empty = find<EmptyState>(R.id.spo2_empty)
+
         init {
             root.setOnClickListener { host.open(SleepDetailFragment()) }
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
         }
 
         override fun bind(data: Data) {
             val ctx = root.context
             val o = data.spo2
-            val tile = find<StatTile>(R.id.spo2_tile)
-            val spark = find<Sparkline>(R.id.spo2_spark)
-            find<EmptyState>(R.id.spo2_empty).visibility = if (o == null) View.VISIBLE else View.GONE
-            tile.visibility = if (o == null) View.GONE else View.VISIBLE
+            for (v in listOf(tile, range)) CardVisuals.show(v, o != null)
+            CardVisuals.show(empty, o == null)
             if (o == null) {
-                spark.visibility = View.GONE
+                root.contentDescription = ctx.getString(R.string.spo2_empty)
                 return
             }
-            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
             tile.value = o.lastPct.toString()
             tile.unit = ctx.getString(R.string.unit_percent)
-            tile.label = if (o.lastDay == data.today) ctx.getString(R.string.spo2_last_night) else Fmt.day(ctx, o.lastDay.yyyymmdd)
-            spark.values = o.nights.toIntArray()
-            spark.visibility = if (o.nights.size >= 2) View.VISIBLE else View.GONE
-            root.contentDescription = ctx.getString(R.string.spo2_description, Fmt.percent(o.lastPct / 100.0), tile.label)
+            tile.label = tag(ctx, o)
+            bindRange(range, o.lastPct, ticks = true)
+            val night = if (o.lastDay == data.today) ctx.getString(R.string.spo2_last_night) else Fmt.day(ctx, o.lastDay.yyyymmdd)
+            root.contentDescription = ctx.getString(R.string.spo2_description, Fmt.percent(o.lastPct / 100.0), listOf(night, tile.label).joinToString(", "))
         }
     }
 }

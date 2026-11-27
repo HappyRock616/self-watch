@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Recovery card: resting heart rate (a heart). Drawn for Self Watch; tinted in code. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,20.5C7,16.6 3,13.3 3,9.1A4.6,4.6 0,0 1,7.6 4.5C9.4,4.5 11,5.5 12,7C13,5.5 14.6,4.5 16.4,4.5A4.6,4.6 0,0 1,21 9.1C21,13.3 17,16.6 12,20.5z" />
+</vector>

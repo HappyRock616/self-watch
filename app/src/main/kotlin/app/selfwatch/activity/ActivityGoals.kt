@@ -15,16 +15,17 @@ import app.selfwatch.model.time.Day
 import kotlin.math.roundToInt
 
 /**
- * The step and active-time goals every screen reads. Steps are per day (default 10,000); active time
- * ([GoalKind.ACTIVE_MIN]) is minutes per **week** (default 300). Views that work per day use a seventh
+ * The step and active-time goals every screen reads. Steps are per day (default 7,500, Garmin's Auto
+ * Goal start; `StepAutoGoal` raises it); active time ([GoalKind.ACTIVE_MIN]) is minutes per **week**
+ * (default 150, Garmin and WHO). Views that work per day use a seventh
  * of the weekly goal ([dailyShare]).
  */
 object ActivityGoals {
     /** Step goal per day before one is set. */
-    const val DEFAULT_STEPS: Int = 10_000
+    const val DEFAULT_STEPS: Int = 7_500
 
     /** Active minutes per week before a goal is set. */
-    const val DEFAULT_ACTIVE_MIN_WEEK: Int = 300
+    const val DEFAULT_ACTIVE_MIN_WEEK: Int = 150
 
     /** WHO 2020 minimum of moderate minutes a week (vigorous minutes counting double), shown as a note. */
     const val WHO_MIN_WEEK: Int = 150
@@ -59,9 +60,6 @@ object ActivityGoals {
     /** Active days per week before a goal is set. */
     const val DEFAULT_ACTIVE_DAYS: Int = 5
 
-    /** Floors per day before a goal is set (a common watch default). */
-    const val DEFAULT_FLOORS: Int = 10
-
     /** The workouts-per-week goal. */
     suspend fun workoutsWeek(db: SelfWatchDb): Int = db.settings.getInt(WORKOUTS_WEEK_KEY) ?: DEFAULT_WORKOUTS_WEEK
 
@@ -71,8 +69,8 @@ object ActivityGoals {
     /** The distance-per-day goal in metres, or null when none is set. */
     suspend fun distanceM(db: SelfWatchDb): Int? = db.settings.getInt(DISTANCE_KEY)
 
-    /** The floors-per-day goal. */
-    suspend fun floors(db: SelfWatchDb): Int = db.settings.getInt(FLOORS_KEY) ?: DEFAULT_FLOORS
+    /** The floors-per-day goal, or null when none is set (0 means no goal). */
+    suspend fun floors(db: SelfWatchDb): Int? = db.settings.getInt(FLOORS_KEY)?.takeIf { it > 0 }
 
     /** The active-calories-per-day goal. */
     suspend fun activeKcal(db: SelfWatchDb): Int = db.settings.getInt(SettingKeys.GOAL_ACTIVE_KCAL) ?: ActivityRules.DEFAULT_ACTIVE_KCAL

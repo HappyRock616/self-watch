@@ -3,4 +3,5 @@
 <resources>
     <item name="training_chart" type="id" />
     <item name="exercise_sleep_chart" type="id" />
+    <item name="daily_activity_chart" type="id" />
 </resources>

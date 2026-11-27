@@ -10,7 +10,6 @@ package app.selfwatch.activity.cards
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityGoals
 import app.selfwatch.activity.TodayLoader
@@ -20,6 +19,7 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.DataKind
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
@@ -28,17 +28,20 @@ import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.SystemClock
 import app.selfwatch.service.live.LiveReading
+import app.selfwatch.ui.components.BarsView
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingView
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.format.Fmt
-import app.selfwatch.ui.format.FmtLabels
 import app.selfwatch.ui.format.Units
 import app.selfwatch.watch.LiveVitals
-import kotlin.math.roundToLong
+import app.selfwatch.ui.R as UiR
 
 /**
- * Steps (C11, the "steps now" card): today's steps against the user's step goal, else 10,000, with
- * distance and active calories and the last 7 days as bars. While the card is on screen and the watch is
- * connected, the watch's live step count replaces the last sync's ([LiveVitals]). "Every extra 1,000
- * helps", never pass or fail. The stored id stays `steps_today`.
+ * Steps (C11, card design standard): today's steps against the user's step goal (else 7,500) with the
+ * last 7 days as bars, met / short in color, and the goal line. Small form: a ring with today's steps.
+ * While the card is on screen and the watch is connected, the watch's live step count replaces the last
+ * sync's ([LiveVitals]). Never pass or fail. The stored id stays `steps_today`.
  */
 object StepsTodayCard : Card<StepsTodayCard.Data>("steps_today", CardTab.ACTIVITY, R.string.card_steps_today, R.string.card_steps_today_summary) {
 
@@ -84,6 +87,11 @@ object StepsTodayCard : Card<StepsTodayCard.Data>("steps_today", CardTab.ACTIVIT
 
     override val needs: Set<DataKind> = setOf(DataKind.STEPS)
 
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(app.selfwatch.activity.DailyActivityDetailFragment())
+        return true
+    }
+
     override fun small(ctx: Context, data: Data): SmallFace? {
         if (data.isEmpty) return null
         val steps = data.steps ?: 0
@@ -91,13 +99,22 @@ object StepsTodayCard : Card<StepsTodayCard.Data>("steps_today", CardTab.ACTIVIT
             value = Fmt.number(steps.toLong()),
             label = ctx.getString(R.string.small_of_steps, Fmt.number(data.target.toLong())),
             status = CardStatusColors.ofProgress(steps.toDouble(), data.target.toDouble()),
-            note = if (steps >= data.target) {
-                ctx.getString(R.string.small_target_reached)
-            } else {
-                ctx.getString(R.string.small_to_go, Fmt.number((data.target - steps).toLong()))
-            },
             progress = if (data.target > 0) steps.toFloat() / data.target else null,
         )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallRing(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        val steps = data.steps ?: 0
+        (graphic as RingView).apply {
+            progress = if (data.target > 0) steps.toFloat() / data.target else 0f
+            color = ActivityVisuals.goalColor(context, steps, data.target)
+            centerText = Fmt.number(steps.toLong())
+            subText = context.getString(R.string.activity_of_goal, Fmt.number(data.target.toLong()))
+        }
     }
 
     override fun createView(host: CardHost, parent: ViewGroup): CardView<Data> = Holder(host, parent)
@@ -113,15 +130,15 @@ object StepsTodayCard : Card<StepsTodayCard.Data>("steps_today", CardTab.ACTIVIT
 
     private const val WEEK = 7
 
-    private class Holder(host: CardHost, parent: ViewGroup) : StatCardView<Data>(
-        parent, R.layout.card_activity_steps_today,
-        StatIds(R.id.st_tile, R.id.st_bar, R.id.st_bars, R.id.st_caption, R.id.st_note, R.id.st_empty),
-    ) {
-        private val extras: TextView = find(R.id.st_extras)
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(CardView.inflate(parent, R.layout.card_activity_steps_today)) {
+        private val tile = find<StatTile>(R.id.st_tile)
+        private val bars = find<BarsView>(R.id.st_bars)
+        private val empty = find<EmptyState>(R.id.st_empty)
         private var stored: Data? = null
         private var live: LiveReading? = null
 
         init {
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
             LiveVitals.follow(host, root) { r ->
                 live = r
                 stored?.let { show(it) }
@@ -137,38 +154,22 @@ object StepsTodayCard : Card<StepsTodayCard.Data>("steps_today", CardTab.ACTIVIT
             val ctx = root.context
             val now = stepsNow(data.steps, live, SystemClock.today().startSec(SystemClock.zone()))
             val isLive = now != null && now != data.steps
-            val empty = data.isEmpty && now == null
-            showEmpty(empty)
-            extras.visibility = if (empty) View.GONE else View.VISIBLE
-            if (empty) return
+            val isEmpty = data.isEmpty && now == null
+            ActivityVisuals.show(!isEmpty, tile, bars)
+            ActivityVisuals.show(isEmpty, empty)
+            if (isEmpty) {
+                root.contentDescription = empty.message
+                return
+            }
             val steps = now ?: 0
             val target = Fmt.number(data.target.toLong())
-            tile.value = Fmt.number(steps.toLong())
-            tile.unit = null
-            val label = when {
-                data.ownGoal -> ctx.getString(R.string.st_label_own, target)
-                else -> ctx.getString(R.string.st_label, target)
-            }
-            tile.label = if (isLive) ctx.getString(R.string.card_line_pair, label, ctx.getString(R.string.st_live)) else label
-            progress(steps, data.target)
-            caption.text = if (steps >= data.target) {
-                ctx.getString(R.string.st_caption_done)
-            } else {
-                ctx.getString(R.string.st_caption_more, Fmt.number((data.target - steps).toLong()))
-            }
-            val distance = data.distanceM?.let { Fmt.distance(it.toDouble(), data.units, labels = FmtLabels.from(ctx)) }
-            text(
-                extras,
-                when {
-                    distance != null && data.activeKcal != null -> ctx.getString(R.string.st_extras, distance, Fmt.number(data.activeKcal.toLong()))
-                    else -> distance
-                },
+            ActivityVisuals.number(
+                tile, Fmt.number(steps.toLong()), null,
+                if (isLive) ctx.getString(R.string.tag_live) else ctx.getString(R.string.tag_goal, target),
             )
             val week = data.week.dropLast(1).map { it ?: 0 } + steps
-            bars(ctx.getString(R.string.activity_steps), week, weekdayLabels(data.days.map { it.yyyymmdd }), data.target)
-            val present = data.week.filterNotNull()
-            text(note, if (present.isEmpty()) null else ctx.getString(R.string.st_note, Fmt.number(present.average().roundToLong())))
-            root.contentDescription = ctx.getString(R.string.st_description, tile.value, target)
+            ActivityVisuals.weekBars(bars, ctx.getString(R.string.activity_steps), week, StatCardView.weekdayLabels(data.days.map { it.yyyymmdd }), data.target)
+            root.contentDescription = ctx.getString(R.string.design_steps_description, tile.value, target)
         }
     }
 }

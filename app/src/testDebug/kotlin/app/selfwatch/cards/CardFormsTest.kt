@@ -149,9 +149,9 @@ class CardFormsTest {
 
     @Test
     fun finishedCardsWithDataWorkInEveryThemeAndFontSize() {
-        // Day clock, Live, Weather and the device cards with real-looking data (the gallery's samples),
+        // Live, Weather and the device cards with real-looking data (the gallery's samples),
         // small and large, in every theme, dark and light, at 1.0×, 1.5× and 2.0× font.
-        val ids = setOf("day_clock", "live", "weather", "battery", "last_sync", "solar", "room_climate")
+        val ids = setOf("live", "weather", "battery", "last_sync", "solar", "room_climate")
         val samples = CardSamples.all().filter { it.first.id in ids }
         assertEquals(ids, samples.map { it.first.id }.toSet())
         for (theme in SwTheme.Theme.entries) {
@@ -191,7 +191,7 @@ class CardFormsTest {
             "body_today", "activity_goals", "workouts", "daily_balance", "weight_goal", "sport_progress", "food_groups",
             "readiness", "sleep_score", "temperature", "muscle_mass", "lean_mass", "bmi", "bmr", "blood_pressure", "naps",
             "morning_summary", "active_time", "streaks", "weekly_review", "last_activity", "personal_records", "vo2_max",
-            "day_clock", "live", "weather", "battery", "last_sync", "solar", "room_climate",
+            "live", "weather", "battery", "last_sync", "solar", "room_climate",
         )
     }
 }

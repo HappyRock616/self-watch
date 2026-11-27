@@ -43,7 +43,13 @@ data class Baseline(val mean: Double, val sd: Double, val count: Int) {
 data class HrvBaseline(val sevenDayMs: Int, val lowMs: Int, val highMs: Int, val status: RangeStatus, val rolling: List<Int>)
 
 /** HRV card data: the result once there is enough history, else how many nights are in so far. */
-data class HrvInfo(val result: HrvBaseline?, val nights: Int, val needed: Int)
+data class HrvInfo(val result: HrvBaseline?, val nights: Int, val needed: Int, val watch: WatchHrv? = null)
+
+/**
+ * The watch's own HRV status summary (FIT `hrv_status_summary`), as Garmin shows it: last night's and
+ * the 7-day average, the balanced baseline and the status (1 poor, 2 low, 3 unbalanced, 4 balanced).
+ */
+data class WatchHrv(val nightMs: Int?, val weekMs: Int?, val lowMs: Int?, val highMs: Int?, val status: Int?)
 
 /**
  * Resting heart rate as a 4-week rolling average against the user's earlier level.
@@ -72,6 +78,8 @@ data class SignalReading(
     val deviation: Int,
     /** True when the signal is clearly above the user's usual. */
     val up: Boolean,
+    /** Spread of the baseline nights (stored scale); 0 when not known. */
+    val sd: Double = 0.0,
 )
 
 /** The body signals read against baseline. [scale] divides the stored value for display. */
@@ -224,7 +232,7 @@ object BodySignalsMath {
     fun reading(kind: SignalKind, value: Int, base: Baseline): SignalReading {
         val dev = value - base.mean
         val up = dev >= kind.minRise && dev >= RISE_SD * base.sd
-        return SignalReading(kind, value, dev.roundToInt(), up)
+        return SignalReading(kind, value, dev.roundToInt(), up, base.sd)
     }
 
     /**
@@ -447,6 +455,40 @@ object BodyCardMath {
      * Rest minutes from stress readings ([tSec] ascending, values 0–100): each reading at or below
      * [REST_MAX] counts until the next reading (at most [MAX_GAP_SEC]).
      */
+    /**
+     * Minutes at each stress level (0 rest 0–25, 1 low 26–50, 2 medium 51–75, 3 high 76–100), each reading
+     * counting until the next one, at most [MAX_GAP_SEC] (as [restMinutes]).
+     */
+    fun levelMinutes(tSec: LongArray, values: IntArray): IntArray {
+        val sec = LongArray(4)
+        for (i in 0 until minOf(tSec.size, values.size) - 1) {
+            val v = values[i]
+            if (v !in 0..100) continue
+            val level = when {
+                v <= 25 -> 0
+                v <= 50 -> 1
+                v <= 75 -> 2
+                else -> 3
+            }
+            sec[level] += (tSec[i + 1] - tSec[i]).coerceIn(0, MAX_GAP_SEC)
+        }
+        return IntArray(4) { (sec[it] / 60).toInt() }
+    }
+
+    /** The average of [values] in each of [slots] equal parts of [startSec]..[endSec]; −1 where none. */
+    fun slots(tSec: LongArray, values: IntArray, startSec: Long, endSec: Long, slots: Int): IntArray {
+        val sum = LongArray(slots)
+        val count = IntArray(slots)
+        val span = (endSec - startSec).coerceAtLeast(1)
+        for (i in tSec.indices) {
+            if (tSec[i] < startSec || tSec[i] >= endSec) continue
+            val s = ((tSec[i] - startSec) * slots / span).toInt().coerceIn(0, slots - 1)
+            sum[s] += values[i]
+            count[s]++
+        }
+        return IntArray(slots) { if (count[it] == 0) -1 else ((sum[it] * 2 + count[it]) / (2L * count[it])).toInt() }
+    }
+
     fun restMinutes(tSec: LongArray, values: IntArray): Int {
         var sec = 0L
         for (i in 0 until minOf(tSec.size, values.size) - 1) {

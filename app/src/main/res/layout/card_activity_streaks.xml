@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Activity card: streak at the step goal, flame + 14 day dots (StreaksCard), card design standard. -->
+<app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/streaks_card"
+    style="@style/Widget.SelfWatch.TabCard"
+    app:swTitle="@string/card_streaks">
+
+    <LinearLayout
+        android:id="@+id/sk_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/sk_flame"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="@dimen/sw_space_1"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_flame" />
+
+        <app.selfwatch.ui.components.StatTile
+            android:id="@+id/sk_tile"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:swValue="@string/dash" />
+    </LinearLayout>
+    <app.selfwatch.ui.components.DotsView
+        android:id="@+id/sk_dots"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/sw_space_1"
+        android:importantForAccessibility="no" />
+    <app.selfwatch.ui.components.EmptyState
+        android:id="@+id/sk_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:swMessage="@string/trend_empty" />
+</app.selfwatch.ui.components.SwCard>

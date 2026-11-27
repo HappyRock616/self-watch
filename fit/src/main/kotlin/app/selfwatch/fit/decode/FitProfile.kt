@@ -77,6 +77,8 @@ object FitMsg {
 
     /** hrv_status_summary (nightly HRV). */
     const val HRV_STATUS_SUMMARY: Int = 370
+    const val METRIC_RECOVERY: Int = 284
+    const val NAP_EVENT: Int = 412
 
     /** hrv_value (5-minute RMSSD). */
     const val HRV_VALUE: Int = 371

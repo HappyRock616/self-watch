@@ -23,7 +23,10 @@ import app.selfwatch.ui.components.SwCard
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import app.selfwatch.ui.R as UiR
 
-/** Theme colors for [CardStatus] (the theme's primary, secondary and muted; never hard-coded). */
+/**
+ * Colors for [CardStatus]: the theme palette (primary on track, secondary close, muted off), the same goal
+ * colors the rings and bars use ([LevelColors.good] / [LevelColors.close]); owner, 2026-11-26.
+ */
 object CardStatusColors {
     /** The color of [status] in [ctx]'s theme, or null for [CardStatus.NONE]. */
     @ColorInt
@@ -76,7 +79,9 @@ class SmallCardView<T>(private val card: Card<T>, host: CardHost, parent: ViewGr
         graphic?.let { g ->
             g.visibility = View.GONE
             g.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            (root as ViewGroup).addView(g, 1, Views.matchWrap(ctx, 8))
+            // Keep the height the picture asks for (bars fall back to their full-size height otherwise).
+            val lp = Views.matchWrap(ctx, 8).apply { g.layoutParams?.height?.let { height = it } }
+            (root as ViewGroup).addView(g, 1, lp)
         }
         show(null)
     }
@@ -97,7 +102,10 @@ class SmallCardView<T>(private val card: Card<T>, host: CardHost, parent: ViewGr
         tile.unit = f.unit
         tile.label = f.label
         note.text = f.note
-        note.visibility = if (f.note.isNullOrEmpty()) View.GONE else View.VISIBLE
+        // Card design standard: a picture replaces the note, and a picture with the number inside replaces the number.
+        val pictured = graphic != null && face != null
+        note.visibility = if (f.note.isNullOrEmpty() || pictured) View.GONE else View.VISIBLE
+        tile.visibility = if (pictured && card.smallGraphicShowsValue) View.GONE else View.VISIBLE
         val color = CardStatusColors.of(ctx, f.status)
         if (color == null) {
             dot.visibility = View.GONE
@@ -106,7 +114,7 @@ class SmallCardView<T>(private val card: Card<T>, host: CardHost, parent: ViewGr
             (dot.background as GradientDrawable).setColor(color)
         }
         val p = f.progress
-        if (p == null) {
+        if (p == null || pictured) {
             bar.visibility = View.GONE
         } else {
             bar.visibility = View.VISIBLE

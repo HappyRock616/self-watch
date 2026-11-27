@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Root ids of the chart cards on the main tabs. -->
+<resources>
+    <item name="sleep_chart_card" type="id" />
+    <item name="heart_chart_card" type="id" />
+    <item name="weight_chart_card" type="id" />
+    <item name="activity_chart_card" type="id" />
+</resources>

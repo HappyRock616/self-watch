@@ -23,7 +23,7 @@ import app.selfwatch.body.cards.BreathingRateCard
 import app.selfwatch.body.cards.HrvBaselineCard
 import app.selfwatch.body.cards.ReadinessCard
 import app.selfwatch.body.cards.RestingHrCard
-import app.selfwatch.body.cards.SleepCard
+import app.selfwatch.body.cards.SleepChartCard
 import app.selfwatch.body.cards.SleepScoreCard
 import app.selfwatch.body.cards.Spo2Card
 import app.selfwatch.body.cards.WeightCard
@@ -46,7 +46,7 @@ object CardPresets {
     private val LAYOUT: Map<CardTab, List<Pair<Card<*>, CardSize>>> = mapOf(
         CardTab.BODY to listOf(
             BodyTodayCard to LARGE,
-            SleepCard to LARGE,
+            SleepChartCard to LARGE,
             HrvBaselineCard to SMALL,
             RestingHrCard to SMALL,
             BodyStressCard to SMALL,

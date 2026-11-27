@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Card design standard (docs/CARD_DESIGN.md), Body cards set 1: short tags and chart labels. -->
+<resources>
+    <!-- Body today: one word under each ring. -->
+    <string name="body1_ring_eaten">Eaten</string>
+    <string name="body1_ring_burned">Burned</string>
+    <string name="body1_ring_water">Water</string>
+    <string name="body1_ring_energy">Energy</string>
+    <string name="body1_ring_sleep">Sleep</string>
+    <string name="body1_ring_weight">Weight</string>
+    <string name="body1_of">%1$d/%2$d</string>
+    <string name="body1_on_track">on track</string>
+
+    <!-- Chart end labels. -->
+    <plurals name="body1_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="body1_today">Today</string>
+    <string name="body1_now">Now</string>
+    <string name="body1_24h_ago">24 h ago</string>
+
+    <!-- Sleep. -->
+    <string name="body1_stage_deep">Deep %1$s</string>
+    <string name="body1_stage_light">Light %1$s</string>
+    <string name="body1_stage_rem">REM %1$s</string>
+    <string name="body1_stage_awake">Awake %1$s</string>
+    <string name="body1_sleep_description">Sleep %1$s, %2$s. %3$s</string>
+
+    <!-- Usual-range tags. -->
+    <string name="body1_usual">Usual</string>
+    <string name="body1_below_usual">Below usual</string>
+    <string name="body1_above_usual">Above usual</string>
+    <string name="body1_learning">Learning %1$d/%2$d</string>
+    <string name="body1_seven_day">7-day avg</string>
+    <string name="body1_seven_day_value">7-day avg %1$s</string>
+    <string name="body1_four_week">4-week avg</string>
+    <string name="body1_range_description">%1$s %2$s %3$s, %4$s. Usual %5$s to %6$s.</string>
+
+    <!-- Body signals. -->
+    <string name="body1_signal_skin">Skin temp</string>
+    <string name="body1_signal_rhr">Resting HR</string>
+    <string name="body1_signal_resp">Breathing</string>
+    <string name="body1_signal_up">↑ up</string>
+    <string name="body1_signal_ok">ok</string>
+
+    <!-- Energy level. -->
+    <string name="body1_charged_drained">↑ %1$d  ↓ %2$d</string>
+    <string name="body1_energy_description">Energy level %1$d of 100, %2$s. Charged %3$d, drained %4$d.</string>
+
+    <!-- Heart rate. -->
+    <string name="body1_hr_range">%1$s–%2$s</string>
+    <string name="body1_daily_range">Daily range</string>
+    <string name="body1_hrt_description">Heart rate, last 30 days. Latest daily range %1$s beats a minute.</string>
+    <string name="body1_hrn_description">Heart rate %1$s beats a minute, %2$s.</string>
+
+    <!-- Blood oxygen. -->
+    <string name="body1_spo2_asleep">asleep</string>
+    <string name="body1_spo2_low">asleep · low %1$d%%</string>
+
+    <!-- Readiness. -->
+    <string name="body1_readiness_description">Readiness %1$s of 100, %2$s.</string>
+
+    <!-- Recovery tiles (TalkBack). -->
+    <string name="body1_tile_description">%1$s %2$s</string>
+</resources>

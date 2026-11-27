@@ -22,8 +22,8 @@ android {
         applicationId = "app.selfwatch"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.0.3"
+        versionCode = 4
+        versionName = "0.0.4"
         // The app's name. Debug builds put the version first ("0.0.3db Self Watch", db = debug) so the
         // launcher never cuts the part that tells builds apart.
         resValue("string", "app_name", "Self Watch")

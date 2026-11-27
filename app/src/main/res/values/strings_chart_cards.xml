@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chart cards on the main tabs: the detail screens' overlay charts with toggle chips as large cards. -->
+<resources>
+    <string name="card_sleep_chart">Sleep chart</string>
+    <string name="card_sleep_chart_summary">Last night\'s stages with heart rate, HRV and more</string>
+    <string name="card_heart_chart">Heart chart</string>
+    <string name="card_heart_chart_summary">Today\'s heart rate, stress and HRV</string>
+    <string name="card_weight_chart">Weight chart</string>
+    <string name="card_weight_chart_summary">Weight trend with energy balance and activity</string>
+    <string name="card_activity_chart">Activity chart</string>
+    <string name="card_activity_chart_summary">Training load against HRV and resting heart rate</string>
+    <!-- Content description of a chart card's title row; %1$s is the card's name. -->
+    <string name="chart_card_open">%1$s, open the full screen</string>
+    <!-- Tag in the Heart chart card's title row; %1$d is beats per minute. -->
+    <string name="chart_card_resting">Rest %1$d bpm</string>
+    <string name="chart_card_resting_hr">Resting HR</string>
+    <string name="chart_card_avg_hr">Avg heart rate</string>
+    <string name="chart_card_latest">Latest</string>
+    <string name="chart_card_week_load">7-day load</string>
+</resources>

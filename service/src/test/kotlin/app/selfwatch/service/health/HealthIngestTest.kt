@@ -56,7 +56,9 @@ class HealthIngestTest : ServiceDbTest() {
             IngestBatch(
                 key = k,
                 activity = minutes(dev, 30),
-                metrics = listOf(MetricSample(dev, MetricKind.RESTING_HR, at(day, 8), 52)),
+                // Zone 2 heart rate (115 bpm; max 180 without a birth year) during all 30 minutes: 30 active minutes.
+                metrics = listOf(MetricSample(dev, MetricKind.RESTING_HR, at(day, 8), 52)) +
+                    (0 until 30).map { MetricSample(dev, MetricKind.HEART_RATE, at(day, 9) + it * 60L, 115) },
                 sleepSessions = listOf(SleepSession(dev, at(day.plusDays(-1), 23), at(day, 7), 80)),
             ),
         )

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Body card: sleep, resting heart rate and HRV side by side (RecoveryCard). -->
+<!-- Body card: sleep, resting heart rate and HRV as three icon tiles (RecoveryCard), card design standard: icon and number only. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/recovery_row"
@@ -16,11 +16,18 @@
         android:clickable="true"
         android:focusable="true">
 
+        <ImageView
+            android:id="@+id/sleep_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/body1_ic_sleep" />
         <app.selfwatch.ui.components.StatTile
             android:id="@+id/sleep_tile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:swLabel="@string/body_sleep"
+            android:layout_marginTop="@dimen/sw_space_half"
+            android:importantForAccessibility="no"
             app:swValue="@string/dash" />
     </app.selfwatch.ui.components.SwCard>
 
@@ -32,11 +39,18 @@
         android:clickable="true"
         android:focusable="true">
 
+        <ImageView
+            android:id="@+id/rest_hr_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/body1_ic_heart" />
         <app.selfwatch.ui.components.StatTile
             android:id="@+id/rest_hr_tile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:swLabel="@string/body_rest_hr"
+            android:layout_marginTop="@dimen/sw_space_half"
+            android:importantForAccessibility="no"
             app:swValue="@string/dash" />
     </app.selfwatch.ui.components.SwCard>
 
@@ -48,11 +62,18 @@
         android:clickable="true"
         android:focusable="true">
 
+        <ImageView
+            android:id="@+id/hrv_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/body1_ic_hrv" />
         <app.selfwatch.ui.components.StatTile
             android:id="@+id/hrv_tile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:swLabel="@string/body_hrv"
+            android:layout_marginTop="@dimen/sw_space_half"
+            android:importantForAccessibility="no"
             app:swValue="@string/dash" />
     </app.selfwatch.ui.components.SwCard>
 </LinearLayout>

@@ -8,6 +8,7 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
@@ -17,14 +18,19 @@ import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
 import app.selfwatch.food.SleepCaloriesFragment
+import app.selfwatch.ui.format.Fmt
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
- * Logging days (C4): which days of the week holding the day shown have diary entries, as dots, with
- * gentle wording ("4 days logged this week, nice"; never a broken-streak alarm). Its link opens the
- * sleep and calories chart (O2).
+ * Logging days (C4, card design standard): the days of the week holding the day shown as seven day dots,
+ * filled when the diary has entries, with the count as the number. Gentle: never a broken-streak alarm.
+ * Tap opens the sleep and calories chart (O2). Small form: the number and the dots.
  */
 object LoggingDaysCard : Card<LoggingWeek>(
     "logging_days",
@@ -62,17 +68,31 @@ object LoggingDaysCard : Card<LoggingWeek>(
         )
     }
 
+    /** The week as seven day dots with day letters. */
+    fun picture(data: LoggingWeek): TrendPicture = TrendPicture.Dots(
+        data.logged.toBooleanArray(),
+        data.days.map { d -> Fmt.dayToDate(d.yyyymmdd).dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) },
+    )
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: LoggingWeek) {
+        (graphic as PictureFrame).show(picture(data))
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(SleepCaloriesFragment())
+        return true
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<LoggingWeek> = Holder(host, parent)
 
     private class Holder(host: CardHost, parent: ViewGroup) :
         FoodMetricView<LoggingWeek>(parent, R.id.food_logging_days_card, R.string.card_logging_days) {
 
         init {
-            link.id = R.id.sleep_calories_link
-            link.text = ctx.getString(R.string.sleep_calories_link)
-            link.setOnClickListener { host.open(SleepCaloriesFragment()) }
-            show(link, true)
-            show(tile, false)
+            card.isClickable = true
+            card.setOnClickListener { host.open(SleepCaloriesFragment()) }
         }
 
         override fun bind(data: LoggingWeek) {
@@ -84,11 +104,10 @@ object LoggingDaysCard : Card<LoggingWeek>(
                 data.ahead.first() || data.ahead.count { !it } <= 1 -> ctx.getString(R.string.logging_days_fresh)
                 else -> ctx.getString(R.string.logging_days_resume)
             }
-            show(empty, false)
-            show(tile, false)
-            setDots(data.logged, data.ahead)
-            text(note, line)
-            text(coverage, if (n > 0) ctx.getString(R.string.logging_days_note) else null)
+            tile.value = n.toString()
+            tile.unit = ctx.getString(R.string.goal_lines_of_count, data.days.size)
+            tile.label = ctx.getString(R.string.d2_tag_days_logged)
+            showContent(picture(data))
             card.contentDescription = line
         }
     }

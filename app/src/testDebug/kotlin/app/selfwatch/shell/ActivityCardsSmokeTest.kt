@@ -11,6 +11,7 @@ import android.app.Application
 import android.os.Looper
 import android.view.View
 import app.selfwatch.R
+import app.selfwatch.activity.ActivityFragment
 import app.selfwatch.activity.ExerciseSleepDetailFragment
 import app.selfwatch.activity.OverlayLayers
 import app.selfwatch.activity.TrainingDetailFragment
@@ -44,7 +45,7 @@ class ActivityCardsSmokeTest {
     private val ctx: Application = RuntimeEnvironment.getApplication()
 
     private val emptyIds = listOf(
-        R.id.im_empty, R.id.st_empty, R.id.ak_empty, R.id.ss_empty, R.id.ad_empty, R.id.tl_empty, R.id.wv_empty, R.id.eh_empty,
+        R.id.im_empty, R.id.st_empty, R.id.ak_empty, R.id.ss_empty, R.id.ad_empty, R.id.wv_empty, R.id.eh_empty,
         R.id.tt_empty, R.id.rhr_empty, R.id.dt_empty, R.id.ct_empty,
     )
 
@@ -79,13 +80,21 @@ class ActivityCardsSmokeTest {
         waitFor("every Activity card with demo data") {
             emptyIds.all { id -> activity.findViewById<View>(id)?.let { it.visibility == View.GONE } == true }
         }
-        val opens = mapOf(
-            R.id.intensity_minutes_card to (ExerciseSleepDetailFragment::class.java to OverlayLayers.EXERCISE_SLEEP),
-            R.id.training_load_card to (TrainingDetailFragment::class.java to OverlayLayers.TRAINING),
+        // Weekly effort needs training status, which the demo watch (like the vívoactive 5) lacks: the
+        // card the user chose waits for data instead of loading.
+        val actHost = activity.supportFragmentManager.findFragmentByTag(Tab.ACTIVITY.tag) as ActivityFragment
+        waitFor("Weekly effort waiting for data") { actHost.cards?.shownKeys.orEmpty().any { it.startsWith("training_load:w") } }
+        assertTrue(activity.findViewById<View>(R.id.training_load_card) == null)
+        val clickIntensity: () -> Unit = { assertTrue(activity.findViewById<View>(R.id.intensity_minutes_card).performClick()) }
+        // The training overlay itself still opens with its layers.
+        val openTraining: () -> Unit = { Nav.open(actHost, TrainingDetailFragment()) }
+        val opens = listOf(
+            clickIntensity to (ExerciseSleepDetailFragment::class.java to OverlayLayers.EXERCISE_SLEEP),
+            openTraining to (TrainingDetailFragment::class.java to OverlayLayers.TRAINING),
         )
-        for ((card, target) in opens) {
+        for ((open, target) in opens) {
             val (type, layers) = target
-            assertTrue(activity.findViewById<View>(card).performClick())
+            open()
             activity.supportFragmentManager.executePendingTransactions()
             idle()
             val shown = activity.supportFragmentManager.findFragmentById(R.id.detail_container)

@@ -61,10 +61,11 @@ object TrainingLoadCard : Card<TrainingLoadCard.Data>("training_load", CardTab.A
 
     override suspend fun load(env: CardEnv): Data {
         val loader = ActivityStatsLoader(env.db, env.clock)
-        val maxHr = loader.maxHr()
+        val zones = loader.zoneSet()
+        val maxHr = MaxHr.of(zones)
         val thisWeek = ActivityWeek.start(env.day)
         val starts = (WEEKS - 1 downTo 0).map { thisWeek.plusDays(-ActivityWeek.DAYS * it) }
-        val sessions = loader.zones(loader.workouts(DayRange(starts.first(), env.day)), maxHr.bpm)
+        val sessions = loader.zones(loader.workouts(DayRange(starts.first(), env.day)), zones)
         val zone = env.clock.zone()
         val loads = IntArray(WEEKS)
         var any = false
@@ -77,7 +78,8 @@ object TrainingLoadCard : Card<TrainingLoadCard.Data>("training_load", CardTab.A
         return Data(starts, loads.toList(), maxHr, any)
     }
 
-    override val needs: Set<DataKind> = setOf(DataKind.WORKOUTS)
+    // Only for watches with training load (not the vívoactive 5): field review, 2026-11-26.
+    override val needs: Set<DataKind> = setOf(DataKind.TRAINING_STATUS)
 
     override fun small(ctx: Context, data: Data): SmallFace? {
         if (!data.hasData) return null

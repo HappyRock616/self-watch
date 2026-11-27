@@ -64,6 +64,7 @@
 
     <!-- Body fat -->
     <string name="body_fat_change">%1$s in 90 days</string>
+    <string name="body_fat_band">%1$s (ACE)</string>
     <string name="body_fat_note">Scale body fat varies from day to day; read the long trend. Not a medical measurement.</string>
     <string name="body_fat_empty">Log body fat or weigh in on a body-fat scale to see your trend.</string>
     <string name="body_fat_description">Body fat trend %1$s. %2$s</string>
@@ -74,6 +75,8 @@
     <string name="hrv_card_below">Lower than your usual</string>
     <string name="hrv_card_above">Higher than your usual</string>
     <string name="hrv_card_band">Your usual: %1$s–%2$s ms</string>
+    <string name="hrv_card_baseline">Baseline (balanced): %1$s–%2$s ms</string>
+    <string name="hrv_card_last_night">Last night: %1$s ms. 7-day average and status from your watch.</string>
     <string name="hrv_card_note">A lower week is not always tiredness; read it alongside sleep and training.</string>
     <string name="hrv_card_learning">Learning your usual range: %1$d of %2$d nights so far. Wear your watch to sleep and it fills in.</string>
     <string name="hrv_card_recent">This week\'s average shows once there are three nights with HRV in the last seven. Wear your watch to sleep.</string>
@@ -81,6 +84,8 @@
 
     <!-- Resting heart rate -->
     <string name="rhr_card_label">4-week average</string>
+    <string name="rhr_card_today">today</string>
+    <string name="rhr_card_today_week">today · 7-day average %1$s bpm</string>
     <string name="rhr_card_steady">Steady against your usual</string>
     <string name="rhr_card_lower">Lower than your usual (%1$s bpm)</string>
     <string name="rhr_card_higher">Higher than your usual (+%1$s bpm)</string>
@@ -90,14 +95,7 @@
     <string name="rhr_card_description">Resting heart rate %1$s beats per minute. %2$s</string>
 
     <!-- Body stress -->
-    <string name="stress_card_avg">Body stress</string>
-    <string name="stress_card_rest">Rest time</string>
     <string name="stress_card_today">Today so far</string>
-    <string name="stress_card_rest_level">Your body was mostly at rest</string>
-    <string name="stress_card_low_level">Your body was lightly working</string>
-    <string name="stress_card_mid_level">Your body was working moderately hard</string>
-    <string name="stress_card_high_level">Your body was working hard</string>
-    <string name="stress_card_note">Worked out from heart rate. Context only: it describes your body, not how you feel.</string>
     <string name="stress_card_empty">Body stress and rest time show here once your watch records them.</string>
     <string name="stress_card_description">%1$s: body stress %2$s, rest time %3$s. %4$s</string>
 
@@ -181,7 +179,8 @@
     <string name="card_energy_level">Energy level</string>
     <string name="card_energy_level_summary">Your watch\'s energy level today, from 0 to 100</string>
     <string name="el_label">of 100 · %1$s</string>
-    <string name="el_today">Today: high %1$d · low %2$d</string>
+    <string name="el_label_band">%1$s · %2$s</string>
+    <string name="el_today_charged">Today: high %1$d · low %2$d · charged +%3$d · drained −%4$d</string>
     <string name="el_note">Your watch estimates this from your heart rate, stress, sleep and activity. Rest and sleep fill it up.</string>
     <string name="el_empty">Your watch\'s energy level shows here after it syncs.</string>
     <string name="el_description">Energy level %1$d of 100. %2$s</string>

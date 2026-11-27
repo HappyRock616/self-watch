@@ -20,7 +20,6 @@ import app.selfwatch.model.time.TimeRange
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.LocalTime
 import java.time.ZoneId
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -55,9 +54,9 @@ public fun interface WatchRestingKcal {
  * | Column | Rule |
  * |---|---|
  * | steps, distance_m, active_kcal | Sum of the day's activity minutes; when devices overlap on a minute, only the highest-priority device counts |
- * | active_min | The watch's own intensity minutes (FIT monitoring fields 33/34, as in Garmin Connect): moderate count 1, vigorous count 2; ordinary movement counts 0 |
+ * | active_min | Minutes in heart-rate zone 2 and up (`IntensityClassifier`, zones from `HrZoneStore`): zones 2–3 count 1, zones 4–5 count 2 |
  * | resting_kcal | The [WatchRestingKcal] hook, else the day's stored `RESTING_KCAL` metric (the watch's resting metabolic rate, [WatchRestingKcal.fromMetrics]), else Mifflin-St Jeor from the profile and the latest weight on or before the day; prorated for today |
- * | resting_hr | The `RESTING_HR` metric of the day, else the lowest 30-minute average heart rate during the night |
+ * | resting_hr | The watch's current-day resting HR (`RESTING_HR`), else the lowest 30-minute average heart rate in the day (Garmin's rule) |
  * | hrv_avg_ms | Average HRV during the night that ended that morning |
  * | sleep_min | Asleep minutes of the night that ended that morning |
  * | kcal_in, protein_g, fat_g, carb_g, water_ml | Diary and water totals of the day |
@@ -141,7 +140,7 @@ public class SummaryBuilder(
         val activity = SummaryRules.activity(db.activity.minutes(range), rank)
         val night = db.sleep.night(day, zone)
         val nightRange = night?.let { TimeRange(it.session.startSec, it.session.endSec) }
-        val restingHr = restingHr(day, range, nightRange, zone, rank)
+        val restingHr = restingHr(range, rank)
         val hrv = nightRange?.let { SummaryRules.average(SummaryRules.topDevice(db.metrics.series(MetricKind.HRV_RMSSD, it), rank)) }
         val sleepMin = night?.let { SummaryRules.sleepMinutes(it.session, it.stages) }
         val food = db.diary.dayTotals(day)
@@ -175,10 +174,14 @@ public class SummaryBuilder(
         return s
     }
 
-    private suspend fun restingHr(day: Day, range: TimeRange, night: TimeRange?, zone: ZoneId, rank: (Long) -> Int): Int? {
+    /**
+     * The watch's resting heart rate for the day (its current-day value); without one, Garmin's rule:
+     * the lowest 30-minute average heart rate in the day.
+     */
+    private suspend fun restingHr(range: TimeRange, rank: (Long) -> Int): Int? {
         val daily = SummaryRules.topDevice(db.metrics.series(MetricKind.RESTING_HR, range).filter { it.value > 0 }, rank)
         daily.maxByOrNull { it.tSec }?.let { return it.value }
-        val window = night ?: TimeRange(range.startSec, day.toLocalDate().atTime(NIGHT_FALLBACK_END).atZone(zone).toEpochSecond())
+        val window = TimeRange(range.startSec, minOf(range.endSec, clock.nowSec()))
         val hr = SummaryRules.topDevice(db.metrics.series(MetricKind.HEART_RATE, window).filter { it.value > 0 }, rank)
         return SummaryRules.lowestWindowAverage(hr, window.endSec)
     }
@@ -210,9 +213,6 @@ public class SummaryBuilder(
 
         /** Seconds after local midnight at which the day change is handled. */
         public const val MIDNIGHT_GRACE_SEC: Long = 5
-
-        /** End of the night window for the resting-HR fallback when no sleep was recorded. */
-        public val NIGHT_FALLBACK_END: LocalTime = LocalTime.of(6, 0)
 
         private const val DAY_SEC = 86_400L
         private const val WEIGHT_LOOKBACK_DAYS = 365

@@ -8,6 +8,7 @@
 package app.selfwatch.activity.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.activity.ActivityGoals
@@ -19,24 +20,35 @@ import app.selfwatch.cards.Card
 import app.selfwatch.cards.CardEnv
 import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardSize
+import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.CardVisuals
 import app.selfwatch.cards.GoalLine
-import app.selfwatch.cards.GoalLinesView
 import app.selfwatch.cards.GoalMath
 import app.selfwatch.cards.GoalMetric
+import app.selfwatch.cards.GoalText
 import app.selfwatch.cards.SmallFace
 import app.selfwatch.db.Table
 import app.selfwatch.me.GoalsFragment
 import app.selfwatch.model.time.DayRange
+import app.selfwatch.shell.Views
+import app.selfwatch.ui.charts.LevelColors
+import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.RingItem
+import app.selfwatch.ui.components.RingRowView
+import app.selfwatch.ui.components.RingView
+import app.selfwatch.ui.components.SwCard
+import app.selfwatch.ui.format.Fmt
 import app.selfwatch.ui.format.Units
 
 /**
- * Activity goals (the first card on Activity): every activity goal at a glance as "done / goal" with a
- * bar: steps today, active minutes this week (intensity minutes: a vigorous minute counts twice), active
- * calories today, workouts this week, active days this week, distance today and, on watches with a
- * barometer, floors. Weeks start on Monday, like the rest of Activity.
+ * Activity goals (the first card on Activity, card design standard): a row of goal rings, one per
+ * activity goal with its value inside and met / short as color: steps today, active minutes this week
+ * (intensity minutes: a vigorous minute counts twice), active calories today, workouts this week, active
+ * days this week and distance today (floors join when a device sends them). Weeks start on Monday, like
+ * the rest of Activity. Small form: one ring, goals on track. Opens Goals.
  */
 object ActivityGoalsCard : Card<ActivityGoalsCard.Data>(
     "activity_goals", CardTab.ACTIVITY, R.string.card_activity_goals, R.string.card_activity_goals_summary,
@@ -84,12 +96,100 @@ object ActivityGoalsCard : Card<ActivityGoalsCard.Data>(
         )
     }
 
-    private class Holder private constructor(private val lines: GoalLinesView) : CardView<Data>(lines.root) {
-        constructor(host: CardHost, parent: ViewGroup) :
-            this(GoalLinesView(parent, R.string.card_activity_goals, { host.open(GoalsFragment()) }, R.id.activity_goals_card))
+    override fun createSmallGraphic(ctx: Context): View = CardVisuals.smallRing(ctx)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        val (good, judged) = GoalMath.onTrack(data.lines)
+        (graphic as RingView).apply {
+            progress = if (judged > 0) good.toFloat() / judged else 0f
+            color = ActivityVisuals.goalColor(context, good, judged)
+            centerText = good.toString()
+            subText = context.getString(R.string.goal_lines_of_count, judged)
+        }
+    }
+
+    override fun openDetail(host: CardHost): Boolean {
+        host.open(GoalsFragment())
+        return true
+    }
+
+    /** One ring per goal line: progress, met / short color, the value inside and a one-word label. */
+    fun rings(ctx: Context, lines: List<GoalLine>, units: Units): List<RingItem> {
+        val c = LevelColors.of(ctx)
+        return lines.map { line ->
+            val done = line.done
+            val value = when {
+                done == null -> ctx.getString(R.string.dash)
+                line.metric == GoalMetric.WORKOUTS || line.metric == GoalMetric.ACTIVE_DAYS ->
+                    ctx.getString(R.string.ring_value_of, Fmt.number(done.toLong()), Fmt.number((line.goal ?: 0).toLong()))
+                line.metric == GoalMetric.DISTANCE -> distance(done, units)
+                else -> compact(done)
+            }
+            val color = when {
+                done == null -> c.track
+                line.status == CardStatus.GOOD -> c.good
+                else -> c.close
+            }
+            RingItem(line.progress ?: 0f, color, value, ctx.getString(ringLabel(line.metric, units)))
+        }
+    }
+
+    /** 10,072 as "10.1k"; smaller numbers in full. */
+    fun compact(v: Int): String = if (v >= COMPACT_FROM) Fmt.number(v / THOUSAND, 1) + "k" else Fmt.number(v.toLong())
+
+    private fun distance(m: Int, units: Units): String = Fmt.number(if (units == Units.METRIC) m / THOUSAND else m / METRES_PER_MILE, 1)
+
+    private fun ringLabel(m: GoalMetric, units: Units): Int = when (m) {
+        GoalMetric.STEPS -> R.string.ring_steps
+        GoalMetric.ACTIVE_MIN -> R.string.ring_active
+        GoalMetric.ACTIVE_KCAL -> R.string.ring_calories
+        GoalMetric.WORKOUTS -> R.string.ring_workouts
+        GoalMetric.ACTIVE_DAYS -> R.string.ring_days
+        GoalMetric.DISTANCE -> if (units == Units.METRIC) R.string.ring_km else R.string.ring_mi
+        else -> m.label
+    }
+
+    private const val COMPACT_FROM = 10_000
+    private const val THOUSAND = 1_000.0
+    private const val METRES_PER_MILE = 1_609.344
+
+    private class Holder(host: CardHost, parent: ViewGroup) : CardView<Data>(SwCard(parent.context)) {
+        private val ctx = parent.context
+        private val row = RingRowView(ctx).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
+        private val empty = EmptyState(ctx).apply { message = ctx.getString(R.string.activity_goals_empty) }
+
+        init {
+            val card = root as SwCard
+            card.id = R.id.activity_goals_card
+            card.title = ctx.getString(R.string.card_activity_goals)
+            card.addView(row, Views.matchWrap(ctx, 4))
+            card.addView(empty, Views.matchWrap(ctx))
+            card.isClickable = true
+            card.isFocusable = true
+            card.setOnClickListener { host.open(GoalsFragment()) }
+        }
 
         override fun bind(data: Data) {
-            lines.show(data.lines, data.units, root.context.getString(R.string.activity_goals_empty))
+            val has = data.lines.any { it.done != null }
+            ActivityVisuals.show(has, row)
+            ActivityVisuals.show(!has, empty)
+            if (!has) {
+                root.contentDescription = listOf(ctx.getString(R.string.card_activity_goals), empty.message).joinToString(". ")
+                return
+            }
+            row.items = rings(ctx, data.lines, data.units)
+            val (good, judged) = GoalMath.onTrack(data.lines)
+            val spoken = data.lines.joinToString(". ") { line ->
+                listOfNotNull(ctx.getString(line.metric.label), GoalText.doneOfGoal(ctx, line, data.units), CardStatusColors.spoken(ctx, line.status))
+                    .joinToString(", ")
+            }
+            root.contentDescription = listOf(
+                ctx.getString(R.string.card_activity_goals),
+                ctx.resources.getQuantityString(R.plurals.goal_lines_on_track, judged, good, judged),
+                spoken,
+            ).joinToString(". ")
         }
     }
 }

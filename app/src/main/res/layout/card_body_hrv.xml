@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Body card: overnight HRV 7-day average against the user's usual band (HrvBaselineCard). -->
+<!-- Body card: HRV (HrvBaselineCard), card design standard: 7-day average and a range bar of the baseline band. -->
 <app.selfwatch.ui.components.SwCard xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/hrv_baseline_card"
@@ -12,33 +12,15 @@
         android:id="@+id/hrv_baseline_tile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:swLabel="@string/hrv_card_label"
+        android:importantForAccessibility="no"
+        app:swLabel="@string/body1_seven_day"
         app:swValue="@string/dash" />
-
-    <TextView
-        android:id="@+id/hrv_baseline_status"
+    <app.selfwatch.ui.components.RangeBarView
+        android:id="@+id/hrv_baseline_range"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Body" />
-    <TextView
-        android:id="@+id/hrv_baseline_band"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
-    <app.selfwatch.ui.components.Sparkline
-        android:id="@+id/hrv_baseline_spark"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/body_spark_height"
         android:layout_marginTop="@dimen/sw_space_1"
         android:importantForAccessibility="no" />
-    <TextView
-        android:id="@+id/hrv_baseline_note"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/sw_space_half"
-        android:textAppearance="@style/TextAppearance.SelfWatch.Caption" />
     <app.selfwatch.ui.components.EmptyState
         android:id="@+id/hrv_baseline_empty"
         android:layout_width="match_parent"

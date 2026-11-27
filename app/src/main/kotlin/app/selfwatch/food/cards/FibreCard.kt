@@ -8,6 +8,7 @@
 package app.selfwatch.food.cards
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import app.selfwatch.R
 import app.selfwatch.cards.Card
@@ -17,13 +18,17 @@ import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardStatusColors
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
+import app.selfwatch.ui.charts.LevelColors
 import app.selfwatch.ui.format.Fmt
 
 /**
- * Fibre (C26) for the day shown against 14 g per 1,000 kcal of the calorie goal, showing the computed target. Foods
- * without a fibre value are counted ("x of y foods have fibre data").
+ * Fiber (C26, card design standard) for the day shown: a ring toward 14 g per 1,000 kcal of the calorie
+ * goal with the grams inside. Foods without a fiber value are counted for TalkBack ("x of y foods have
+ * fiber data"). Small form: the ring.
  */
 object FibreCard : Card<FibreDay>("fibre", CardTab.FOOD, R.string.card_fibre, R.string.card_fibre_summary) {
 
@@ -50,6 +55,28 @@ object FibreCard : Card<FibreDay>("fibre", CardTab.FOOD, R.string.card_fibre, R.
         )
     }
 
+    /** The ring: grams inside, toward the target (met = good, short = close), or null with nothing known. */
+    fun picture(ctx: Context, data: FibreDay): TrendPicture? {
+        val grams = FoodCardLoader.grams(data.coverage.sum ?: return null) ?: return null
+        val target = data.targetG
+        val c = LevelColors.of(ctx)
+        val sub = if (target != null) ctx.getString(R.string.small_of_g, Fmt.number(target.toLong())) else ctx.getString(R.string.unit_g)
+        return TrendPicture.Ring(
+            progress = target?.takeIf { it > 0 }?.let { grams.toFloat() / it } ?: 0f,
+            color = if (target != null && grams >= target) c.good else c.close,
+            center = Fmt.number(grams.toLong()),
+            sub = sub,
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override val smallGraphicShowsValue: Boolean = true
+
+    override fun bindSmallGraphic(graphic: View, data: FibreDay) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<FibreDay> = Holder(parent)
 
     private class Holder(parent: ViewGroup) : FoodMetricView<FibreDay>(parent, R.id.food_fibre_card, R.string.card_fibre) {
@@ -61,40 +88,25 @@ object FibreCard : Card<FibreDay>("fibre", CardTab.FOOD, R.string.card_fibre, R.
                 c.entries == 0 -> return showEmpty(ctx.getString(R.string.fibre_empty))
                 x10 == null -> return showEmpty(ctx.getString(R.string.fibre_none_known))
             }
-            showContent()
             val grams = FoodCardLoader.grams(x10) ?: 0
             tile.value = Fmt.number(grams.toLong())
             tile.unit = ctx.getString(R.string.unit_g)
             val target = data.targetG
             val label = if (target != null) ctx.getString(R.string.fibre_target, Fmt.number(target.toLong())) else ctx.getString(R.string.fibre_target_none)
             tile.label = label
+            showContent(picture(ctx, data))
             val line = when {
                 target == null -> null
                 grams >= target -> ctx.getString(R.string.fibre_reached)
                 else -> ctx.getString(R.string.fibre_left, Fmt.number((target - grams).toLong()))
             }
-            if (target != null) {
-                bar.set(
-                    grams.toFloat(),
-                    maxOf(grams.toFloat(), target * BAR_HEADROOM),
-                    palette.primary,
-                    low = target.toFloat(),
-                )
-            }
-            show(bar, target != null)
-            text(note, line)
             val cov = FoodCardText.coverage(ctx, R.plurals.fibre_coverage, c)
-            text(coverage, cov)
             card.contentDescription = ctx.getString(
                 R.string.food_card_description,
                 ctx.getString(R.string.card_fibre),
                 "${tile.value} ${tile.unit}, $label",
                 listOfNotNull(line, cov).joinToString(". "),
             )
-        }
-
-        private companion object {
-            const val BAR_HEADROOM = 1.25f
         }
     }
 }

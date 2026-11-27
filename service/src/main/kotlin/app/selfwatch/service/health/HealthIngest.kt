@@ -10,11 +10,13 @@ package app.selfwatch.service.health
 import android.database.SQLException
 import app.selfwatch.db.DbBusyException
 import app.selfwatch.db.SelfWatchDb
+import app.selfwatch.model.health.MetricKind
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.result.Outcome
 import app.selfwatch.model.result.SwError
 import app.selfwatch.model.time.Clock
 import app.selfwatch.model.time.Day
+import app.selfwatch.model.time.TimeRange
 import app.selfwatch.model.watch.HealthSink
 import app.selfwatch.model.watch.IngestBatch
 import app.selfwatch.model.watch.SyncFileKey
@@ -26,8 +28,9 @@ import kotlin.coroutines.cancellation.CancellationException
  *
  * [ingest] writes the whole batch and marks its sync file done in one database transaction
  * (`HealthWriteDao.ingest`), so a failure leaves nothing behind and the file is retried. The DAO
- * announces the changed tables (`DbChanges.notify`) after the commit; then the day summaries of the
- * affected days (in the phone's time zone) are rebuilt through [summaries].
+ * announces the changed tables (`DbChanges.notify`) after the commit; then the minutes are marked
+ * moderate or vigorous from their heart-rate zone ([IntensityClassifier], zones from [HrZoneStore]) and
+ * the day summaries of the affected days (in the phone's time zone) are rebuilt through [summaries].
  */
 public class HealthIngest(
     private val db: SelfWatchDb,
@@ -50,11 +53,20 @@ public class HealthIngest(
             SwLog.e(TAG, "ingest failed; nothing stored", e)
             return Outcome.Fail(SwError.Io("ingest failed"))
         }
+        val zoneDays = try {
+            classify(batch)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SwLog.e(TAG, "intensity from heart-rate zones failed", e)
+            emptySet()
+        }
         val builder = summaries ?: return Outcome.Ok(Unit)
         val today = clock.today()
-        val days = affectedDays(batch, clock.zone()).filterTo(HashSet()) { it <= today }
+        val days = (affectedDays(batch, clock.zone()) + zoneDays).filterTo(HashSet()) { it <= today }
         try {
             builder.refresh(days)
+            StepAutoGoal.update(db, clock)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -64,12 +76,21 @@ public class HealthIngest(
         return Outcome.Ok(Unit)
     }
 
+    /** Re-marks the minutes the batch's activity and heart rate touch; returns the days that changed. */
+    private suspend fun classify(batch: IngestBatch): Set<Day> {
+        val times = batch.activity.map { it.tSec } + batch.metrics.filter { it.kind == MetricKind.HEART_RATE }.map { it.tSec }
+        if (times.isEmpty()) return emptySet()
+        val range = TimeRange(times.min() - ZONE_MARGIN_SEC, times.max() + ZONE_MARGIN_SEC)
+        return IntensityClassifier.reclassify(db, range, HrZoneStore(db, clock).current().bounds, clock.zone())
+    }
+
     override suspend fun alreadyHave(key: SyncFileKey): Boolean = db.syncFiles.isDone(key)
 
     /** Helpers. */
     public companion object {
         private const val TAG = "HealthIngest"
         private const val HALF_DAY_SEC = 12 * 3600L
+        private const val ZONE_MARGIN_SEC = 120L
 
         /**
          * The local days in [zone] whose summary [batch] can change: the day of every sample, both

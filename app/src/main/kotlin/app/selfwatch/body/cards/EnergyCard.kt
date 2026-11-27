@@ -10,7 +10,6 @@ package app.selfwatch.body.cards
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import app.selfwatch.R
 import app.selfwatch.body.BodyLoader
 import app.selfwatch.body.Energy
@@ -22,23 +21,25 @@ import app.selfwatch.cards.CardHost
 import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
 import app.selfwatch.db.Table
 import app.selfwatch.ui.charts.ChartPalette
 import app.selfwatch.ui.components.BarSeries
-import app.selfwatch.ui.components.BarsView
 import app.selfwatch.ui.components.EmptyState
+import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.components.SwCard
 import app.selfwatch.ui.format.Fmt
-import app.selfwatch.ui.format.FmtLabels
-import com.google.android.material.progressindicator.LinearProgressIndicator
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
+import app.selfwatch.ui.R as UiR
 
 /**
- * C3 Energy: calories in vs out today, the 7-day bars and the 7-day energy balance (labelled an
- * estimate); opens the calorie explainer.
+ * C3 Energy (card design standard): today's calories left (or in minus out) as the number, tagged with
+ * in and out, over the last 7 days as bars (eaten and burned, day letters, the calorie goal as the line).
+ * Small form: the number and the bars. Opens the calorie explainer.
  */
 object EnergyCard : Card<EnergyWeek>("energy", CardTab.FOOD, R.string.card_energy, R.string.card_energy_summary) {
 
@@ -48,15 +49,21 @@ object EnergyCard : Card<EnergyWeek>("energy", CardTab.FOOD, R.string.card_energ
 
     override val defaultSize: CardSize get() = CardSize.LARGE
 
+    /** "in 1,820 · out 2,310", or null when neither is known. */
+    private fun inOut(ctx: Context, e: Energy): String? {
+        val eaten = e.inKcal
+        val burned = e.outKcal
+        if (eaten == null && burned == null) return null
+        val dash = ctx.getString(R.string.dash)
+        return ctx.getString(R.string.d2_tag_in_out, eaten?.let { Fmt.number(it.toLong()) } ?: dash, burned?.let { Fmt.number(it.toLong()) } ?: dash)
+    }
+
     override fun small(ctx: Context, data: EnergyWeek): SmallFace? {
         val e = data.energy
         val kcal = ctx.getString(R.string.unit_kcal)
         val eaten = e.inKcal
         val burned = e.outKcal
-        val inOut = listOfNotNull(
-            eaten?.let { ctx.getString(R.string.body_in, Fmt.number(it.toLong())) },
-            burned?.let { ctx.getString(R.string.body_out, Fmt.number(it.toLong())) },
-        ).joinToString(" · ").ifEmpty { null }
+        val inOut = inOut(ctx, e)
         val remaining = e.remainingKcal
         val net = e.netKcal
         return when {
@@ -80,64 +87,64 @@ object EnergyCard : Card<EnergyWeek>("energy", CardTab.FOOD, R.string.card_energ
         }
     }
 
+    /** The week as bars: eaten (primary) and burned (secondary) per day, the goal as the line; null when empty. */
+    fun picture(ctx: Context, data: EnergyWeek): TrendPicture? {
+        if (data.week.none { it.inKcal >= 0 || it.outKcal >= 0 }) return null
+        val palette = ChartPalette.of(ctx)
+        val loc = Locale.getDefault()
+        return TrendPicture.Bars(
+            labels = data.week.map { d -> Fmt.dayToDate(d.day).dayOfWeek.getDisplayName(TextStyle.NARROW, loc) },
+            values = IntArray(0),
+            goal = data.energy.goalKcal?.toFloat(),
+            series = listOf(
+                BarSeries(ctx.getString(R.string.body_in_label), palette.primary, data.week.map { it.inKcal }.toIntArray()),
+                BarSeries(ctx.getString(R.string.body_out_label), palette.secondary, data.week.map { it.outKcal }.toIntArray()),
+            ),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: EnergyWeek) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
+    }
+
     override fun createView(host: CardHost, parent: ViewGroup): CardView<EnergyWeek> = Holder(host, parent)
 
     private class Holder(private val host: CardHost, parent: ViewGroup) :
         CardView<EnergyWeek>(CardView.inflate(parent, R.layout.card_body_energy)) {
         private val card = root as SwCard
         private var energy = Energy(null, null, null, null)
+        private val tile = find<StatTile>(R.id.energy_tile)
+        private val week = find<PictureFrame>(R.id.energy_week)
+        private val empty = find<EmptyState>(R.id.energy_empty)
 
         init {
             card.setOnClickListener { EnergySheet.show(host.fragment, energy) }
-            card.onAction = { EnergySheet.show(host.fragment, energy) }
+            tile.setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number)
         }
 
         override fun bind(data: EnergyWeek) {
             val ctx = root.context
             val e = data.energy
             energy = e
-            val labels = FmtLabels.from(ctx)
-            val loc = Locale.getDefault()
-            val palette = ChartPalette.of(ctx)
-            val inText = find<TextView>(R.id.energy_in)
-            val outText = find<TextView>(R.id.energy_out)
-            // In = series 1 (primary), out = series 2 (secondary), as text colors that read on the card.
-            inText.setTextColor(palette.primaryText)
-            outText.setTextColor(palette.secondaryText)
-            inText.text = e.inKcal?.let { ctx.getString(R.string.body_in, Fmt.number(it.toLong())) } ?: ctx.getString(R.string.body_in_empty)
-            outText.text = e.outKcal?.let { ctx.getString(R.string.body_out, Fmt.number(it.toLong())) } ?: ctx.getString(R.string.body_out_empty)
-            card.actionText = when {
-                e.remainingKcal != null -> ctx.getString(R.string.body_left, Fmt.energy(e.remainingKcal ?: 0, loc, labels))
-                e.netKcal != null -> Fmt.energy(e.netKcal ?: 0, loc, labels, signed = true)
-                else -> ctx.getString(R.string.body_how)
+            val face = small(ctx, data)
+            val p = picture(ctx, data)
+            val isEmpty = face == null && p == null
+            empty.visibility = if (isEmpty) View.VISIBLE else View.GONE
+            tile.visibility = if (face == null) View.GONE else View.VISIBLE
+            week.show(p)
+            if (isEmpty) {
+                card.contentDescription = listOf(ctx.getString(R.string.body_energy_today), ctx.getString(R.string.body_energy_empty)).joinToString(". ")
+                return
             }
-            val inBar = find<LinearProgressIndicator>(R.id.energy_in_bar)
-            val outBar = find<LinearProgressIndicator>(R.id.energy_out_bar)
-            val max = maxOf(e.inKcal ?: 0, e.outKcal ?: 0, e.goalKcal ?: 0, 1)
-            inBar.max = max
-            outBar.max = max
-            inBar.setProgressCompat(e.inKcal ?: 0, false)
-            outBar.setProgressCompat(e.outKcal ?: 0, false)
-
-            val bars = find<BarsView>(R.id.energy_week)
-            bars.labels = data.week.map { d -> Fmt.dayToDate(d.day).dayOfWeek.getDisplayName(TextStyle.NARROW, loc) }
-            bars.series = listOf(
-                BarSeries(ctx.getString(R.string.body_in_label), palette.primary, data.week.map { it.inKcal }.toIntArray()),
-                BarSeries(ctx.getString(R.string.body_out_label), palette.secondary, data.week.map { it.outKcal }.toIntArray()),
-            )
-            bars.goalLine = e.goalKcal?.toFloat()
-            val weekHasData = data.week.any { it.inKcal >= 0 || it.outKcal >= 0 }
-            val empty = e.isEmpty && !weekHasData
-            find<EmptyState>(R.id.energy_empty).visibility = if (empty) View.VISIBLE else View.GONE
-            for (id in intArrayOf(R.id.energy_in_bar, R.id.energy_out_bar, R.id.energy_week, R.id.energy_caption)) {
-                find<View>(id).visibility = if (empty) View.GONE else View.VISIBLE
+            if (face != null) {
+                tile.value = face.value
+                tile.unit = face.unit
+                tile.label = inOut(ctx, e)?.takeIf { face.note != null } ?: face.label
             }
-            // The 7-day balance, labelled as an estimate (energy maths is never exact).
-            val balance = find<TextView>(R.id.energy_balance)
-            val b = data.balanceKcal
-            balance.text = b?.let { ctx.getString(R.string.energy_balance, Fmt.energy(it, loc, labels, signed = true)) }
-            balance.visibility = if (b == null || empty) View.GONE else View.VISIBLE
-            card.contentDescription = ctx.getString(R.string.body_energy_description, inText.text, outText.text, card.actionText ?: "")
+            val number = face?.let { "${it.value} ${it.unit ?: ""} ${it.label}" } ?: ctx.getString(R.string.dash)
+            card.contentDescription = ctx.getString(R.string.d2_energy_description, number, inOut(ctx, e) ?: "")
         }
     }
 }

@@ -77,6 +77,33 @@ public enum class MetricKind(public val code: Int) {
 
     /** Cycling VO2 max, ml/kg/min ×10, stamped as [VO2_MAX_RUNNING]. Added in core-model v1.4. */
     VO2_MAX_CYCLING(13),
+
+    /**
+     * The watch's HRV status summary (FIT `hrv_status_summary`, 370), one set per night, stamped at the
+     * summary: last night's average in ms. Added in core-model v1.5 (0.0.4).
+     */
+    HRV_NIGHT_AVG(14),
+
+    /** The watch's 7-day HRV average in ms (same summary). */
+    HRV_WEEK_AVG(15),
+
+    /** Lower edge of the watch's balanced HRV baseline in ms (same summary). */
+    HRV_BASELINE_LOW(16),
+
+    /** Upper edge of the watch's balanced HRV baseline in ms (same summary). */
+    HRV_BASELINE_HIGH(17),
+
+    /** The watch's HRV status: 1 poor, 2 low, 3 unbalanced, 4 balanced (same summary; 0 none is not stored). */
+    HRV_STATUS(18),
+
+    /**
+     * The watch's recovery time in minutes (FIT `metric_recovery`, 284), stamped at the moment it was
+     * set (the countdown starts there). Added in 0.0.4.
+     */
+    RECOVERY_MIN(19),
+
+    /** A nap (FIT `nap_event`, 412): its length in minutes, stamped at its start. Added in 0.0.4. */
+    NAP_MIN(20),
     ;
 
     /** True for the VO2 max kinds ([VO2_MAX_RUNNING], [VO2_MAX_CYCLING]). */

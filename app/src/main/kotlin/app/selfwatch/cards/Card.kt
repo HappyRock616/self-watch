@@ -178,10 +178,16 @@ abstract class Card<T>(
     open val group: Int? get() = null
 
     /**
-     * An optional picture for the small form, shown above the number (for example the Day clock's
-     * ring). Built once per small card; null for none.
+     * An optional picture for the small form (card design standard: number and picture only), shown
+     * under the title. A picture replaces the note line. Built once per small card; null for none.
      */
     open fun createSmallGraphic(ctx: Context): View? = null
+
+    /**
+     * True when the small picture shows the number itself (a gauge or ring with the value inside): the
+     * separate number is then hidden (still read by TalkBack).
+     */
+    open val smallGraphicShowsValue: Boolean = false
 
     /** Shows [data] in the picture from [createSmallGraphic]. */
     open fun bindSmallGraphic(graphic: View, data: T) = Unit

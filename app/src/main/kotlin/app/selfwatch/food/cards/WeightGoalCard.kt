@@ -21,7 +21,10 @@ import app.selfwatch.cards.CardSize
 import app.selfwatch.cards.CardStatus
 import app.selfwatch.cards.CardTab
 import app.selfwatch.cards.CardView
+import app.selfwatch.cards.PictureFrame
 import app.selfwatch.cards.SmallFace
+import app.selfwatch.cards.TrendPicture
+import app.selfwatch.cards.TrendPictures
 import app.selfwatch.db.SelfWatchDb
 import app.selfwatch.db.Table
 import app.selfwatch.food.budget.EnergyBudget
@@ -33,13 +36,7 @@ import app.selfwatch.model.time.Day
 import app.selfwatch.model.time.DayRange
 import app.selfwatch.model.time.TimeRange
 import app.selfwatch.shell.Views
-import app.selfwatch.ui.charts.Axis
 import app.selfwatch.ui.charts.ChartPalette
-import app.selfwatch.ui.charts.DotTrendLayer
-import app.selfwatch.ui.charts.LineLayer
-import app.selfwatch.ui.charts.OverlayChartView
-import app.selfwatch.ui.components.BarSeries
-import app.selfwatch.ui.components.BarsView
 import app.selfwatch.ui.components.EmptyState
 import app.selfwatch.ui.components.StatTile
 import app.selfwatch.ui.components.SwCard
@@ -51,10 +48,11 @@ import kotlin.math.roundToInt
 import app.selfwatch.ui.R as UiR
 
 /**
- * Weight goal (Food): the recommended calories a day to reach the goal weight by the goal date and how
- * that number changed over the last weeks; the weight trend with the projected line to the goal; BMI now
- * and at the goal. See [WeightGoalMath] for how the number is worked out; it is re-worked each Monday
- * from what really happened.
+ * Weight goal (Food; card design standard): the weight still to go as the number, tagged with the
+ * recommended calories a day, over a trend line that runs from the first weigh-in (weekly trend) into
+ * the projection to the goal, with the goal dashed and both ends dated. See [WeightGoalMath] for how the
+ * calories are worked out; they are re-worked each Monday from what really happened. The data keeps the
+ * weekly targets and BMI for TalkBack and the detail. Small form: the number and the line.
  */
 object WeightGoalCard : Card<WeightGoalCard.Data>("weight_goal", CardTab.FOOD, R.string.card_weight_goal, R.string.card_weight_goal_summary) {
 
@@ -151,13 +149,67 @@ object WeightGoalCard : Card<WeightGoalCard.Data>("weight_goal", CardTab.FOOD, R
 
     override fun small(ctx: Context, data: Data): SmallFace? {
         val p = data.plan ?: return null
+        val toGo = toGo(data) ?: return null
         return SmallFace(
-            value = Fmt.number(p.targetKcal.toLong()),
-            unit = ctx.getString(R.string.unit_kcal),
-            label = ctx.getString(R.string.weight_goal_small_label),
+            value = toGo,
+            unit = BodyUnits.unit(BodyKind.WEIGHT, data.units),
+            label = ctx.getString(R.string.d2_tag_kcal_a_day, Fmt.number(p.targetKcal.toLong())),
             status = if (p.onTime(data.goalDate)) CardStatus.GOOD else CardStatus.CLOSE,
             note = rateText(ctx, p, data),
         )
+    }
+
+    /** The weight still to go, signed, in display units ("−4.5"), or null without a goal and a trend. */
+    fun toGo(data: Data): String? {
+        val goal = data.goalX100 ?: return null
+        val now = data.currentX100 ?: return null
+        val d = goal - now
+        val n = Fmt.number(BodyUnits.toDisplay(BodyKind.WEIGHT, abs(d), data.units), 1)
+        return when {
+            d < 0 -> "−$n"
+            d > 0 -> "+$n"
+            else -> n
+        }
+    }
+
+    /**
+     * The trend line: the weekly trend from the first weigh-in up to today, then the projection week by
+     * week to the goal; the goal dashed; dated ends (first weigh-in, the day the goal is reached). Null
+     * without a plan.
+     */
+    fun picture(ctx: Context, data: Data): TrendPicture? {
+        val p = data.plan ?: return null
+        val goal = data.goalX100 ?: return null
+        val current = data.currentX100 ?: return null
+        val w = data.weighIns
+        if (w.isEmpty() || data.trend.size != w.size) return null
+        val zone = ZoneId.systemDefault()
+        val past = ArrayList<Int>()
+        var sec = w.first().tSec
+        val now = data.today.startSec(zone)
+        while (sec < now) {
+            val i = w.indexOfLast { it.tSec <= sec }
+            if (i >= 0) past += data.trend[i]
+            sec += WEEK_SEC
+        }
+        past += current
+        val proj = WeightGoalMath.projection(current, p.ratePerWeekX100, goal, MAX_PROJECTION_WEEKS).drop(1)
+        val values = (past + proj).map { BodyUnits.toDisplay(BodyKind.WEIGHT, it, data.units).toFloat() }
+        if (values.size < 2) return null
+        val end = p.reachDay ?: data.goalDate ?: data.today
+        return TrendPicture.Line(
+            values.toFloatArray(),
+            TrendPictures.dayLabel(ctx, Day.of(w.first().tSec, zone)),
+            Fmt.day(ctx, end.yyyymmdd, data.today.toLocalDate()),
+            ChartPalette.of(ctx).primary,
+            goal = BodyUnits.toDisplay(BodyKind.WEIGHT, goal, data.units).toFloat(),
+        )
+    }
+
+    override fun createSmallGraphic(ctx: Context): View = PictureFrame(ctx, small = true)
+
+    override fun bindSmallGraphic(graphic: View, data: Data) {
+        (graphic as PictureFrame).show(picture(graphic.context, data))
     }
 
     /** "Lose 0.5 kg a week · goal by Mar 3" and the like. */
@@ -176,12 +228,7 @@ object WeightGoalCard : Card<WeightGoalCard.Data>("weight_goal", CardTab.FOOD, R
         private val ctx = parent.context
         private val sw = root as SwCard
         private val tile = StatTile(ctx).apply { setValueAppearance(UiR.style.TextAppearance_SelfWatch_Display_Number) }
-        private val rate = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_Body)
-        private val why = Views.caption(ctx)
-        private val chart = OverlayChartView(ctx).apply { id = R.id.weight_goal_chart }
-        private val historyLabel = Views.caption(ctx, ctx.getString(R.string.weight_goal_history))
-        private val history = BarsView(ctx).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
-        private val bmi = Views.text(ctx, UiR.style.TextAppearance_SelfWatch_Body)
+        private val line = PictureFrame(ctx, small = false).apply { id = R.id.weight_goal_chart }
         private val empty = EmptyState(ctx).apply {
             buttonText = ctx.getString(R.string.weight_goal_set)
             onButton = { host.open(GoalsFragment()) }
@@ -190,37 +237,29 @@ object WeightGoalCard : Card<WeightGoalCard.Data>("weight_goal", CardTab.FOOD, R
         init {
             sw.id = R.id.weight_goal_card
             sw.title = ctx.getString(R.string.card_weight_goal)
-            sw.actionText = ctx.getString(R.string.goal_lines_edit)
-            sw.onAction = { host.open(GoalsFragment()) }
+            sw.isClickable = true
+            sw.isFocusable = true
+            sw.setOnClickListener { host.open(GoalsFragment()) }
             sw.addView(tile, Views.matchWrap(ctx))
-            sw.addView(rate, Views.matchWrap(ctx, 4))
-            sw.addView(why, Views.matchWrap(ctx, 4))
-            sw.addView(chart, Views.matchWrap(ctx, 8).apply { height = ctx.resources.getDimensionPixelSize(R.dimen.weight_goal_chart) })
-            sw.addView(historyLabel, Views.matchWrap(ctx, 8))
-            sw.addView(history, Views.matchWrap(ctx, 4).apply { height = ctx.resources.getDimensionPixelSize(R.dimen.trend_card_bars) })
-            sw.addView(bmi, Views.matchWrap(ctx, 8))
+            sw.addView(line, Views.matchWrap(ctx, 8))
             sw.addView(empty, Views.matchWrap(ctx))
         }
 
         override fun bind(data: Data) {
             val p = data.plan
-            for (v in listOf(tile, rate, why, chart, historyLabel, history)) v.visibility = if (p == null) View.GONE else View.VISIBLE
+            tile.visibility = if (p == null) View.GONE else View.VISIBLE
             empty.visibility = if (p == null) View.VISIBLE else View.GONE
-            bmi.visibility = if (data.bmiNow == null) View.GONE else View.VISIBLE
-            bmi.text = data.bmiNow?.let { now ->
-                data.bmiGoal?.let { g -> ctx.getString(R.string.weight_goal_bmi, Fmt.number(now, 1), Fmt.number(g, 1)) }
-                    ?: ctx.getString(R.string.weight_goal_bmi_now, Fmt.number(now, 1))
-            }
             if (p == null) {
+                line.show(null)
                 empty.message = ctx.getString(if (data.needsGoal) R.string.weight_goal_need_goal else R.string.weight_goal_need_weight)
                 sw.contentDescription = listOf(sw.title, empty.message).joinToString(". ")
                 return
             }
-            tile.value = Fmt.number(p.targetKcal.toLong())
-            tile.unit = ctx.getString(R.string.unit_kcal)
-            tile.label = ctx.getString(R.string.weight_goal_a_day)
-            rate.text = WeightGoalCard.rateText(ctx, p, data)
-            why.text = listOfNotNull(
+            tile.value = toGo(data) ?: ctx.getString(R.string.dash)
+            tile.unit = BodyUnits.unit(BodyKind.WEIGHT, data.units)
+            tile.label = ctx.getString(R.string.d2_tag_kcal_a_day, Fmt.number(p.targetKcal.toLong()))
+            line.show(picture(ctx, data))
+            val why = listOfNotNull(
                 ctx.getString(
                     when (p.source) {
                         BurnSource.ADAPTIVE -> R.string.weight_goal_source_adaptive
@@ -232,41 +271,13 @@ object WeightGoalCard : Card<WeightGoalCard.Data>("weight_goal", CardTab.FOOD, R
                 if (p.capped) ctx.getString(R.string.weight_goal_capped) else null,
                 if (p.floorApplied) ctx.getString(R.string.weight_goal_floor) else null,
             ).joinToString(" ")
-            showChart(data, p)
-            history.labels = data.history.map { (d, _) -> Fmt.day(ctx, d.yyyymmdd, data.today.toLocalDate()) }
-            history.series = listOf(BarSeries(ctx.getString(R.string.weight_goal_history), ChartPalette.of(ctx).primary, data.history.map { it.second }.toIntArray()))
-            sw.contentDescription = listOfNotNull(sw.title, "${tile.value} ${tile.unit} ${tile.label}", rate.text, why.text, bmi.text.takeIf { bmi.visibility == View.VISIBLE }).joinToString(". ")
-        }
-
-        private fun showChart(data: Data, p: WeightPlan) {
-            val zone = ZoneId.systemDefault()
-            fun display(x100: Int): Int = (BodyUnits.toDisplay(BodyKind.WEIGHT, x100, data.units) * SCALE).roundToInt()
-            val palette = ChartPalette.of(ctx)
-            val w = data.weighIns
-            val now = data.today.startSec(zone)
-            val goal = data.goalX100 ?: return
-            val proj = WeightGoalMath.projection(data.currentX100 ?: return, p.ratePerWeekX100, goal, MAX_PROJECTION_WEEKS)
-            val unit = BodyUnits.unit(BodyKind.WEIGHT, data.units)
-            val layers = mutableListOf<app.selfwatch.ui.charts.ChartLayer>(
-                DotTrendLayer(
-                    "weight", ctx.getString(R.string.weight_goal_trend), palette.primary, Axis.LEFT,
-                    LongArray(w.size) { w[it].tSec }, IntArray(w.size) { display(w[it].valueX100) },
-                    trend = IntArray(data.trend.size) { display(data.trend[it]) },
-                    goal = display(goal), scale = SCALE, unit = unit, lockedOn = true,
-                ),
-            )
-            if (proj.size >= 2) {
-                layers += LineLayer(
-                    "projection", ctx.getString(R.string.weight_goal_projection), palette.secondary, Axis.LEFT,
-                    LongArray(proj.size) { now + it * WEEK_SEC }, IntArray(proj.size) { display(proj[it]) },
-                    scale = SCALE, gapSec = 2 * WEEK_SEC, unit = unit,
-                )
+            val bmi = data.bmiNow?.let { now ->
+                data.bmiGoal?.let { g -> ctx.getString(R.string.weight_goal_bmi, Fmt.number(now, 1), Fmt.number(g, 1)) }
+                    ?: ctx.getString(R.string.weight_goal_bmi_now, Fmt.number(now, 1))
             }
-            val start = w.firstOrNull()?.tSec ?: now
-            chart.range = TimeRange(start, maxOf(now + DAY_SEC, now + (proj.size - 1) * WEEK_SEC + DAY_SEC))
-            chart.layers = layers
+            sw.contentDescription = listOfNotNull(
+                sw.title, "${tile.value} ${tile.unit} ${ctx.getString(R.string.d2_tag_to_go)}", tile.label, WeightGoalCard.rateText(ctx, p, data), why, bmi,
+            ).joinToString(". ")
         }
     }
-
-    private const val SCALE = 100
 }
