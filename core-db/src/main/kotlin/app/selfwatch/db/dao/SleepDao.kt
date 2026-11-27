@@ -51,21 +51,28 @@ public class SleepDao internal constructor(private val db: SelfWatchDb) {
         return db.write(setOf(Table.SLEEP_STAGE)) { insertStagesIn(it, stages, importId) }
     }
 
-    /** The main sleep that ended on [day] in [zone] (the longest session ending that day), or null. */
+    /**
+     * The main sleep that ended on [day] in [zone], or null: the longest **joined** night ending that day.
+     *
+     * A night can reach the phone in pieces: when the watch syncs at midnight, the part before
+     * midnight comes in that sync's monitoring file and the rest in the morning's sleep file (Pixel 8
+     * field test, 2026-11-26). Pieces of one device less than [JOIN_GAP_SEC] apart are joined (see
+     * [join]), so the night starts when you fell asleep, not at midnight, and belongs to the day it ends.
+     * The returned [SleepNight.id] is the longest piece's row (used to delete).
+     */
     public suspend fun night(day: Day, zone: ZoneId): SleepNight? = db.read { d ->
         val r = day.toTimeRange(zone)
-        val row = d.queryOne(
-            "$SELECT_SESSION WHERE end_sec >= ? AND end_sec < ? ORDER BY (end_sec - start_sec) DESC, id LIMIT 1",
-            args(r.startSec, r.endSec),
-        ) { c -> c.getLong(0) to mapSession(c) } ?: return@read null
-        val s = row.second
-        SleepNight(row.first, s, stagesIn(d, TimeRange(s.startSec, s.endSec), s.deviceId))
+        val best = joinedIn(d, TimeRange(r.startSec, r.endSec))
+            .filter { it.session.endSec >= r.startSec && it.session.endSec < r.endSec }
+            .maxByOrNull { it.session.endSec - it.session.startSec } ?: return@read null
+        val s = best.session
+        SleepNight(best.id, s, stagesIn(d, TimeRange(s.startSec, s.endSec), s.deviceId))
     }
 
-    /** Sessions (naps included) that ended within [days] in [zone], oldest first. */
+    /** Joined sessions (naps included) that ended within [days] in [zone], oldest first (see [night]). */
     public suspend fun sessions(days: DayRange, zone: ZoneId): List<SleepSession> = db.read { d ->
         val r = days.toTimeRange(zone)
-        d.queryList("$SELECT_SESSION WHERE end_sec >= ? AND end_sec < ? ORDER BY end_sec", args(r.startSec, r.endSec), ::mapSession)
+        joinedIn(d, r).map { it.session }.filter { it.endSec >= r.startSec && it.endSec < r.endSec }.sortedBy { it.endSec }
     }
 
     /** Stage samples of [deviceId] in [range], oldest first. */
@@ -79,6 +86,55 @@ public class SleepDao internal constructor(private val db: SelfWatchDb) {
     }
 
     internal companion object {
+        /** Pieces of one device's sleep less than this apart are one night (a midnight sync splits a night with no gap). */
+        internal const val JOIN_GAP_SEC: Long = 60 * 60
+
+        /** How far around a range to look for pieces that join into a night ending inside it. */
+        private const val JOIN_LOOKAROUND_SEC: Long = 24 * 3600
+
+        /** A joined night: the longest piece's row [id] and the joined [session]. */
+        internal data class Joined(val id: Long, val session: SleepSession)
+
+        private fun joinedIn(d: SQLiteDatabase, range: TimeRange): List<Joined> {
+            val rows = d.queryList(
+                "$SELECT_SESSION WHERE end_sec >= ? AND start_sec < ? ORDER BY device_id, start_sec",
+                args(range.startSec - JOIN_LOOKAROUND_SEC, range.endSec + JOIN_LOOKAROUND_SEC),
+            ) { c -> c.getLong(0) to mapSession(c) }
+            return join(rows)
+        }
+
+        /**
+         * Joins [rows] (row id to session) of the same device whose gap is at most [JOIN_GAP_SEC]
+         * (overlaps included) into one session from the earliest start to the latest end. The score
+         * and id come from the longest piece (the sleep file's piece carries the watch's score).
+         */
+        internal fun join(rows: List<Pair<Long, SleepSession>>): List<Joined> {
+            val out = ArrayList<Joined>()
+            for ((_, group) in rows.groupBy { it.second.deviceId }) {
+                val sorted = group.sortedBy { it.second.startSec }
+                var start = 0L
+                var end = 0L
+                var best: Pair<Long, SleepSession>? = null
+                fun flush() {
+                    val b = best ?: return
+                    out += Joined(b.first, SleepSession(b.second.deviceId, start, end, b.second.score))
+                }
+                for (row in sorted) {
+                    val s = row.second
+                    val cur = best
+                    if (cur == null || s.startSec - end > JOIN_GAP_SEC) {
+                        flush()
+                        start = s.startSec; end = s.endSec; best = row
+                    } else {
+                        end = maxOf(end, s.endSec)
+                        if (s.endSec - s.startSec > cur.second.endSec - cur.second.startSec) best = row
+                    }
+                }
+                flush()
+            }
+            return out
+        }
+
         private const val SELECT_SESSION = "SELECT id, device_id, start_sec, end_sec, score FROM sleep_session"
 
         private fun mapSession(c: Cursor): SleepSession = SleepSession(c.getLong(1), c.getLong(2), c.getLong(3), c.intOrNull(4))

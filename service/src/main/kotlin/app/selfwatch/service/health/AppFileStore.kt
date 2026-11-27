@@ -46,11 +46,30 @@ public class AppFileStore(private val filesDir: File) : FileStore {
             rel
         }
 
+    /**
+     * Writes [bytes] to `sleepfiles/<deviceId>/<fileSec>-<kind>.fit` and deletes kept sleep files
+     * older than [SLEEP_KEEP_DAYS] days (they are small: about 1 KB per night, a monitoring file with
+     * sleep stages up to about 30 KB). App-private, never shared; they go into a backup only as part
+     * of the app's files, like workouts.
+     */
+    override suspend fun keepSleepFile(deviceId: Long, fileSec: Long, kind: String, bytes: ByteArray) {
+        withContext(Dispatchers.IO) {
+            val dir = File(filesDir, "sleepfiles/$deviceId")
+            if (!dir.isDirectory && !dir.mkdirs()) throw IOException("cannot create ${dir.name}")
+            File(dir, "$fileSec-$kind.fit").writeBytes(bytes)
+            val cutoff = System.currentTimeMillis() - SLEEP_KEEP_DAYS * 86_400_000L
+            dir.listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.delete() }
+        }
+    }
+
     /** The file for a [path] returned by [saveWorkoutFit]. */
     public fun resolve(path: String): File = File(filesDir, path)
 
     /** Paths. */
     public companion object {
+        /** How long original sleep files are kept. */
+        public const val SLEEP_KEEP_DAYS: Long = 14
+
         /** The relative path of a workout's FIT file. */
         public fun workoutPath(deviceId: Long, startSec: Long): String = "workouts/$deviceId/$startSec.fit"
     }

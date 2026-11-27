@@ -218,6 +218,44 @@ class HealthDaoTest : DbTest() {
         assertEquals(nap, db.sleep.night(d23, utc)!!.id)
     }
 
+    /**
+     * A sync at midnight splits the night: the part before midnight arrives in the midnight monitoring
+     * file, the rest in the morning's sleep file (Pixel 8, 2026-11-26). The two pieces are one night
+     * that starts when you fell asleep, belongs to the wake-up day and keeps the sleep file's score.
+     */
+    @Test
+    fun midnightSplitNightIsJoined() = test {
+        val before = SleepSession(1, t23 - 50 * 60L, t23 - 30, null) // 23:10 to 23:59:30, monitoring file
+        val after = SleepSession(1, t23 + 84, t23 + 6 * 3600L + 35 * 60, 67) // 00:01:24 to 06:35, sleep file
+        db.sleep.insertSession(before)
+        val afterId = db.sleep.insertSession(after)
+        db.sleep.insertStages(
+            listOf(
+                SleepStageSample(1, t23 - 50 * 60L, SleepStage.LIGHT),
+                SleepStageSample(1, t23 - 20 * 60L, SleepStage.DEEP),
+                SleepStageSample(1, t23 + 84, SleepStage.LIGHT),
+            ),
+        )
+        val night = db.sleep.night(d23, utc)!!
+        assertEquals(SleepSession(1, before.startSec, after.endSec, 67), night.session)
+        assertEquals(afterId, night.id)
+        assertEquals(3, night.stages.size)
+        // The piece that ended before midnight is not a night of its own on the day before.
+        assertNull(db.sleep.night(d23.plusDays(-1), utc))
+        assertEquals(listOf(SleepSession(1, before.startSec, after.endSec, 67)), db.sleep.sessions(DayRange(d23.plusDays(-1), d23), utc))
+    }
+
+    @Test
+    fun joinKeepsSeparateNightsAndDevicesApart() {
+        val night = 1L to SleepSession(1, 0, 8 * 3600L, 80)
+        val nap = 2L to SleepSession(1, 13 * 3600L, 14 * 3600L, null) // 5 h later: not joined
+        val close = 3L to SleepSession(1, 8 * 3600L + 59 * 60, 9 * 3600L, null) // 59 min later: joined
+        val other = 4L to SleepSession(2, 8 * 3600L + 60, 9 * 3600L, 50) // other device: never joined
+        val out = SleepDao.join(listOf(nap, other, close, night)).sortedBy { it.id }
+        assertEquals(listOf(1L, 2L, 4L), out.map { it.id })
+        assertEquals(SleepSession(1, 0, 9 * 3600L, 80), out[0].session)
+    }
+
     // ---- workout ----
 
     @Test

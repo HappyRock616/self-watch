@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Self Watch</string>
+    <!-- app_name comes from the build (resValue in build-logic): "0.0.3db Self Watch" on debug builds. -->
 
     <!-- Bottom tabs -->
     <string name="tab_body">Body</string>

@@ -50,13 +50,23 @@ class MonitoringCarry {
  *   baseline.
  * - A message at time t covers the time up to t, so its delta goes to the minute containing t − 1 s
  *   (the message stamped 00:00:00 still belongs to the day before).
- * - Minutes: steps, distance and kcal summed; intensity the highest; activity type the last seen.
+ * - Minutes: steps, distance and kcal summed; activity type the last seen.
+ * - Intensity minutes are the watch's own: `moderate_activity_minutes` (33) and
+ *   `vigorous_activity_minutes` (34), the minutes the watch credited since the previous message (it
+ *   rates them from heart rate against resting heart rate, as Garmin Connect shows them). The credited
+ *   minutes are marked on the minutes just before the message: vigorous ones last, as
+ *   [IntensityLevel.VIGOROUS], moderate ones before them, as [IntensityLevel.MODERATE]. The raw
+ *   activity level in field 24 (bits 5–7) is the watch's movement level, not exercise intensity: it is
+ *   kept only as 0 (still) or 1 (moving), so walking around never counts as intensity minutes.
  * - Heart rate: the last value in each minute, one [app.selfwatch.model.health.MetricKind.HEART_RATE]
  *   sample stamped at the minute start.
  * - Resting metabolic rate (`monitoring_info` field 5, kcal per day): one
  *   [app.selfwatch.model.health.MetricKind.RESTING_KCAL] sample per local day, stamped at the start of
  *   the day the `monitoring_info` message falls on.
  * - VO2 max (`max_met_data`, mostly in metrics files): running or cycling, see [Vo2Max].
+ * - Sleep stages (`sleep_level`): the watch puts the part of a night before a midnight sync in the
+ *   monitoring file, not the sleep file; they become stage samples and one session for that piece
+ *   (joined with the rest of the night when read, see `SleepDao.night`).
  * - Local midnight comes from [zone] if given, otherwise from the file's own local time offset
  *   (`monitoring_info.local_timestamp` − `timestamp`), otherwise UTC.
  */
@@ -71,6 +81,11 @@ object MonitoringDecoder {
     private const val F_TYPE_INTENSITY = 24
     private const val F_TIMESTAMP_16 = 26
     private const val F_HEART_RATE = 27
+    private const val F_MODERATE_MIN = 33
+    private const val F_VIGOROUS_MIN = 34
+
+    /** Most credited minutes accepted from one message (guards against a corrupt value). */
+    private const val MAX_CREDIT_MIN = 60
     private const val MAX_TZ_SEC = 14 * 3600
 
     /** `monitoring_info.resting_metabolic_rate`, kcal per day. */
@@ -98,10 +113,12 @@ object MonitoringDecoder {
         val counters = carry?.snapshot() ?: HashMap()
         val metrics = MetricExtractor(deviceId)
         val minutes = TreeMap<Long, Bucket>()
+        val credit = HashMap<Long, Int>()
         val hr = TreeMap<Long, Int>()
         var refFit: Long? = null
         var offsetSec: Int? = null
         val restingKcal = ArrayList<Pair<Long, Int>>()
+        val sleep = TreeMap<Long, app.selfwatch.model.health.SleepStageSample>()
 
         fun localDay(t: Long): Long {
             val off = if (zone != null) zone.rules.getOffset(Instant.ofEpochSecond(t)).totalSeconds else (offsetSec ?: 0)
@@ -118,6 +135,7 @@ object MonitoringDecoder {
             if (rec.ownTime) rec.tSec?.let { refFit = FitTime.fromEpoch(it) }
             if (metrics.accept(rec)) return@read
             when (rec.global) {
+                FitMsg.SLEEP_LEVEL -> SleepDecoder.stageOf(rec, deviceId)?.let { sleep[it.tSec] = it }
                 FitMsg.MONITORING_INFO -> {
                     noteOffset(rec.long(0), rec.long(F_TIMESTAMP))
                     val rmr = rec.int(F_RESTING_METABOLIC_RATE)
@@ -142,12 +160,15 @@ object MonitoringDecoder {
 
                     val packed = rec.int(F_TYPE_INTENSITY)
                     val type = rec.int(F_ACTIVITY_TYPE) ?: packed?.and(0x1F)
-                    val intensity = packed?.let { (it shr 5) and 0x07 }
+                    val intensity = packed?.let { if ((it shr 5) and 0x07 > 0) IntensityLevel.MOVING else IntensityLevel.STILL }
+                    // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (moderate/vigorous_activity_minutes summed per message; GarminPaiSampleProvider totals moderate + 2 × vigorous)
+                    val modMin = rec.int(F_MODERATE_MIN)?.takeIf { it in 1..MAX_CREDIT_MIN } ?: 0
+                    val vigMin = rec.int(F_VIGOROUS_MIN)?.takeIf { it in 1..MAX_CREDIT_MIN } ?: 0
                     val steps = rec.long(F_CYCLES)
                     val steps16 = rec.long(F_CYCLES_16)
                     val dist = rec.long(F_DISTANCE)
                     val kcal = rec.long(F_ACTIVE_CALORIES)
-                    if (steps == null && steps16 == null && dist == null && kcal == null && intensity == null) return@read
+                    if (steps == null && steps16 == null && dist == null && kcal == null && intensity == null && modMin == 0 && vigMin == 0) return@read
 
                     val a = ts - 1
                     val day = localDay(a)
@@ -156,7 +177,13 @@ object MonitoringDecoder {
                         // Counters restart at local midnight.
                         c.day = day; c.steps = 0; c.distCm = 0; c.kcal = 0
                     }
-                    val b = minutes.getOrPut(Math.floorDiv(a, 60L) * 60) { Bucket() }
+                    val minuteStart = Math.floorDiv(a, 60L) * 60
+                    val b = minutes.getOrPut(minuteStart) { Bucket() }
+                    for (i in 0 until vigMin + modMin) {
+                        val level = if (i < vigMin) IntensityLevel.VIGOROUS else IntensityLevel.MODERATE
+                        val t = minuteStart - i * 60L
+                        if ((credit[t] ?: 0) < level) credit[t] = level
+                    }
                     // Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java (cycles are cumulative per activity type; steps = raw cycles value, i.e. scaled cycles × 2, summed over types)
                     val curSteps = steps ?: steps16?.let { s16 -> c.steps + ((s16 - (c.steps and 0xFFFF)) and 0xFFFF) }
                     if (curSteps != null) { b.steps += delta(curSteps, c.steps); c.steps = curSteps }
@@ -183,6 +210,7 @@ object MonitoringDecoder {
                     }
                     metrics.addRestingKcal(start, kcal)
                 }
+                for (t in credit.keys) minutes.getOrPut(t) { Bucket() }
                 val activity = minutes.map { (t, b) ->
                     ActivityMinute(
                         deviceId = deviceId,
@@ -190,11 +218,20 @@ object MonitoringDecoder {
                         steps = clampInt(b.steps),
                         activeKcalX10 = clampInt(b.kcal * 10),
                         distanceCm = clampInt(b.distCm),
-                        intensity = b.intensity,
+                        intensity = credit[t] ?: b.intensity,
                         activityType = b.type,
                     )
                 }
-                Outcome.Ok(IngestBatch(key = null, activity = activity, metrics = metrics.result()))
+                val stages = sleep.values.toList()
+                Outcome.Ok(
+                    IngestBatch(
+                        key = null,
+                        activity = activity,
+                        metrics = metrics.result(),
+                        sleepStages = stages,
+                        sleepSessions = SleepDecoder.sessionFor(stages, deviceId, score = null),
+                    ),
+                )
             }
         }
     }
@@ -202,4 +239,19 @@ object MonitoringDecoder {
     private fun delta(cur: Long, base: Long): Long = if (cur >= base) cur - base else 0L
 
     private fun clampInt(v: Long): Int = v.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+}
+
+/** Values of [ActivityMinute.intensity] written by the decoders. */
+object IntensityLevel {
+    /** No movement. */
+    const val STILL: Int = 0
+
+    /** Moving, but no intensity minute credited by the watch. */
+    const val MOVING: Int = 1
+
+    /** A moderate intensity minute credited by the watch (counts 1). */
+    const val MODERATE: Int = 2
+
+    /** A vigorous intensity minute credited by the watch (counts 2). */
+    const val VIGOROUS: Int = 3
 }

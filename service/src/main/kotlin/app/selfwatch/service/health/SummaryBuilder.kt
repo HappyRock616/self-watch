@@ -55,7 +55,7 @@ public fun interface WatchRestingKcal {
  * | Column | Rule |
  * |---|---|
  * | steps, distance_m, active_kcal | Sum of the day's activity minutes; when devices overlap on a minute, only the highest-priority device counts |
- * | active_min | Moderate minutes count 1, vigorous minutes count 2 |
+ * | active_min | The watch's own intensity minutes (FIT monitoring fields 33/34, as in Garmin Connect): moderate count 1, vigorous count 2; ordinary movement counts 0 |
  * | resting_kcal | The [WatchRestingKcal] hook, else the day's stored `RESTING_KCAL` metric (the watch's resting metabolic rate, [WatchRestingKcal.fromMetrics]), else Mifflin-St Jeor from the profile and the latest weight on or before the day; prorated for today |
  * | resting_hr | The `RESTING_HR` metric of the day, else the lowest 30-minute average heart rate during the night |
  * | hrv_avg_ms | Average HRV during the night that ended that morning |

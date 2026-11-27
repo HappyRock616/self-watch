@@ -28,6 +28,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -59,6 +60,11 @@ class PairingTest {
     fun garminPresetUsesTheManufacturerId() {
         assertEquals(0x0087, PairFilter.GARMIN.manufacturerId)
         assertEquals(GARMIN_MANUFACTURER_ID, PairFilter.GARMIN.manufacturerId)
+        // watches need a Bluetooth name too, in the same filter (no nameless hex-address entries)
+        assertTrue(PairFilter.GARMIN.nameAndManufacturer)
+        val name = PairFilter.GARMIN.namePattern!!
+        assertTrue(name.matches("vívoactive 5"))
+        assertFalse(name.matches(""))
         // every filter combination builds a valid request
         Pairing.buildRequest(PairFilter.GARMIN)
         Pairing.buildRequest(PairFilter(Regex("vívoactive.*|Forerunner.*"), GARMIN_MANUFACTURER_ID))

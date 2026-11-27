@@ -22,6 +22,7 @@ import app.selfwatch.R
 import app.selfwatch.graph
 import app.selfwatch.onboarding.OnboardingActivity
 import app.selfwatch.onboarding.OnboardingViewModel
+import app.selfwatch.service.SyncCommands
 import app.selfwatch.ui.SwActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -50,6 +51,15 @@ class MainActivity : SwActivity() {
                 select(Tab.BODY)
             }
         }
+    }
+
+    private val openAppSync by lazy {
+        OpenAppSync(
+            nowSec = { System.currentTimeMillis() / 1000 },
+            lastSyncSec = { graph.db.devices.active().mapNotNull { graph.db.devices.lastSync(it.id) }.maxOrNull() },
+            hasWatch = { graph.db.devices.active().isNotEmpty() },
+            requestSync = { SyncCommands.start(applicationContext, SyncCommands.ACTION_SYNC_NOW) },
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,6 +95,8 @@ class MainActivity : SwActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { vm.foodEnabled.collect { updateFab() } }
+                // Fresh data while the app is on screen (no need to tap Sync now); see OpenAppSync.
+                launch { openAppSync.runWhileOnScreen() }
             }
         }
     }

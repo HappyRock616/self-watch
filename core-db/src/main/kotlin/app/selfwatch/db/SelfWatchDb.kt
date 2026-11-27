@@ -170,7 +170,7 @@ public class SelfWatchDb internal constructor(
     /** Constants and the per-process instance. */
     public companion object {
         /** Current schema version. */
-        public const val VERSION: Int = 4
+        public const val VERSION: Int = 5
 
         /** File name. */
         public const val NAME: String = "selfwatch.db"

@@ -1,0 +1,1 @@
+Sleep: a night split by a midnight sync is one night again. Intensity minutes match Garmin Connect (exercise only). Syncs when you open the app and every 15 min while open. Reconnects by itself if syncs bring no new data. Pairing lists watches by name.

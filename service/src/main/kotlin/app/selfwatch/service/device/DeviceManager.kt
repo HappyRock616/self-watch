@@ -351,8 +351,43 @@ public class DeviceManager(
             SwLog.e(TAG, "sync of device ${md.info.id} threw", e)
             Outcome.Fail(SwError.Io("sync failed"))
         }
-        if (result is Outcome.Ok) recordSync(md)
+        if (result is Outcome.Ok) {
+            recordSync(md)
+            if (result.value.filesNew == 0) reconnectIfStale(md)
+        }
         return result
+    }
+
+    /**
+     * Guard for a link that says "synced" but delivers nothing (Pixel 8 field test, 2026-11-26: manual
+     * syncs finished with no new files for hours and only a phone restart brought the data). When a
+     * watch's sync brings no new file, no file at all has been stored for [STALE_DATA_SEC] and it is
+     * daytime (the watch writes its daily data at least every few hours while you are awake), the link
+     * is dropped and opened fresh, which is what the restart did. At most once per [STALE_RECONNECT_GAP_SEC],
+     * so a quiet watch is never hammered.
+     */
+    private suspend fun reconnectIfStale(md: ManagedDevice) {
+        if (!DeviceKinds.isWatch(md.info.kind)) return
+        val now = clock.nowSec()
+        val hour = java.time.Instant.ofEpochSecond(now).atZone(clock.zone()).hour
+        if (hour !in STALE_DAY_HOURS) return
+        if (now - md.lastStaleReconnectSec < STALE_RECONNECT_GAP_SEC) return
+        val recent = try {
+            db.syncFiles.doneBetween(md.info.id, now - STALE_DATA_SEC, now)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SwLog.w(TAG, "stale check failed", e)
+            return
+        }
+        if (recent.isNotEmpty()) return
+        md.lastStaleReconnectSec = now
+        SwLog.w(TAG, "device ${md.info.id}: synced but no new watch file for ${STALE_DATA_SEC / 3600} h; reconnecting")
+        lock.withLock {
+            if (md.supervisor?.isActive != true) return
+            md.supervisor?.cancelAndJoin()
+            md.supervisor = scope.launch { supervise(md) }
+        }
     }
 
     private suspend fun cycleOne(md: ManagedDevice, reason: SyncReason): Outcome<SyncReport> = coroutineScope {
@@ -477,6 +512,9 @@ public class DeviceManager(
 
         @Volatile var supervisor: Job? = null
 
+        /** When [reconnectIfStale] last dropped and reopened the link (0 = never). */
+        @Volatile var lastStaleReconnectSec: Long = 0
+
         @Volatile var port: BlePort? = null
 
         @Volatile var driverState: ConnectionState = ConnectionState.Disconnected
@@ -526,6 +564,15 @@ public class DeviceManager(
 
     /** Defaults. */
     public companion object {
+        /** No watch file stored for this long (with a sync that brought nothing) means the link may be stuck. */
+        internal const val STALE_DATA_SEC: Long = 4 * 3600
+
+        /** At most one stale-link reconnect per this many seconds. */
+        internal const val STALE_RECONNECT_GAP_SEC: Long = 2 * 3600
+
+        /** Local hours in which a missing file counts as stale (the watch writes little while you sleep). */
+        internal val STALE_DAY_HOURS: IntRange = 9..22
+
         /** How long a sync-only cycle waits for the watch to be ready. */
         public const val CONNECT_TIMEOUT_MS: Long = 120_000
 

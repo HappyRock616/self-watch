@@ -25,6 +25,8 @@ import app.selfwatch.fit.msg
 import app.selfwatch.model.health.ActivityMinute
 import app.selfwatch.model.health.MetricKind
 import app.selfwatch.model.health.MetricSample
+import app.selfwatch.model.health.SleepSession
+import app.selfwatch.model.health.SleepStage
 import app.selfwatch.model.result.Outcome
 import app.selfwatch.model.result.valueOrNull
 import app.selfwatch.model.time.Day
@@ -56,6 +58,22 @@ class MonitoringDecoderTest {
 
     private fun List<ActivityMinute>.at(t: Long) = single { it.tSec == t }
 
+    /**
+     * The part of a night before a midnight sync comes in the monitoring file (Pixel 8, 2026-11-26):
+     * its `sleep_level` messages become stages and one session for that piece.
+     */
+    @Test
+    fun sleepLevelsInAMonitoringFileAreKept() {
+        val t0 = Synth.T0
+        val b = fit {
+            define(1, FitMsg.SLEEP_LEVEL, listOf(FieldDef(253, 4, UINT32), FieldDef(0, 1, ENUM)))
+            listOf(2, 3, 2).forEachIndexed { i, v -> data(1, listOf(ft(t0 + i * 60L), v)) }
+        }
+        val batch = decode(b)
+        assertEquals(listOf(SleepStage.LIGHT, SleepStage.DEEP, SleepStage.LIGHT), batch.sleepStages.map { it.stage })
+        assertEquals(listOf(SleepSession(batch.sleepStages.first().deviceId, t0, t0 + 180, null)), batch.sleepSessions)
+    }
+
     @Test
     fun cumulativeCountersBecomeMinuteDeltasPerActivityType() {
         val b = fit {
@@ -70,12 +88,38 @@ class MonitoringDecoderTest {
         assertEquals(listOf(t0, t0 + 60, t0 + 120, t0 + 180), a.map { it.tSec })
         assertEquals(ActivityMinute(dev, t0, 100, 40, 7000, 1, 6), a.at(t0))
         // Two records end in the minute starting at t0+60: (150-100) + (180-150).
-        assertEquals(ActivityMinute(dev, t0 + 60, 80, 30, 5600, 2, 6), a.at(t0 + 60))
+        // The raw movement level is only still/moving: 2 is not a moderate minute.
+        assertEquals(ActivityMinute(dev, t0 + 60, 80, 30, 5600, 1, 6), a.at(t0 + 60))
         // Running has its own counter.
-        assertEquals(ActivityMinute(dev, t0 + 120, 50, 50, 9000, 3, 1), a.at(t0 + 120))
+        assertEquals(ActivityMinute(dev, t0 + 120, 50, 50, 9000, 1, 1), a.at(t0 + 120))
         assertEquals(20, a.at(t0 + 180).steps)
         assertEquals(10, a.at(t0 + 180).activeKcalX10)
         assertEquals(250, a.sumOf { it.steps })
+    }
+
+    /**
+     * Intensity minutes are the watch's own (fields 33/34), not the movement level: a walk at level 4
+     * with nothing credited counts nothing; a message crediting 2 moderate and 1 vigorous marks the three
+     * minutes before it (vigorous last).
+     */
+    @Test
+    fun intensityMinutesAreTheOnesTheWatchCredited() {
+        val b = fit {
+            define(
+                3, FitMsg.MONITORING,
+                listOf(FieldDef(253, 4, UINT32), FieldDef(3, 4, UINT32), FieldDef(24, 1, BYTE), FieldDef(33, 2, UINT16), FieldDef(34, 2, UINT16)),
+            )
+            data(3, listOf(ft(t0 + 60), 100L, 4 shl 5, null, null))
+            data(3, listOf(ft(t0 + 600), 900L, 5 shl 5, 2, 1))
+        }
+        val a = decode(b, ZoneOffset.UTC).activity
+        assertEquals(1, a.at(t0).intensity)
+        assertEquals(IntensityLevel.VIGOROUS, a.at(t0 + 540).intensity)
+        assertEquals(IntensityLevel.MODERATE, a.at(t0 + 480).intensity)
+        assertEquals(IntensityLevel.MODERATE, a.at(t0 + 420).intensity)
+        assertEquals(800, a.at(t0 + 540).steps)
+        assertEquals(0, a.at(t0 + 420).steps)
+        assertEquals(3, a.count { it.intensity >= IntensityLevel.MODERATE })
     }
 
     @Test

@@ -22,8 +22,11 @@ android {
         applicationId = "app.selfwatch"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.0.2"
+        versionCode = 3
+        versionName = "0.0.3"
+        // The app's name. Debug builds put the version first ("0.0.3db Self Watch", db = debug) so the
+        // launcher never cuts the part that tells builds apart.
+        resValue("string", "app_name", "Self Watch")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     if (canSignRelease) {
@@ -44,8 +47,12 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             vcsInfo { include = false }
         }
-        debug { applicationIdSuffix = ".debug" }
+        debug {
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "${defaultConfig.versionName}db Self Watch")
+        }
     }
+    buildFeatures { resValues = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

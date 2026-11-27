@@ -79,6 +79,13 @@ public data class IngestBatch(
 public interface FileStore {
     /** Saves a workout FIT file and returns its path. */
     public suspend fun saveWorkoutFit(deviceId: Long, startSec: Long, bytes: ByteArray): String
+
+    /**
+     * Keeps an original watch file that held sleep data (a sleep file, or a monitoring file with
+     * sleep stages), so an odd night can be checked against exactly what the watch sent. Kept for
+     * a short time only; does nothing by default.
+     */
+    public suspend fun keepSleepFile(deviceId: Long, fileSec: Long, kind: String, bytes: ByteArray) {}
 }
 
 /** What a sync achieved. */

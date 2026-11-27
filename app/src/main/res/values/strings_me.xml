@@ -370,7 +370,7 @@
     <string name="onboarding_goal_water_oz">Water per day (fl oz)</string>
     <string name="onboarding_goals_later">You can change goals any time in Me → Goals.</string>
     <string name="onboarding_pair_title">Pair your watch</string>
-    <string name="onboarding_pair_help">Self Watch talks to your Garmin watch over Bluetooth. Android will ask for nearby devices access, then show your watch.</string>
+    <string name="onboarding_pair_help">Self Watch talks to your Garmin watch over Bluetooth. First put the watch in pairing mode: on the watch, open the phone settings and choose Pair phone. Android will ask for nearby devices access, then show your watch by name.</string>
     <string name="onboarding_pair_garmin_connect">Using Garmin Connect now? Remove the watch from Garmin Connect and from Android\'s Bluetooth settings first, then pair it here.</string>
     <string name="onboarding_pair_button">Pair watch</string>
     <string name="onboarding_paired">Paired: %1$s</string>

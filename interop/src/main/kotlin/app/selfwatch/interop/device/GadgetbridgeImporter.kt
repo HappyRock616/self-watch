@@ -345,9 +345,45 @@ internal class GbReader(private val d: SQLiteDatabase, private val warnings: Mut
                     steps = (prev?.steps ?: 0) + steps.coerceAtLeast(0),
                     activeKcalX10 = (prev?.activeKcalX10 ?: 0) + kcal.coerceAtLeast(0) * 10,
                     distanceCm = (prev?.distanceCm ?: 0) + dist.coerceAtLeast(0),
-                    intensity = maxOf(prev?.intensity ?: 0, intensity.coerceAtLeast(0)),
+                    // RAW_INTENSITY is the watch's movement level, not exercise intensity: only still (0) or moving (1).
+                    intensity = maxOf(prev?.intensity ?: 0, if (intensity > 0) 1 else 0),
                     activityType = null,
                 )
+            }
+        }
+        readIntensityMinutes()
+    }
+
+    /**
+     * The watch's own intensity minutes (`GARMIN_INTENSITY_MINUTES_SAMPLE`, from FIT monitoring fields
+     * 33/34): each row credits MODERATE and VIGOROUS minutes up to its timestamp. They are marked on the
+     * minutes just before it (vigorous last, as 3; moderate before them, as 2), as the FIT decoder does.
+     * Ref: Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java.
+     */
+    private fun readIntensityMinutes() {
+        val t = "GARMIN_INTENSITY_MINUTES_SAMPLE"
+        val cols = columns(t)
+        if (cols.isEmpty()) return
+        if (!cols.containsAll(listOf("TIMESTAMP", "DEVICE_ID", "MODERATE", "VIGOROUS"))) {
+            warnings.add("$t has an unknown layout; skipped")
+            return
+        }
+        d.rawQuery("SELECT TIMESTAMP, DEVICE_ID, MODERATE, VIGOROUS FROM $t ORDER BY TIMESTAMP", null).use { c ->
+            while (c.moveToNext()) {
+                val ts = c.getLong(0) / 1000
+                if (!SeriesBuilder.plausible(ts)) continue
+                val b = builder(c.getLong(1))
+                val mod = c.measured(2).takeIf { it in 1..60 } ?: 0
+                val vig = c.measured(3).takeIf { it in 1..60 } ?: 0
+                val last = ts - ts % 60
+                for (i in 0 until vig + mod) {
+                    val level = if (i < vig) 3 else 2
+                    val minute = last - i * 60L
+                    val prev = b.activity[minute]
+                    if (prev != null && prev.intensity >= level) continue
+                    b.activity[minute] = prev?.copy(intensity = level)
+                        ?: ActivityMinute(deviceId = 0, tSec = minute, steps = 0, activeKcalX10 = 0, distanceCm = 0, intensity = level, activityType = null)
+                }
             }
         }
     }

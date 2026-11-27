@@ -37,8 +37,8 @@ import java.io.File
  * it to the newest version and checks that the data survived and the new schema is in place.
  *
  * Shipped scripts come from `assets/db/V{n}.sql`. Scripts newer than [SelfWatchDb.VERSION] may be
- * staged in test resources `db/V{n}.sql` (today: a dummy V5, never shipped) so the harness always
- * runs one upgrade past the shipped schema. When a real V5 lands, rename the dummy to V6.
+ * staged in test resources `db/V{n}.sql` (today: a dummy V6, never shipped) so the harness always
+ * runs one upgrade past the shipped schema. When a real V6 lands, rename the dummy to V7.
  */
 @RunWith(RobolectricTestRunner::class)
 class MigrationTest {
@@ -80,7 +80,7 @@ class MigrationTest {
 
     @Test
     fun harnessFindsStagedVersions() {
-        assertTrue("a staged V5 must exist for the harness to test upgrades", latest >= 5)
+        assertTrue("a staged V6 must exist for the harness to test upgrades", latest >= 6)
     }
 
     @Test
@@ -127,6 +127,11 @@ class MigrationTest {
                     "INSERT INTO workout (device_id, sport, start_sec, end_sec, duration_sec, distance_m, kcal, has_track, fit_path, source) " +
                         "VALUES (99, 1, 1795435200, 1795437000, 1800, 5000, 300, 1, '/f/run.fit', 1)",
                 )
+                // Garmin minutes with raw movement levels (before V5) and a scale-free day summary.
+                val w = db.writableDatabase
+                w.execSQL("INSERT INTO device (id, kind, address, name, model, added_sec) VALUES (50, 1, 'AA:BB:CC:00:00:50', 'W', 'm', 1)")
+                w.execSQL("INSERT INTO activity_minute (device_id, t_sec, steps, intensity) VALUES (50, 60, 10, 0), (50, 120, 90, 2), (50, 180, 120, 5)")
+                w.execSQL("INSERT INTO day_summary (day, tz_offset_min, active_min, updated_sec) VALUES (20261123, 0, 219, 1)")
             }
             // 2. Upgrade and check.
             open(latest).use { db ->
@@ -141,7 +146,8 @@ class MigrationTest {
                 checkV2(db)
                 checkV3(db)
                 checkV4(db)
-                checkDummyV5(db)
+                if (from < 5) checkV5(db)
+                checkDummyV6(db)
             }
         }
     }
@@ -203,8 +209,20 @@ class MigrationTest {
         assertEquals(0, db.readableDatabase.rawQuery("SELECT COUNT(*) FROM workout_trim", null).use { it.moveToFirst(); it.getInt(0) })
     }
 
-    /** Checks specific to the staged dummy V5. */
-    private fun checkDummyV5(db: SelfWatchDb) {
+    /** Schema 5: raw movement levels no longer count as intensity minutes; old totals are cleared. */
+    private fun checkV5(db: SelfWatchDb) {
+        val d = db.readableDatabase
+        assertEquals(
+            listOf(0, 1, 1),
+            d.rawQuery("SELECT intensity FROM activity_minute WHERE device_id = 50 ORDER BY t_sec", null).use { c ->
+                buildList { while (c.moveToNext()) add(c.getInt(0)) }
+            },
+        )
+        assertEquals(0, d.rawQuery("SELECT active_min FROM day_summary WHERE day = 20261123", null).use { it.moveToFirst(); it.getInt(0) })
+    }
+
+    /** Checks specific to the staged dummy V6. */
+    private fun checkDummyV6(db: SelfWatchDb) {
         val d = db.writableDatabase
         assertEquals(3, d.rawQuery("SELECT source FROM water", null).use { it.moveToFirst(); it.getInt(0) })
         assertEquals("", d.rawQuery("SELECT label FROM fast", null).use { it.moveToFirst(); it.getString(0) })

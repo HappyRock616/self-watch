@@ -49,6 +49,7 @@ import app.selfwatch.model.food.UnitSystem
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.time.Day
 import app.selfwatch.model.result.Outcome
+import app.selfwatch.model.result.SwError
 import app.selfwatch.service.device.WatchStatus
 import app.selfwatch.ui.format.Fmt
 import app.selfwatch.shell.DisplayUnits
@@ -444,7 +445,16 @@ class OnboardingActivity : MeScreenActivity() {
                 }
                 is Outcome.Fail -> {
                     SwLog.i(TAG, "pairing ended: ${r.error}")
-                    toast(getString(R.string.devices_pair_failed, WatchStatus.reason(r.error)))
+                    if (r.error is SwError.PermissionMissing) {
+                        toast(getString(R.string.devices_pair_failed, WatchStatus.reason(r.error)))
+                    } else {
+                        // Same hint as Devices: the watch is probably not in pairing mode.
+                        MaterialAlertDialogBuilder(this@OnboardingActivity)
+                            .setTitle(R.string.devices_pair_hint_title)
+                            .setMessage(R.string.devices_pair_hint)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                    }
                 }
             }
         }

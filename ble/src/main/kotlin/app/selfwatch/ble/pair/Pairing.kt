@@ -49,6 +49,9 @@ import kotlin.coroutines.resume
 /**
  * Which devices the system picker offers. Each non-null criterion becomes its own filter, and the
  * picker shows devices matching **any** of them. With both null every LE device is offered.
+ *
+ * With [nameAndManufacturer] true, [namePattern] and [manufacturerId] go into **one** filter, so a
+ * device must match both (used for watches: Garmin's id *and* a Bluetooth name).
  */
 public data class PairFilter(
     /** Bluetooth name pattern (from `garmin/models.json`), or null. */
@@ -60,11 +63,27 @@ public data class PairFilter(
      * each one is its own filter.
      */
     val serviceUuids: List<UUID> = emptyList(),
+    /** True: [namePattern] and [manufacturerId] must both match (one filter), not either. */
+    val nameAndManufacturer: Boolean = false,
 ) {
     /** Filter presets. */
     public companion object {
-        /** Any device advertising Garmin's manufacturer id ([GARMIN_MANUFACTURER_ID]). */
-        public val GARMIN: PairFilter = PairFilter(namePattern = null, manufacturerId = GARMIN_MANUFACTURER_ID)
+        /**
+         * Garmin watches: Garmin's manufacturer id ([GARMIN_MANUFACTURER_ID]) **and** a non-empty
+         * Bluetooth name. The system picker shows a device's name only when it knows one and its MAC
+         * address otherwise; Garmin devices that advertise without a name (a watch that is not in
+         * "Pair phone" mode, bike lights, other people's watches nearby) showed up as hex strings on a
+         * phone that had never seen the watch (Pixel 8 field test, 2026-11-25). A watch in pairing
+         * mode advertises its name, and a watch this phone already knows has a cached name, so both
+         * still show. Gadgetbridge also picks Garmin watches by name (its own scan, then a
+         * single-device association: `util/CompanionDeviceUtil.java` in references/Gadgetbridge
+         * 160beab41); the system picker keeps us free of `BLUETOOTH_SCAN` and location.
+         */
+        public val GARMIN: PairFilter = PairFilter(
+            namePattern = Regex(".+"),
+            manufacturerId = GARMIN_MANUFACTURER_ID,
+            nameAndManufacturer = true,
+        )
     }
 }
 
@@ -324,6 +343,18 @@ public class Pairing internal constructor(
         fun buildRequest(filter: PairFilter): AssociationRequest {
             val builder = AssociationRequest.Builder().setSingleDevice(false)
             var any = false
+            if (filter.nameAndManufacturer && filter.namePattern != null && filter.manufacturerId != null) {
+                // One filter: both must match (BluetoothLeDeviceFilter ANDs its name pattern and scan filter).
+                val scan = ScanFilter.Builder().setManufacturerData(filter.manufacturerId, ByteArray(0)).build()
+                builder.addDeviceFilter(
+                    BluetoothLeDeviceFilter.Builder().setNamePattern(filter.namePattern.toPattern()).setScanFilter(scan).build(),
+                )
+                for (uuid in filter.serviceUuids) {
+                    val s = ScanFilter.Builder().setServiceUuid(ParcelUuid(uuid)).build()
+                    builder.addDeviceFilter(BluetoothLeDeviceFilter.Builder().setScanFilter(s).build())
+                }
+                return builder.build()
+            }
             filter.namePattern?.let {
                 builder.addDeviceFilter(BluetoothLeDeviceFilter.Builder().setNamePattern(it.toPattern()).build())
                 any = true

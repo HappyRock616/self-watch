@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.3
+
+- Sleep: a night that the watch hands over in two parts (before and after a sync at midnight) is now one night. It starts when you fell asleep, not at midnight, counts all of it, and belongs to the day you wake up. Sleep stages are read from every watch file, not only the sleep file. The watch's original sleep files are kept on the phone for 14 days so an odd night can be checked.
+- Fresh data while you look at the app: Self Watch syncs when you open it (if the last sync is over 5 minutes old) and every 15 minutes while it stays open. No need to tap Sync now.
+- Stuck link guard: if syncs keep finishing with no new watch data for 4 hours during the day, Self Watch reconnects to the watch by itself (at most every 2 hours), instead of needing a phone restart.
+- Intensity minutes now match Garmin Connect: only the minutes the watch itself credits as moderate (count 1) or vigorous (count 2) exercise, rated from heart rate. Before, ordinary walking around counted too. Past days show 0 because the old figures could not be corrected.
+- Watch pairing: the pairing list shows Garmin watches by name. Nameless Garmin devices nearby no longer show up as hex addresses. If the watch is not in the list, Self Watch explains how to put it in pairing mode (Pair phone on the watch).
+
 ## 0.0.2
 
 A big redesign of every page, a much better food database, and a new Devices page.

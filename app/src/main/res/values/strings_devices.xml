@@ -223,4 +223,7 @@
     <string name="devices_exclusive">Exclusive</string>
     <string name="devices_exclusive_note">On: Self Watch keeps reconnecting when another phone or app takes this watch. Off: it steps back and checks once an hour, which saves watch battery.</string>
     <string name="devices_hr_from_strap">Heart rate comes from %1$s while it\'s connected.</string>
+    <!-- Shown when watch pairing does not finish: Android lists only Garmin devices that broadcast a name. -->
+    <string name="devices_pair_hint_title">Watch not in the list?</string>
+    <string name="devices_pair_hint">Put the watch in pairing mode: on the watch, open the phone settings and choose Pair phone. Keep it next to this phone, then tap Pair watch again.\n\nOnly Garmin devices that show their name are listed.</string>
 </resources>

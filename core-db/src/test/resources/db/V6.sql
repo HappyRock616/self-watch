@@ -6,7 +6,7 @@
  * of the License, or (at your option) any later version. See the LICENSE file.
  */
 
--- DUMMY schema V5, for MigrationTest only (test resources; never shipped). It exercises the kinds
+-- DUMMY schema V6, for MigrationTest only (test resources; never shipped). It exercises the kinds
 -- of change a real upgrade makes: a new column, a new table with a trigger, a table rebuild that
 -- keeps its rows, a new index and a data fix-up.
 

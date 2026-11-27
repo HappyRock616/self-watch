@@ -42,7 +42,8 @@ data class DayIntensity(val moderateMin: Int, val vigorousMin: Int) {
 /**
  * Intensity minutes and active days (catalogue C10 and C15).
  *
- * The watch marks each minute 0 (sedentary) to 3 (vigorous); 2 is moderate. A minute recorded by two
+ * Intensity minutes are the ones the watch credits (FIT fields 33/34, as in Garmin Connect): 2 marks a
+ * moderate minute, 3 a vigorous one; 0 and 1 are still and moving. A minute recorded by two
  * watches counts once, at the higher intensity. The weekly target is the user's active-minutes goal
  * (minutes per week, default 300; [ActivityGoals]); WHO 2020's minimum of 150 is shown as a note.
  */

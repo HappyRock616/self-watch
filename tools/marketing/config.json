@@ -1,5 +1,5 @@
 {
-  "_comment": "Marketing images. Run: python <skill>/make_marketing_images.py tools/marketing/config.json (needs Pillow). Raw shots are Pixel 5 captures in docs/screens.",
+  "_comment": "Marketing images. Run: python <skill>/make_marketing_images.py tools/marketing/config.json (needs Pillow). Raw shots are Pixel 5 captures in docs/screens/0.0.2.",
   "output_dir": "../../build/marketing",
   "icon": "../../branding/icon/png/self-watch-icon-512.png",
   "icon_round": true,
@@ -43,18 +43,28 @@
   "shots": [
     {
       "key": "body",
-      "file": "../../docs/screens/body.png",
-      "pill": "Calories in vs out",
+      "file": "../../docs/screens/0.0.2/body.png",
+      "pill": "Goals at a glance",
       "color": "#f28c28",
       "caption": [
-        "Food and activity together,",
-        "finally on one screen."
+        "Food, activity and sleep,",
+        "together on one screen."
+      ]
+    },
+    {
+      "key": "activity",
+      "file": "../../docs/screens/0.0.2/activity.png",
+      "pill": "Move more",
+      "color": "#2f8fe0",
+      "caption": [
+        "Steps, active minutes and",
+        "workouts from your watch."
       ]
     },
     {
       "key": "food",
-      "file": "../../docs/screens/food-diary.png",
-      "pill": "Food diary",
+      "file": "../../docs/screens/0.0.2/food.png",
+      "pill": "Every nutrient, every meal",
       "color": "#3aa56b",
       "caption": [
         "Calories left, with your",
@@ -62,63 +72,59 @@
       ]
     },
     {
-      "key": "activity",
-      "file": "../../docs/screens/activity.png",
-      "pill": "Activity",
-      "color": "#2f8fe0",
-      "caption": [
-        "Steps, active minutes and",
-        "trends from your watch."
-      ]
-    },
-    {
-      "key": "add_food",
-      "file": "../../docs/screens/add-food.png",
-      "pill": "Quick logging",
+      "key": "food_detail",
+      "file": "../../docs/screens/0.0.2/food-detail.png",
+      "pill": "Know your food",
       "color": "#188a8c",
       "caption": [
-        "Search, scan a barcode",
-        "or re-log in one tap."
-      ]
-    },
-    {
-      "key": "sleep",
-      "file": "../../docs/screens/sleep.png",
-      "pill": "Sleep",
-      "color": "#6a4fc4",
-      "caption": [
-        "Sleep stages, heart rate,",
-        "HRV and breathing."
+        "A big offline food list with",
+        "vegan and gluten-free tags."
       ]
     },
     {
       "key": "workout",
-      "file": "../../docs/screens/workout.png",
-      "pill": "Workouts",
+      "file": "../../docs/screens/0.0.2/workout.png",
+      "pill": "Every workout",
       "color": "#e26340",
       "caption": [
-        "Every workout with route,",
-        "heart rate and splits."
+        "Route, heart rate and pace",
+        "for every run and ride."
       ]
     },
     {
-      "key": "weight",
-      "file": "../../docs/screens/weight.png",
-      "pill": "Weight",
+      "key": "trends",
+      "file": "../../docs/screens/0.0.2/run-trends.png",
+      "pill": "See your progress",
+      "color": "#6a4fc4",
+      "caption": [
+        "Trends for each sport,",
+        "workout after workout."
+      ]
+    },
+    {
+      "key": "devices",
+      "file": "../../docs/screens/0.0.2/devices.png",
+      "pill": "Your watch, no account",
       "color": "#284e8c",
       "caption": [
-        "Weigh-ins, trend line",
-        "and progress to your goal."
+        "Your watch syncs straight",
+        "to your phone. No cloud."
       ]
     },
     {
       "key": "privacy",
-      "file": "../../docs/screens/privacy.png",
+      "file": "../../docs/screens/0.0.2/privacy.png",
       "pill": "Private by design",
       "color": "#c43e3c",
       "caption": [
         "No account, no ads,",
         "no tracking."
+      ],
+      "crop": [
+        0,
+        140,
+        1080,
+        2240
       ]
     }
   ],
@@ -131,7 +137,7 @@
     "body",
     "food",
     "activity",
-    "sleep",
+    "workout",
     "privacy"
   ]
 }

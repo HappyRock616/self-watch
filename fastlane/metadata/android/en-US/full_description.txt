@@ -8,30 +8,35 @@ Self Watch merges them into one. It connects directly to your Garmin watch over 
 
 No account. No cloud. No ads. No analytics. No Google Play Services.
 
-<b>Body</b>
-• Weight with a trend line and progress to your goal
-• Waist, hips and body fat
-• Calories in vs out, today and over the last week
+<b>Goals at a glance</b>
+• Body today: calories eaten and burned, water, energy level, sleep and weight against your goals
+• Activity goals: steps, active minutes, workouts and active days this week
+• Cards in two sizes that you add, remove and move on any tab
+
+<b>Body and sleep</b>
+• Sleep stages, HRV, resting heart rate, stress, readiness and blood oxygen
+• Weight with a trend line, body composition, measurements and blood pressure
+• Weight goal: safe daily calories to reach your goal weight by your date
 
 <b>Activity and workouts</b>
-• Steps, active minutes, active calories and streaks
-• Week, month, year and all-time trends
-• Every workout with route, heart rate, speed and splits
+• Steps, active minutes, VO2 max, weekly effort and heart-rate recovery
+• Every workout with route, heart rate, pace and elevation
+• Trends for each sport, and trim a workout when you forgot to stop the watch
 • Export as GPX, TCX or FIT
 
-<b>Sleep</b>
-• Deep, light, REM and awake stages
-• Heart rate, HRV, breathing and SpO2 through the night
-
 <b>Food diary</b>
-• Search, scan a barcode with the built-in camera (no pictures saved), or re-log in one tap
+• Offline food list of about 266,000 foods, packaged products and restaurant meals
+• Search that finds the everyday food first, and barcode scanning (no pictures saved)
+• Daily balance: calories, protein, carbs, fat, fat types, fiber, sodium and added sugar
+• Vegan, vegetarian, gluten-free and allergen tags, with a warning when a food clashes with your diet
+• Tap a meal for its nutrition summary; recent foods for each meal in one tap
 • Custom foods, saved meals and recipes
-• Calories left for the day, with activity added in
-• Works with no internet at all
 
-<b>Watch</b>
+<b>Watch and devices</b>
 • Pairs directly with Garmin watches. No Garmin account needed
+• Heart-rate straps and scales alongside your watch; a strap always wins for heart rate
 • Phone notifications on the watch, with a switch per app
+• Weather and GPS help for the watch
 • Phone apps can talk to Connect IQ watch apps, with your permission
 
 <b>Import and export</b>
@@ -41,7 +46,7 @@ No account. No cloud. No ads. No analytics. No Google Play Services.
 • Optional Health Connect sync (Android 14+)
 
 <b>Privacy center</b>
-Every internet feature has its own switch, nothing goes out unless its switch is on, and every request is listed: when, where and how much.
+Every internet feature has its own switch, and every request is listed: when, where and how much. Only the food list download, GPS help for the watch and your watch apps' own web requests are on at the start; barcode lookups and everything else stay off until you turn them on.
 
 Tested with the vívoactive 5; other current Garmin watches are expected to work, and the app tells you when a model hasn't been verified yet.
 

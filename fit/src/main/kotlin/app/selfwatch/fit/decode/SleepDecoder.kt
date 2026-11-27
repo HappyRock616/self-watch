@@ -41,19 +41,7 @@ object SleepDecoder {
         val result = FitReader(file).read { rec ->
             if (metrics.accept(rec)) return@read
             when (rec.global) {
-                FitMsg.SLEEP_LEVEL -> {
-                    // Ref: Gadgetbridge 160beab41 FitCodeGenerator/src/main/resources/fit_profile.json (SleepLevel enum: 0 UNMEASURABLE, 1 AWAKE, 2 LIGHT, 3 DEEP, 4 REM)
-                    val t = rec.tSec ?: return@read
-                    val stage = when (rec.int(0)) {
-                        0 -> SleepStage.UNMEASURABLE
-                        1 -> SleepStage.AWAKE
-                        2 -> SleepStage.LIGHT
-                        3 -> SleepStage.DEEP
-                        4 -> SleepStage.REM
-                        else -> return@read
-                    }
-                    stages[t] = SleepStageSample(deviceId, t, stage)
-                }
+                FitMsg.SLEEP_LEVEL -> stageOf(rec, deviceId)?.let { stages[it.tSec] = it }
                 FitMsg.SLEEP_ASSESSMENT -> rec.int(6)?.takeIf { it in 0..100 }?.let { score = it }
                 FitMsg.SLEEP_SUMMARY -> {
                     rec.int(0)?.takeIf { it in 0..100 }?.let { summaryScore = it }
@@ -78,16 +66,43 @@ object SleepDecoder {
                 val e0 = end
                 val sessions = when {
                     s0 != null && e0 != null -> listOf(SleepSession(deviceId, s0, e0, score ?: summaryScore))
-                    samples.isNotEmpty() -> {
-                        val first = samples.first().tSec
-                        val last = samples.last().tSec
-                        listOf(SleepSession(deviceId, first, last + interval(samples), score ?: summaryScore))
-                    }
-                    else -> emptyList()
+                    else -> sessionFor(samples, deviceId, score ?: summaryScore)
                 }
                 Outcome.Ok(IngestBatch(key = null, metrics = metrics.result(), sleepStages = samples, sleepSessions = sessions))
             }
         }
+    }
+
+    /**
+     * The stage sample in a `sleep_level` record, or null. Used by every decoder: Garmin watches also
+     * put `sleep_level` messages in monitoring files, for example the part of a night before a sync at
+     * midnight (Pixel 8 field test, 2026-11-26: the sleep file started at 00:01 and the 23:xx stages
+     * were in the 18:22–00:00 monitoring file). Gadgetbridge reads `sleep_level` from any FIT file
+     * (references/Gadgetbridge 160beab41 service/devices/garmin/fit/FitImporter.java).
+     */
+    internal fun stageOf(rec: app.selfwatch.fit.io.FitRecord, deviceId: Long): SleepStageSample? {
+        // Ref: Gadgetbridge 160beab41 FitCodeGenerator/src/main/resources/fit_profile.json (SleepLevel enum: 0 UNMEASURABLE, 1 AWAKE, 2 LIGHT, 3 DEEP, 4 REM)
+        val t = rec.tSec ?: return null
+        val stage = when (rec.int(0)) {
+            0 -> SleepStage.UNMEASURABLE
+            1 -> SleepStage.AWAKE
+            2 -> SleepStage.LIGHT
+            3 -> SleepStage.DEEP
+            4 -> SleepStage.REM
+            else -> return null
+        }
+        return SleepStageSample(deviceId, t, stage)
+    }
+
+    /**
+     * One session spanning [samples] (first sample to last sample plus one interval), or none. The
+     * pieces of a night that arrive in different files are joined into one night when read
+     * (`SleepDao.night`), so a piece only needs its own span.
+     */
+    internal fun sessionFor(samples: List<SleepStageSample>, deviceId: Long, score: Int?): List<SleepSession> {
+        if (samples.isEmpty()) return emptyList()
+        val sorted = samples.sortedBy { it.tSec }
+        return listOf(SleepSession(deviceId, sorted.first().tSec, sorted.last().tSec + interval(sorted), score))
     }
 
     /** The smallest gap between stage samples, between 30 s and 5 min; 60 s if unknown. */

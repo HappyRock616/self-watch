@@ -12,7 +12,7 @@ Free, open source, and private by design. **No account, no cloud, no ads, no tra
 
 > **Status: early development (0.0.1).** The app is built and runs, and it has synced with a real vívoactive 5. Test builds are on the [Releases](../../releases) page.
 
-![Body, activity, sleep, food diary and privacy center](docs/images/gallery.png)
+![Body and sleep, food diary, activity, a workout and the privacy center](docs/images/gallery.png)
 
 ## 🔒 Why this exists
 

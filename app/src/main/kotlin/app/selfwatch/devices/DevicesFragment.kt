@@ -34,6 +34,7 @@ import app.selfwatch.me.HelpFragment
 import app.selfwatch.model.device.ConnectionState
 import app.selfwatch.model.log.SwLog
 import app.selfwatch.model.result.Outcome
+import app.selfwatch.model.result.SwError
 import app.selfwatch.model.time.Day
 import app.selfwatch.service.device.WatchStatus
 import app.selfwatch.shell.Nav
@@ -202,7 +203,17 @@ class DevicesFragment : TabFragment(R.layout.fragment_devices, R.menu.menu_devic
             }
             is Outcome.Fail -> {
                 SwLog.i(TAG, "pairing ended: ${r.error}")
-                toastText(getString(R.string.devices_pair_failed, WatchStatus.reason(r.error)))
+                if (r.error is SwError.PermissionMissing) {
+                    toastText(getString(R.string.devices_pair_failed, WatchStatus.reason(r.error)))
+                } else {
+                    // Cancelled or nothing found: usually the watch isn't in pairing mode (it then
+                    // broadcasts without a name and the Garmin filter hides it).
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.devices_pair_hint_title)
+                        .setMessage(R.string.devices_pair_hint)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
             }
         }
     }

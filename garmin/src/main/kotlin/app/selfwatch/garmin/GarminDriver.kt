@@ -552,6 +552,16 @@ public class GarminDriver(
                     return false
                 }
             }
+            if (p.kind == FitFileKind.SLEEP || batch.sleepStages.isNotEmpty()) {
+                // Keep the watch's original for checking odd nights later; never fails the sync.
+                try {
+                    files.keepSleepFile(deviceId, p.key.tSec, p.kind.name.lowercase(), bytes)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    SwLog.w(TAG, "keeping sleep file ${p.entry.index} failed", e)
+                }
+            }
             when (val r = sink.ingest(batch)) {
                 is Outcome.Ok -> Unit
                 is Outcome.Fail -> {
